@@ -1,0 +1,853 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" href="/_next/static/media/83afe278b6a6bb3c-s.p.2bn3s6zvc0dyp.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="stylesheet" href="/_next/static/chunks/0jym9xk64lxlu.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/1rpyum114dc60.js"/><script src="/_next/static/chunks/27jktro2p5rq9.js" async=""></script><script src="/_next/static/chunks/2nykiepra7i1k.js" async=""></script><script src="/_next/static/chunks/11oof8oxnxiv9.js" async=""></script><script src="/_next/static/chunks/turbopack-1f4yurjyc2jz8.js" async=""></script><script src="/_next/static/chunks/3awaw01wug-pc.js" async=""></script><script src="/_next/static/chunks/1x0t1skyoub9j.js" async=""></script><script src="/_next/static/chunks/14mrh2-p_w84d.js" async=""></script><script src="/_next/static/chunks/36uk_00et8m8o.js" async=""></script><meta name="next-size-adjust" content=""/><link rel="icon" href="/favicon.ico"/><link rel="apple-touch-icon" href="/icon-192.png"/><title>MAX CFO AI — Seu CFO Virtual de Inteligência Artificial</title><meta name="description" content="MAX CFO AI: Seu CFO virtual. Análise financeira, DRE, simulações, empresas por CNPJ. 100% local, sem APIs."/><link rel="manifest" href="/manifest.json"/><meta name="mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-title" content="MAX CFO"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><link rel="icon" href="/favicon.ico?favicon.2vob68tjqpejf.ico" sizes="256x256" type="image/x-icon"/><link rel="icon" href="/icon-192.png"/><link rel="apple-touch-icon" href="/icon-192.png"/><script src="/_next/static/chunks/0cz1d0mv5g_q7.js" noModule=""></script></head><body class="inter_396b12ce-module__rRjk0G__className"><div hidden=""><!--$--><!--/$--></div><div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">⚡</div>
+    <div class="brand-text">
+      <span class="brand-name">MAX CFO AI</span>
+      <span class="brand-tagline">Plataforma Financeira v3.0</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">PRINCIPAL</div>
+    <a class="nav-item active" data-view="dashboard" id="nav-dashboard">
+      <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span>
+    </a>
+    <a class="nav-item" data-view="chat" id="nav-chat">
+      <span class="nav-icon">🤖</span><span class="nav-label">CFO IA</span>
+      <span class="nav-badge" id="chatBadge" style="display:none">1</span>
+    </a>
+
+    <div class="nav-section-label">GESTÃO</div>
+    <a class="nav-item" data-view="finance" id="nav-finance">
+      <span class="nav-icon">💰</span><span class="nav-label">Financeiro</span>
+    </a>
+    <a class="nav-item" data-view="reconciliation" id="nav-reconciliation">
+      <span class="nav-icon">🔄</span><span class="nav-label">Conciliação</span>
+    </a>
+    <a class="nav-item" data-view="simulator" id="nav-simulator">
+      <span class="nav-icon">🔮</span><span class="nav-label">Simulador</span>
+    </a>
+    <a class="nav-item" data-view="companies" id="nav-companies">
+      <span class="nav-icon">🏢</span><span class="nav-label">Empresas</span>
+    </a>
+
+    <div class="nav-section-label">ANÁLISE</div>
+    <a class="nav-item" data-view="reports" id="nav-reports">
+      <span class="nav-icon">📋</span><span class="nav-label">Relatórios</span>
+    </a>
+    <a class="nav-item" data-view="settings" id="nav-settings">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Configurações</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-version">MAX CFO AI v3.0 — Premium</div>
+    <div class="user-profile" id="userProfile">
+      <div class="user-avatar" id="userAvatarSidebar">M</div>
+      <div class="user-info">
+        <span class="user-name" id="sidebarUserName">CFO Master</span>
+        <span class="user-plan">Plan Premium ✨</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- OVERLAY mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu">☰</button>
+      <nav class="breadcrumb-nav" aria-label="Localização">
+        <span class="breadcrumb-root">MAX CFO AI</span>
+        <span class="breadcrumb-sep">›</span>
+        <span class="breadcrumb-current" id="breadcrumb-label">Dashboard</span>
+      </nav>
+    </div>
+    <div class="topbar-center">
+      <div class="search-container">
+        <span class="search-icon-left">🔍</span>
+        <input type="text" class="search-input" id="globalSearch" placeholder="Buscar funcionalidade... (Ctrl+K)" autocomplete="off" aria-label="Busca global">
+        <kbd class="search-kbd">Ctrl K</kbd>
+        <div class="search-dropdown" id="searchDropdown" role="listbox"></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-action-btn" id="addBtn" title="Novo lançamento (N)" onclick="quickAdd()">
+        <span>+</span> Novo
+      </button>
+      <button class="topbar-icon-btn" id="notifBtn" title="Notificações" aria-label="Notificações">
+        🔔
+        <span class="notif-dot" id="notifDot"></span>
+      </button>
+      <div class="topbar-divider"></div>
+      <div class="topbar-date-time" id="topbarDateTime"></div>
+    </div>
+  </header>
+
+  <!-- VIEWS CONTAINER -->
+  <main class="views-container" id="viewsContainer">
+
+    <!-- ═══════════ DASHBOARD ═══════════ -->
+    <section class="view active" id="view-dashboard" aria-label="Dashboard">
+
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1 id="dashGreeting">Visão Geral Executiva</h1>
+          <p class="page-subtitle" id="dashSubtitle">Resumo financeiro em tempo real</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary" onclick="switchView('reports')">📋 Relatório</button>
+          <button class="btn-primary" onclick="openModal('receita')">+ Receita</button>
+          <button class="btn-danger-outline" onclick="openModal('despesa')">+ Despesa</button>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-strip" id="kpiStrip">
+        <div class="kpi-card kpi-green">
+          <div class="kpi-top"><span class="kpi-ico">📈</span><span class="kpi-trend positive" id="kpi-rec-trend">—</span></div>
+          <div class="kpi-value" id="kpi-receita">R$ 0,00</div>
+          <div class="kpi-label">Receitas Totais</div>
+        </div>
+        <div class="kpi-card kpi-red">
+          <div class="kpi-top"><span class="kpi-ico">📉</span><span class="kpi-trend" id="kpi-desp-trend">—</span></div>
+          <div class="kpi-value" id="kpi-despesa">R$ 0,00</div>
+          <div class="kpi-label">Despesas Totais</div>
+        </div>
+        <div class="kpi-card kpi-gold">
+          <div class="kpi-top"><span class="kpi-ico">💰</span><span class="kpi-trend" id="kpi-saldo-trend">—</span></div>
+          <div class="kpi-value" id="kpi-saldo">R$ 0,00</div>
+          <div class="kpi-label">Resultado / Saldo</div>
+        </div>
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-top"><span class="kpi-ico">📐</span><span class="kpi-trend" id="kpi-margem-trend">—</span></div>
+          <div class="kpi-value" id="kpi-margem">0,0%</div>
+          <div class="kpi-label">Margem Líquida</div>
+        </div>
+        <div class="kpi-card kpi-purple">
+          <div class="kpi-top"><span class="kpi-ico">⏳</span><span class="kpi-trend" id="kpi-runway-trend">—</span></div>
+          <div class="kpi-value" id="kpi-runway">0 meses</div>
+          <div class="kpi-label">Runway Estimado</div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="grid-3col">
+        <!-- Score Gauge -->
+        <div class="card">
+          <div class="card-title">Saúde Financeira</div>
+          <div class="gauge-container">
+            <svg class="gauge-svg" viewBox="0 0 200 120">
+              <defs>
+                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#EF4444"/>
+                  <stop offset="40%" style="stop-color:#F59E0B"/>
+                  <stop offset="70%" style="stop-color:#C5A059"/>
+                  <stop offset="100%" style="stop-color:#10B981"/>
+                </linearGradient>
+              </defs>
+              <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="18" stroke-linecap="round"/>
+              <path id="gaugeFill" d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+            </svg>
+            <div class="gauge-center-info">
+              <div class="gauge-score" id="gaugeScore">50</div>
+              <div class="gauge-status" id="gaugeStatus">Regular</div>
+            </div>
+          </div>
+          <div class="gauge-scale">
+            <span style="color:#EF4444">Crítico</span>
+            <span style="color:#F59E0B">Regular</span>
+            <span style="color:#10B981">Ótimo</span>
+          </div>
+          <button class="btn-ghost-full" onclick="sendToChat('diagnóstico financeiro')">Ver diagnóstico →</button>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="card">
+          <div class="card-title">Evolução (6 Meses)</div>
+          <canvas id="trendChart" width="300" height="160" style="width:100%;max-height:160px"></canvas>
+          <div class="chart-legend">
+            <span class="legend-dot green" style="box-shadow: 0 0 8px var(--success)"></span> Receitas
+            <span class="legend-dot red" style="margin-left:12px;box-shadow: 0 0 8px var(--danger)"></span> Despesas
+          </div>
+        </div>
+
+        <!-- DRE mini -->
+        <div class="card">
+          <div class="card-title">DRE Executivo</div>
+          <div class="dre-mini" id="dreMini"></div>
+          <button class="btn-ghost-full" onclick="generateReport('dre')">DRE completo →</button>
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW -->
+      <div class="grid-2col" style="margin-top:20px">
+        <!-- Alerts -->
+        <div class="card">
+          <div class="card-header-row">
+            <span class="card-title">⚡ Alertas Inteligentes</span>
+            <span class="badge-count" id="alertCount">0</span>
+          </div>
+          <div class="alerts-list" id="alertsList"></div>
+          <button class="btn-ghost-full" onclick="sendToChat('diagnóstico financeiro')">Análise completa →</button>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card">
+          <div class="card-header-row">
+            <span class="card-title">Últimos Lançamentos</span>
+            <button class="btn-link" onclick="switchView('finance')">Ver todos →</button>
+          </div>
+          <div id="recentTxList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ CHAT IA ═══════════ -->
+    <section class="view chat-view" id="view-chat" aria-label="CFO IA">
+      <div class="chat-layout">
+        <aside class="chat-panel">
+          <div class="ai-header">
+            <div class="ai-avatar-lg">🤖</div>
+            <div>
+              <h3 class="ai-name">MAX CFO AI</h3>
+              <span class="ai-status"><span class="status-pulse"></span> Online — IA Ativa</span>
+            </div>
+          </div>
+
+          <div class="chat-commands-section">
+            <div class="section-label">ANÁLISES RÁPIDAS</div>
+            <button class="cmd-chip" onclick="sendToChat('resumo financeiro')">📊 Resumo</button>
+            <button class="cmd-chip" onclick="sendToChat('gerar DRE completo')">📈 DRE</button>
+            <button class="cmd-chip" onclick="sendToChat('diagnóstico financeiro')">🩺 Diagnóstico</button>
+            <button class="cmd-chip" onclick="sendToChat('análise de margens')">📐 Margens</button>
+            <button class="cmd-chip" onclick="sendToChat('burn rate e runway')">🔥 Burn Rate</button>
+            <button class="cmd-chip" onclick="sendToChat('forecast próximos 3 meses')">🔮 Forecast</button>
+            <button class="cmd-chip" onclick="sendToChat('fluxo de caixa')">💧 Fluxo Caixa</button>
+            <button class="cmd-chip" onclick="sendToChat('capital de giro')">⚖️ Capital Giro</button>
+            <button class="cmd-chip" onclick="sendToChat('ponto de equilíbrio')">🎯 Break Even</button>
+            <button class="cmd-chip" onclick="sendToChat('planejamento tributário')">📋 Tributário</button>
+            <button class="cmd-chip" onclick="sendToChat('onde investir meu excedente')">💼 Investimentos</button>
+            <button class="cmd-chip" onclick="sendToChat('reduzir custos')">✂️ Custos</button>
+            <button class="cmd-chip" onclick="sendToChat('KPIs e indicadores')">📉 KPIs</button>
+          </div>
+
+          <button class="btn-clear-chat" onclick="clearChat()">🗑️ Limpar conversa</button>
+        </aside>
+
+        <div class="chat-body">
+          <div class="messages-area" id="chatMessages" aria-live="polite" aria-label="Mensagens"></div>
+          <div class="chat-input-area">
+            <div class="chat-input-wrap">
+              <textarea
+                class="chat-textarea"
+                id="chatInput"
+                placeholder="Pergunte ao MAX CFO AI... ex: 'Como está minha margem?' ou 'Analisar CNPJ 00.000.000/0001-00'"
+                rows="1"
+                aria-label="Digite sua mensagem"
+              ></textarea>
+              <div class="chat-actions">
+                <button class="voice-trigger" id="voiceBtn" onclick="toggleVoice()" title="Reconhecimento de voz (Chrome)">🎤</button>
+                <button class="send-trigger" id="sendBtn" onclick="sendChat()" aria-label="Enviar">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="chat-footer-hint">Enter para enviar • Shift+Enter para nova linha • 🎤 para voz</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ FINANCEIRO ═══════════ -->
+    <section class="view" id="view-finance" aria-label="Gestão Financeira">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Gestão Financeira</h1>
+          <p class="page-subtitle">Controle completo de receitas e despesas</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary" onclick="exportCSV()">⬇️ Exportar CSV</button>
+          <button class="btn-primary" onclick="openModal('receita')">+ Nova Receita</button>
+          <button class="btn-danger-outline" onclick="openModal('despesa')">+ Nova Despesa</button>
+        </div>
+      </div>
+
+      <!-- Finance KPIs -->
+      <div class="finance-kpi-row" id="financeKPIs"></div>
+
+      <!-- Pie Chart + Table -->
+      <div class="grid-sidebar-main" style="margin-top:20px">
+        <div class="card">
+          <div class="card-title">Distribuição por Categoria</div>
+          <canvas id="pieChart" width="220" height="220" style="width:220px;height:220px;margin:0 auto;display:block"></canvas>
+          <div id="pieChartLegend" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header-row">
+            <span class="card-title">Lançamentos</span>
+            <div class="filter-bar">
+              <select class="select-sm" id="filterPeriod" onchange="applyFilters()">
+                <option value="all">Todo período</option>
+                <option value="thisMonth">Este mês</option>
+                <option value="lastMonth">Mês passado</option>
+                <option value="last3">Últimos 3 meses</option>
+                <option value="thisYear">Este ano</option>
+              </select>
+              <div class="chip-row">
+                <button class="chip active" data-type="all" onclick="setTypeFilter(this,'all')">Todos</button>
+                <button class="chip" data-type="RECEITA" onclick="setTypeFilter(this,'RECEITA')">Receitas</button>
+                <button class="chip" data-type="DESPESA" onclick="setTypeFilter(this,'DESPESA')">Despesas</button>
+              </div>
+              <input type="text" class="search-sm" id="txSearch" placeholder="Buscar..." oninput="applyFilters()">
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table" id="txTable">
+              <thead>
+                <tr>
+                  <th class="sortable" onclick="sortTx('date')">Data <span id="sort-date">↕</span></th>
+                  <th class="sortable" onclick="sortTx('desc')">Descrição <span id="sort-desc">↕</span></th>
+                  <th>Categoria</th>
+                  <th>Tipo</th>
+                  <th class="sortable" onclick="sortTx('amount')">Valor <span id="sort-amount">↕</span></th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="txTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span id="txCount-label" class="table-count"></span>
+            <span id="txTotal-label" class="table-total"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🏦 CONCILIAÇÃO BANCÁRIA 🏦 -->
+    <section class="view" id="view-reconciliation" aria-label="Conciliação Bancária">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Conciliação Bancária</h1>
+          <p class="page-subtitle">Importe seu extrato (OFX ou CSV) e sincronize com o sistema</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-primary" id="btn-import-pending" style="display:none;" onclick="importPendingTransactions()">Importar Pendentes</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px; text-align:center;" id="reconciliation-upload-zone">
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('bank-file-input').click()">
+          <span style="font-size: 32px; display: block; margin-bottom: 10px;">📄</span>
+          <h3>Arraste o extrato do seu banco aqui</h3>
+          <p class="text-muted">Ou clique para selecionar um arquivo (.OFX ou .CSV)</p>
+          <input type="file" id="bank-file-input" accept=".ofx,.csv" style="display:none;" onchange="handleBankFileUpload(event)">
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px; display:none;" id="reconciliation-results">
+        <div class="card-header-row">
+          <span class="card-title">Análise do Extrato</span>
+          <div class="chip-row">
+            <span class="chip" style="background:#10b98122; color:#10b981;" id="count-matched">0 Conciliados</span>
+            <span class="chip" style="background:#f59e0b22; color:#f59e0b;" id="count-pending">0 Pendentes</span>
+          </div>
+        </div>
+        <div class="table-scroll" style="max-height: 500px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Data</th>
+                <th>Descrição (Banco)</th>
+                <th>Valor</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="reconTableBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🔮 SIMULADOR 🔮 -->
+    <section class="view" id="view-simulator" aria-label="Simulador de Cenários">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Simulador de Cenários</h1>
+          <p class="page-subtitle">Projete impactos financeiros em tempo real com IA</p>
+        </div>
+        <button class="btn-secondary" onclick="generateReport('forecast')">📋 Exportar Projeção</button>
+      </div>
+
+      <div class="simulator-layout">
+        <!-- Controls -->
+        <div class="card sim-panel">
+          <div class="sim-section-title">⚙️ Parâmetros do Cenário</div>
+
+          <div class="slider-block">
+            <div class="slider-label-row">
+              <span>📈 Variação de Receita</span>
+              <span class="slider-display" id="recDisplay" style="color:var(--success)">+0%</span>
+            </div>
+            <input type="range" min="-50" max="150" value="0" class="range-input" id="recSlider" oninput="onSliderChange()">
+            <div class="slider-ticks"><span>-50%</span><span>0%</span><span>+150%</span></div>
+          </div>
+
+          <div class="slider-block">
+            <div class="slider-label-row">
+              <span>📉 Variação de Despesa</span>
+              <span class="slider-display" id="despDisplay" style="color:var(--text-muted)">+0%</span>
+            </div>
+            <input type="range" min="-50" max="100" value="0" class="range-input" id="despSlider" oninput="onSliderChange()">
+            <div class="slider-ticks"><span>-50%</span><span>0%</span><span>+100%</span></div>
+          </div>
+
+          <div class="scenarios-title">⚡ Cenários Pré-configurados</div>
+          <div class="scenarios-grid">
+            <button class="scenario-pill" onclick="applyScenario(30,10,'Expansão Moderada')">🚀 Expansão</button>
+            <button class="scenario-pill" onclick="applyScenario(80,-20,'Crescimento Acelerado')">📈 Acelerado</button>
+            <button class="scenario-pill" onclick="applyScenario(-20,10,'Recessão')">⚠️ Recessão</button>
+            <button class="scenario-pill" onclick="applyScenario(-40,20,'Crise Severa')">🔴 Crise</button>
+            <button class="scenario-pill" onclick="applyScenario(0,-25,'Corte de Custos')">✂️ Corte</button>
+            <button class="scenario-pill" onclick="applyScenario(50,-15,'Crescimento + Eficiência')">🎯 Ideal</button>
+            <button class="scenario-pill" onclick="applyScenario(0,0,'Reset')">🔄 Reset</button>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="sim-results-col">
+          <div class="card">
+            <div class="sim-section-title" id="scenarioTitle">📊 Resultado Projetado</div>
+            <div id="simResultCards"></div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="sim-section-title">🤖 Parecer Estratégico do CFO</div>
+            <div class="cfo-speech" id="cfoParecer">
+              <div class="cfo-speech-icon">🤖</div>
+              <p>Ajuste os sliders ou selecione um cenário para receber análise estratégica do MAX CFO AI.</p>
+            </div>
+          </div>
+          <canvas id="simChart" style="display:none"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ EMPRESAS ═══════════ -->
+    <section class="view" id="view-companies" aria-label="Análise Empresarial">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Análise Empresarial</h1>
+          <p class="page-subtitle">Consulte qualquer empresa por CNPJ e receba análise completa do CFO</p>
+        </div>
+      </div>
+
+      <div class="company-search-card card">
+        <div class="company-search-inner">
+          <div class="company-search-left">
+            <h3 class="gold-text">🔍 Consulta de Empresa</h3>
+            <p style="color:var(--text-muted);margin:8px 0 16px">Informe o CNPJ formatado ou nome da empresa</p>
+            <div class="cnpj-row">
+              <input type="text" class="form-input" id="cnpjInput" placeholder="00.000.000/0001-00 ou nome da empresa"
+                maxlength="60" oninput="formatCnpj(this)" onkeydown="if(event.key==='Enter') consultarEmpresa()">
+              <button class="btn-primary btn-lg" onclick="consultarEmpresa()" id="analyzeBtn">
+                Analisar →
+              </button>
+            </div>
+            <div class="quick-companies">
+              <span class="quick-label">Exemplos rápidos:</span>
+              <button class="pill-tag" onclick="setAndAnalyze('33.000.167/0001-01','Petróleo Brasileiro S.A. - PETROBRAS')">Petrobrás</button>
+              <button class="pill-tag" onclick="setAndAnalyze('60.701.190/0001-04','Itaú Unibanco S.A.')">Itaú</button>
+              <button class="pill-tag" onclick="setAndAnalyze('00.000.000/0001-91','Banco do Brasil S.A.')">Banco do Brasil</button>
+              <button class="pill-tag" onclick="setAndAnalyze('45.543.915/0001-81','Magazine Luiza S.A.')">Magalu</button>
+              <button class="pill-tag" onclick="setAndAnalyze('47.960.950/0001-21','Lojas Americanas S.A.')">Americanas</button>
+            </div>
+          </div>
+          <div class="company-search-right">
+            <div class="search-illustration">🏢</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="companyResultArea" style="display:none;margin-top:20px">
+        <div class="company-result-grid">
+          <!-- Main result card -->
+          <div class="card company-main-card" id="companyMainCard"></div>
+          <!-- Score card -->
+          <div class="card company-score-card" id="companyScoreCard"></div>
+        </div>
+        <!-- CFO Parecer -->
+        <div class="card" style="margin-top:16px" id="companyCFOCard"></div>
+      </div>
+
+      <div class="card" id="companyHistoryCard" style="display:none;margin-top:20px">
+        <div class="card-header-row">
+          <span class="card-title">📋 Histórico de Análises</span>
+          <button class="btn-link" onclick="clearCompanyHistory()">Limpar</button>
+        </div>
+        <div id="companyHistoryList"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════ RELATÓRIOS ═══════════ -->
+    <section class="view" id="view-reports" aria-label="Relatórios">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Relatórios & Exportação</h1>
+          <p class="page-subtitle">Gere relatórios executivos completos e profissionais</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-secondary" id="printReportBtn" style="display:none" onclick="window.print()">🖨️ Imprimir</button>
+          <button class="btn-secondary" id="copyReportBtn" style="display:none" onclick="copyReport()">📋 Copiar</button>
+        </div>
+      </div>
+
+      <div class="reports-tiles">
+        <div class="report-tile" onclick="generateReport('dre')" id="tile-dre">
+          <div class="tile-icon">📈</div>
+          <div class="tile-body">
+            <h3>DRE Completo</h3>
+            <p>Demonstrativo de Resultado com análise de todas as margens</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('diagnostico')" id="tile-diagnostico">
+          <div class="tile-icon">🩺</div>
+          <div class="tile-body">
+            <h3>Diagnóstico Financeiro</h3>
+            <p>Score de saúde, pontos fortes, alertas e recomendações</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('cashflow')" id="tile-cashflow">
+          <div class="tile-icon">💸</div>
+          <div class="tile-body">
+            <h3>Fluxo de Caixa</h3>
+            <p>DFC — Atividades operacionais, investimento e financiamento</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('forecast')" id="tile-forecast">
+          <div class="tile-icon">🔮</div>
+          <div class="tile-body">
+            <h3>Forecast 3 Meses</h3>
+            <p>Projeção otimista, conservadora e pessimista do resultado</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('tributario')" id="tile-tributario">
+          <div class="tile-icon">📋</div>
+          <div class="tile-body">
+            <h3>Planejamento Tributário</h3>
+            <p>Regime ideal, carga estimada e oportunidades de economia</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('kpis')" id="tile-kpis">
+          <div class="tile-icon">📉</div>
+          <div class="tile-body">
+            <h3>KPIs Executivos</h3>
+            <p>Todos os indicadores chave com avaliação comparativa</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('breakeven')" id="tile-breakeven">
+          <div class="tile-icon">🎯</div>
+          <div class="tile-body">
+            <h3>Ponto de Equilíbrio</h3>
+            <p>Break-even analysis com metas de crescimento</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+        <div class="report-tile" onclick="generateReport('workingcapital')" id="tile-workingcapital">
+          <div class="tile-icon">⚖️</div>
+          <div class="tile-body">
+            <h3>Capital de Giro</h3>
+            <p>Liquidez, NCG e indicadores de saúde do balanço</p>
+          </div>
+          <div class="tile-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="card report-output-card" id="reportOutputCard" style="display:none">
+        <div class="card-header-row">
+          <h3 id="reportOutputTitle" class="gold-text"></h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" onclick="copyReport()">📋 Copiar</button>
+            <button class="btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+          </div>
+        </div>
+        <pre id="reportOutputContent" class="report-pre"></pre>
+      </div>
+    </section>
+
+    <!-- ═══════════ RELATORIOS ═══════════ -->
+    <section class="view" id="view-reports" aria-label="Relatórios e BI">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Relatórios & BI</h1>
+          <p class="page-subtitle">DRE e Fluxo de Caixa Projetado</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-primary" onclick="generateDRE()">Gerar DRE</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px; padding:24px;" id="dre-container">
+        <h2 style="text-align:center; color:var(--text-muted);">Clique em Gerar DRE para visualizar o demonstrativo.</h2>
+      </div>
+    </section>
+
+<!-- ═══════════ CRM & VENDAS ═══════════ -->
+    <section class="view" id="view-crm" aria-label="CRM & Vendas">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>CRM & Vendas</h1>
+          <p class="page-subtitle">Pipeline de Oportunidades e Leads</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-primary" onclick="openModalEl('crmModal')">+ Novo Lead</button>
+        </div>
+      </div>
+      <div class="kanban-board" id="crm-board" style="display:flex;gap:20px;overflow-x:auto;padding-top:20px;min-height:400px;"></div>
+    </section>
+
+    <!-- ═══════════ ESTOQUE ═══════════ -->
+    <section class="view" id="view-inventory" aria-label="Estoque Inteligente">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Estoque Inteligente</h1>
+          <p class="page-subtitle">Monitoramento proativo com CFO IA</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn-primary" onclick="openModalEl('invModal')">+ Novo Produto</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Produto / Serviço</th>
+                <th>Qtd Atual</th>
+                <th>Status (IA)</th>
+                <th>Previsão Falta</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+<!-- ═══════════ CONFIGURAÇÕES ═══════════ -->
+    <section class="view" id="view-settings" aria-label="Configurações">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Configurações</h1>
+          <p class="page-subtitle">Personalize o MAX CFO AI</p>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <div class="card settings-card">
+          <h3 class="settings-section-title">👤 Perfil</h3>
+          <div class="form-group"><label>Nome</label><input type="text" class="form-input" id="settingName" placeholder="Seu nome ou empresa"></div>
+          <div class="form-group"><label>Empresa</label><input type="text" class="form-input" id="settingCompany" placeholder="Nome da empresa"></div>
+          <div class="form-group"><label>Setor</label>
+            <select class="form-input" id="settingSector">
+              <option>Consultoria</option><option>Tecnologia</option><option>Varejo</option>
+              <option>Indústria</option><option>Serviços</option><option>Saúde</option>
+              <option>Educação</option><option>Financeiro</option><option>Outros</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="saveSettings()">💾 Salvar Perfil</button>
+        </div>
+
+        <div class="card settings-card">
+          <h3 class="settings-section-title">🎨 Aparência</h3>
+          <div class="form-group"><label>Tema</label>
+            <select class="form-input" id="settingTheme" onchange="applyTheme(this.value)">
+              <option value="dark">🌑 Dark (Padrão)</option>
+              <option value="darker">⚫ Ultra Dark</option>
+              <option value="midnight">🔵 Midnight Blue</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Moeda</label>
+            <select class="form-input" id="settingCurrency">
+              <option value="BRL">🇧🇷 Real (BRL)</option>
+              <option value="USD">🇺🇸 Dólar (USD)</option>
+              <option value="EUR">🇪🇺 Euro (EUR)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card settings-card">
+          <h3 class="settings-section-title">🗄️ Dados</h3>
+          <div class="data-info">
+            <div class="data-info-row"><span>Transações salvas</span><strong id="settingTxCount">0</strong></div>
+            <div class="data-info-row"><span>Empresas analisadas</span><strong id="settingCompCount">0</strong></div>
+            <div class="data-info-row"><span>Armazenamento usado</span><strong id="settingStorage">—</strong></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+            <button class="btn-secondary" onclick="exportAllData()">⬇️ Exportar Dados</button>
+            <button class="btn-secondary" onclick="importData()">⬆️ Importar</button>
+            <button class="btn-danger-outline" onclick="clearAllData()">🗑️ Limpar Tudo</button>
+          </div>
+          <input type="file" id="importFileInput" style="display:none" accept=".json" onchange="handleImport(event)">
+        </div>
+
+        <div class="card settings-card">
+          <h3 class="settings-section-title">ℹ️ Sobre o MAX CFO AI</h3>
+          <div class="about-info">
+            <p><strong>Versão:</strong> 3.0.0 Premium</p>
+            <p><strong>Motor IA:</strong> Neural Financial Core v3</p>
+            <p><strong>Módulos:</strong> 15 análises financeiras</p>
+            <p><strong>Armazenamento:</strong> 100% local (localStorage)</p>
+            <p><strong>APIs externas:</strong> Nenhuma — totalmente offline</p>
+            <p style="margin-top:12px;color:var(--text-muted);font-size:13px">
+              O MAX CFO AI é uma plataforma de inteligência financeira executiva que roda completamente no seu navegador, sem enviar dados para servidores externos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════ MODAIS ═══════════ -->
+
+<!-- Modal CRM -->
+<div class="modal-overlay" id="crmModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">👤 Novo Lead</h2>
+      <button class="modal-x" onclick="closeModal('crmModal')">✕</button>
+    </div>
+    <form id="crmForm" onsubmit="submitLead(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Empresa / Cliente</label>
+          <input type="text" class="form-input" id="crmName" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Valor Estimado (R$)</label>
+          <input type="number" class="form-input" id="crmValue" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Risco</label>
+          <select class="form-input" id="crmRisk">
+            <option value="Baixo">Baixo</option>
+            <option value="Moderado">Moderado</option>
+            <option value="Alto">Alto</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('crmModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar Lead</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Estoque -->
+<div class="modal-overlay" id="invModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">📦 Novo Produto</h2>
+      <button class="modal-x" onclick="closeModal('invModal')">✕</button>
+    </div>
+    <form id="invForm" onsubmit="submitProduct(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Nome do Produto</label>
+          <input type="text" class="form-input" id="invName" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Qtd Atual</label>
+          <input type="number" class="form-input" id="invQty" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('invModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar Produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Transação -->
+<div class="modal-overlay" id="txModal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2 class="modal-title" id="txModalTitle">Nova Receita</h2>
+        <p class="modal-subtitle" id="txModalSubtitle">Preencha os dados do lançamento</p>
+      </div>
+      <button class="modal-x" onclick="closeModal('txModal')" aria-label="Fechar">✕</button>
+    </div>
+    <form id="txForm" onsubmit="submitTransaction(event)" novalidate>
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label" for="txDesc">Descrição *</label>
+          <input type="text" class="form-input" id="txDesc" placeholder="Ex: Consultoria Financeira Mensal" required maxlength="120" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txAmount">Valor (R$) *</label>
+          <input type="number" class="form-input" id="txAmount" placeholder="0,00" step="0.01" min="0.01" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txDate">Data *</label>
+          <input type="date" class="form-input" id="txDate" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txCategory">Categoria</label>
+          <select class="form-input" id="txCategory"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txNotes">Observação</label>
+          <input type="text" class="form-input" id="txNotes" placeholder="Opcional" maxlength="200">
+        </div>
+      </div>
+      <input type="hidden" id="txType" value="RECEITA">
+      <input type="hidden" id="txEditId" value="">
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('txModal')">Cancelar</button>
+        <button type="submit" class="btn-primary" id="txSubmitBtn">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Notificações -->
+<div class="modal-overlay" id="notifModal" role="dialog" aria-modal="true">
+  <div class="modal-box modal-sm">
+    <div class="modal-head">
+      <h2 class="modal-title">🔔 Notificações</h2>
+      <button class="modal-x" onclick="closeModal('notifModal')">✕</button>
+    </div>
+    <div id="notifList" style="padding:8px 0"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeModal('notifModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+
+
+</div><!--$--><!--/$--><script src="/_next/static/chunks/1rpyum114dc60.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[43147,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"AuthProvider\"]\n3:I[39756,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"default\"]\n4:I[37457,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"default\"]\n5:I[47257,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"ClientPageRoot\"]\n6:I[53215,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\",\"/_next/static/chunks/36uk_00et8m8o.js\"],\"default\"]\n9:I[97367,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"OutletBoundary\"]\na:\"$Sreact.suspense\"\nd:I[97367,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"ViewportBoundary\"]\nf:I[97367,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"MetadataBoundary\"]\n11:I[68027,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"default\",1]\n:HL[\"/_next/static/chunks/0jym9xk64lxlu.css\",\"style\"]\n:HL[\"/_next/static/media/83afe278b6a6bb3c-s.p.2bn3s6zvc0dyp.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n"])</script><script>self.__next_f.push([1,"0:{\"P\":null,\"c\":[\"\",\"dashboard\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"dashboard\",{\"children\":[\"__PAGE__\",{}]}]},\"$undefined\",\"$undefined\",16],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/0jym9xk64lxlu.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/3awaw01wug-pc.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-1\",{\"src\":\"/_next/static/chunks/1x0t1skyoub9j.js\",\"async\":true,\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-2\",{\"src\":\"/_next/static/chunks/14mrh2-p_w84d.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"pt-BR\",\"children\":[[\"$\",\"head\",null,{\"children\":[[\"$\",\"link\",null,{\"rel\":\"icon\",\"href\":\"/favicon.ico\"}],[\"$\",\"link\",null,{\"rel\":\"apple-touch-icon\",\"href\":\"/icon-192.png\"}]]}],[\"$\",\"body\",null,{\"className\":\"inter_396b12ce-module__rRjk0G__className\",\"children\":[\"$\",\"$L2\",null,{\"children\":[\"$\",\"$L3\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L4\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]}]]}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L3\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L4\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[[\"$\",\"$L5\",null,{\"Component\":\"$6\",\"serverProvidedParams\":{\"searchParams\":{},\"params\":{},\"promises\":[\"$@7\",\"$@8\"]}}],[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/36uk_00et8m8o.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L9\",null,{\"children\":[\"$\",\"$a\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@b\"}]}]]}],{},null,false,null]},null,false,\"$@c\"]},null,false,null],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$Ld\",null,{\"children\":\"$Le\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$Lf\",null,{\"children\":[\"$\",\"$a\",null,{\"name\":\"Next.Metadata\",\"children\":\"$L10\"}]}]}],[\"$\",\"meta\",null,{\"name\":\"next-size-adjust\",\"content\":\"\"}]]}],false]],\"m\":\"$undefined\",\"G\":[\"$11\",[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/0jym9xk64lxlu.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]]],\"S\":true,\"h\":null,\"s\":\"$undefined\",\"l\":\"$undefined\",\"p\":\"$undefined\",\"d\":\"$undefined\",\"b\":\"2HN24-Z5j89tRPBgJ_WPN\"}\n"])</script><script>self.__next_f.push([1,"12:[]\nc:\"$W12\"\n7:{}\n8:\"$0:f:0:1:1:children:1:children:0:props:children:0:props:serverProvidedParams:params\"\n"])</script><script>self.__next_f.push([1,"e:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\n"])</script><script>self.__next_f.push([1,"13:I[27201,[\"/_next/static/chunks/3awaw01wug-pc.js\",\"/_next/static/chunks/1x0t1skyoub9j.js\",\"/_next/static/chunks/14mrh2-p_w84d.js\"],\"IconMark\"]\nb:null\n10:[[\"$\",\"title\",\"0\",{\"children\":\"MAX CFO AI — Seu CFO Virtual de Inteligência Artificial\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"MAX CFO AI: Seu CFO virtual. Análise financeira, DRE, simulações, empresas por CNPJ. 100% local, sem APIs.\"}],[\"$\",\"link\",\"2\",{\"rel\":\"manifest\",\"href\":\"/manifest.json\",\"crossOrigin\":\"$undefined\"}],[\"$\",\"meta\",\"3\",{\"name\":\"mobile-web-app-capable\",\"content\":\"yes\"}],[\"$\",\"meta\",\"4\",{\"name\":\"apple-mobile-web-app-title\",\"content\":\"MAX CFO\"}],[\"$\",\"meta\",\"5\",{\"name\":\"apple-mobile-web-app-status-bar-style\",\"content\":\"black-translucent\"}],[\"$\",\"link\",\"6\",{\"rel\":\"icon\",\"href\":\"/favicon.ico?favicon.2vob68tjqpejf.ico\",\"sizes\":\"256x256\",\"type\":\"image/x-icon\"}],[\"$\",\"link\",\"7\",{\"rel\":\"icon\",\"href\":\"/icon-192.png\"}],[\"$\",\"link\",\"8\",{\"rel\":\"apple-touch-icon\",\"href\":\"/icon-192.png\"}],[\"$\",\"$L13\",\"9\",{}]]\n"])</script></body></html>
