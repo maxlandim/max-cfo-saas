@@ -348,6 +348,79 @@ export default function DashboardPage() {
       </div>
     </section>
 
-</main>\n</div>\n\n<!-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MODAIS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 -->\n\n<!-- Modal Transa\u00e7\u00e3o -->\n<div class=\"modal-overlay\" id=\"txModal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"txModalTitle\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <div>\n        <h2 class=\"modal-title\" id=\"txModalTitle\">Nova Receita</h2>\n        <p class=\"modal-subtitle\" id=\"txModalSubtitle\">Preencha os dados do lan\u00e7amento</p>\n      </div>\n      <button class=\"modal-x\" onclick=\"closeModal('txModal')\" aria-label=\"Fechar\">\u2715</button>\n    </div>\n    <form id=\"txForm\" onsubmit=\"submitTransaction(event)\" novalidate>\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\" for=\"txDesc\">Descri\u00e7\u00e3o *</label>\n          <input type=\"text\" class=\"form-input\" id=\"txDesc\" placeholder=\"Ex: Consultoria Financeira Mensal\" required maxlength=\"120\" autocomplete=\"off\">\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txAmount\">Valor (R$) *</label>\n          <input type=\"number\" class=\"form-input\" id=\"txAmount\" placeholder=\"0,00\" step=\"0.01\" min=\"0.01\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txDate\">Data *</label>\n          <input type=\"date\" class=\"form-input\" id=\"txDate\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txCategory\">Categoria</label>\n          <select class=\"form-input\" id=\"txCategory\"></select>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txNotes\">Observa\u00e7\u00e3o</label>\n          <input type=\"text\" class=\"form-input\" id=\"txNotes\" placeholder=\"Opcional\" maxlength=\"200\">\n        </div>\n      </div>\n      <input type=\"hidden\" id=\"txType\" value=\"RECEITA\">\n      <input type=\"hidden\" id=\"txEditId\" value=\"\">\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('txModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\" id=\"txSubmitBtn\">Salvar Lan\u00e7amento</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n<!-- Modal Notifica\u00e7\u00f5es -->\n<div class=\"modal-overlay\" id=\"notifModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box modal-sm\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">\ud83d\udd14 Notifica\u00e7\u00f5es</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('notifModal')\">\u2715</button>\n    </div>\n    <div id=\"notifList\" style=\"padding:8px 0\"></div>\n    <div class=\"modal-foot\">\n      <button class=\"btn-ghost\" onclick=\"closeModal('notifModal')\">Fechar</button>\n    </div>\n  </div>\n</div>\n\n\n<!-- Modal CRM -->\n<div class=\"modal-overlay\" id=\"crmModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">👤 Novo Lead</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('crmModal')\">✕</button>\n    </div>\n    <form id=\"crmForm\" onsubmit=\"submitLead(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Empresa / Cliente</label>\n          <input type=\"text\" class=\"form-input\" id=\"crmName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Valor Estimado (R$)</label>\n          <input type=\"number\" class=\"form-input\" id=\"crmValue\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Risco</label>\n          <select class=\"form-input\" id=\"crmRisk\">\n            <option value=\"Baixo\">Baixo</option>\n            <option value=\"Moderado\">Moderado</option>\n            <option value=\"Alto\">Alto</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('crmModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Lead</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n\n<!-- Modal Estoque -->\n<div class=\"modal-overlay\" id=\"invModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">📦 Novo Produto</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('invModal')\">✕</button>\n    </div>\n    <form id=\"invForm\" onsubmit=\"submitProduct(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Nome do Produto</label>\n          <input type=\"text\" class=\"form-input\" id=\"invName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Qtd Atual</label>\n          <input type=\"number\" class=\"form-input\" id=\"invQty\" required>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('invModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Produto</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n<!-- TOAST -->\n<div id=\"toastContainer\" aria-live=\"polite\" aria-atomic=\"true\"></div>\n\n\n\n` }} />
+</main>\n</div>\n\n<!-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MODAIS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 -->\n\n<!-- Modal Transa\u00e7\u00e3o -->\n<div class=\"modal-overlay\" id=\"txModal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"txModalTitle\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <div>\n        <h2 class=\"modal-title\" id=\"txModalTitle\">Nova Receita</h2>\n        <p class=\"modal-subtitle\" id=\"txModalSubtitle\">Preencha os dados do lan\u00e7amento</p>\n      </div>\n      <button class=\"modal-x\" onclick=\"closeModal('txModal')\" aria-label=\"Fechar\">\u2715</button>\n    </div>\n    <form id=\"txForm\" onsubmit=\"submitTransaction(event)\" novalidate>\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\" for=\"txDesc\">Descri\u00e7\u00e3o *</label>\n          <input type=\"text\" class=\"form-input\" id=\"txDesc\" placeholder=\"Ex: Consultoria Financeira Mensal\" required maxlength=\"120\" autocomplete=\"off\">\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txAmount\">Valor (R$) *</label>\n          <input type=\"number\" class=\"form-input\" id=\"txAmount\" placeholder=\"0,00\" step=\"0.01\" min=\"0.01\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txDate\">Data *</label>\n          <input type=\"date\" class=\"form-input\" id=\"txDate\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txCategory\">Categoria</label>\n          <select class=\"form-input\" id=\"txCategory\"></select>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txNotes\">Observa\u00e7\u00e3o</label>\n          <input type=\"text\" class=\"form-input\" id=\"txNotes\" placeholder=\"Opcional\" maxlength=\"200\">\n        </div>\n      </div>\n      <input type=\"hidden\" id=\"txType\" value=\"RECEITA\">\n      <input type=\"hidden\" id=\"txEditId\" value=\"\">\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('txModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\" id=\"txSubmitBtn\">Salvar Lan\u00e7amento</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n<!-- Modal Notifica\u00e7\u00f5es -->\n<div class=\"modal-overlay\" id=\"notifModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box modal-sm\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">\ud83d\udd14 Notifica\u00e7\u00f5es</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('notifModal')\">\u2715</button>\n    </div>\n    <div id=\"notifList\" style=\"padding:8px 0\"></div>\n    <div class=\"modal-foot\">\n      <button class=\"btn-ghost\" onclick=\"closeModal('notifModal')\">Fechar</button>\n    </div>\n  </div>\n</div>\n\n\n<!-- Modal CRM -->\n<div class=\"modal-overlay\" id=\"crmModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">👤 Novo Lead</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('crmModal')\">✕</button>\n    </div>\n    <form id=\"crmForm\" onsubmit=\"submitLead(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Empresa / Cliente</label>\n          <input type=\"text\" class=\"form-input\" id=\"crmName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Valor Estimado (R$)</label>\n          <input type=\"number\" class=\"form-input\" id=\"crmValue\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Risco</label>\n          <select class=\"form-input\" id=\"crmRisk\">\n            <option value=\"Baixo\">Baixo</option>\n            <option value=\"Moderado\">Moderado</option>\n            <option value=\"Alto\">Alto</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('crmModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Lead</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n\n<!-- Modal Estoque -->\n<div class=\"modal-overlay\" id=\"invModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">📦 Novo Produto</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('invModal')\">✕</button>\n    </div>\n    <form id=\"invForm\" onsubmit=\"submitProduct(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Nome do Produto</label>\n          <input type=\"text\" class=\"form-input\" id=\"invName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Qtd Atual</label>\n          <input type=\"number\" class=\"form-input\" id=\"invQty\" required>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('invModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Produto</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n
+<!-- Modal OCR Magico -->
+<div class="modal-overlay" id="ocrModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">⚡ OCR Mágico (Leitura IA)</h2>
+      <button class="modal-x" onclick="closeModal('ocrModal')">✕</button>
+    </div>
+    
+    <div id="ocrUploadState">
+      <p style="color:var(--text-muted); margin-bottom:16px">Faça o upload de uma Nota Fiscal (PDF, JPG, PNG) para extração inteligente de dados.</p>
+      
+      <div class="ocr-drop-zone" id="ocrDropZone" onclick="document.getElementById('ocrFileInput').click()">
+        <div class="ocr-scanning-overlay" id="ocrScanningOverlay">
+          <div class="laser-line"></div>
+          <span style="font-size:32px; margin-bottom:16px">🧾</span>
+          <h3 style="color:var(--primary); font-family:monospace">EXTRAINDO DADOS...</h3>
+          <p style="font-family:monospace; color:#818cf8; font-size:12px; margin-top:8px">Rede Neural Ativa: Reconhecendo padrões fiscais</p>
+        </div>
+        
+        <span class="ocr-icon-lg">📥</span>
+        <h3 style="color:white">Arraste e solte sua Nota Fiscal aqui</h3>
+        <p style="color:var(--text-muted); margin-top:8px">Ou clique para procurar (PDF, JPG, PNG)</p>
+        <input type="file" id="ocrFileInput" style="display:none" accept=".pdf,image/*" onchange="handleOCRFile(event)">
+      </div>
+    </div>
+
+    <div id="ocrReviewState" style="display:none">
+      <div style="background:rgba(16,185,129,0.1); border:1px solid #10b981; border-radius:8px; padding:12px; margin-bottom:16px; display:flex; align-items:center; gap:12px">
+        <span style="font-size:24px">✅</span>
+        <div>
+          <h4 style="color:#10b981; margin:0">Leitura Concluída com Sucesso</h4>
+          <p style="font-size:12px; color:var(--text-muted); margin:0">Confirme os dados extraídos antes de salvar no financeiro.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Fornecedor / Descrição</label>
+          <input type="text" class="form-input" id="ocrExtractedDesc" value="Serviços de Computação em Nuvem - AWS">
+        </div>
+        <div class="form-field">
+          <label class="form-label">CNPJ</label>
+          <input type="text" class="form-input" id="ocrExtractedCnpj" value="23.413.399/0001-44">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" class="form-input" id="ocrExtractedAmount" value="4530.00" step="0.01">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Data de Emissão</label>
+          <input type="date" class="form-input" id="ocrExtractedDate">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Categoria</label>
+          <select class="form-input" id="ocrExtractedCategory">
+            <option value="Tecnologia">Tecnologia</option>
+            <option value="Impostos">Impostos</option>
+            <option value="Folha de Pagamento">Folha de Pagamento</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Infraestrutura">Infraestrutura</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="modal-foot" style="margin-top:20px">
+        <button class="btn-ghost" onclick="resetOCR()">Descartar</button>
+        <button class="btn-primary" onclick="saveOCRTransaction()">💾 Salvar Despesa</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- TOAST -->\n<div id=\"toastContainer\" aria-live=\"polite\" aria-atomic=\"true\"></div>\n\n\n\n` }} />
   );
 }
