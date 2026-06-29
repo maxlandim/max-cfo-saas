@@ -8,7 +8,6 @@ export const metadata = {
   title: "MAX CFO AI — Seu CFO Virtual de Inteligência Artificial",
   description: "MAX CFO AI: Seu CFO virtual. Análise financeira, DRE, simulações, empresas por CNPJ. 100% local, sem APIs.",
   manifest: "/manifest.json",
-  themeColor: "#6366f1",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -18,6 +17,10 @@ export const metadata = {
     icon: "/icon-192.png",
     apple: "/icon-192.png"
   }
+};
+
+export const viewport = {
+  themeColor: "#6366f1",
 };
 
 export default function RootLayout({ children }) {
