@@ -16,9 +16,11 @@ export default function LoginPage() {
   const { user } = useAuth();
 
   // Se já estiver logado, redireciona
-  if (user) {
-    router.push('/dashboard');
-  }
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
