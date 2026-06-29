@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "./context/AuthContext";
+import ClientProviders from "./ClientProviders";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,9 +31,9 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className={inter.className}>
-        <AuthProvider>
+        <ClientProviders>
           {children}
-        </AuthProvider>
+        </ClientProviders>
       </body>
     </html>
   );
