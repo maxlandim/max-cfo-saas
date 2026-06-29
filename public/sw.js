@@ -1,4 +1,4 @@
-const CACHE_NAME = 'max-cfo-ai-v1';
+const CACHE_NAME = 'max-cfo-ai-v2';
 const ASSETS = [
   '/dashboard',
   '/engine.js',
