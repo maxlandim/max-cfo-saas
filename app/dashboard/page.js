@@ -348,6 +348,24 @@ export default function DashboardPage() {
       </div>
     </section>
 
+    <!-- ═══════════ ORÇAMENTOS ═══════════ -->
+    <section class="view" id="view-budget" aria-label="Orçamentos"></section>
+
+    <!-- ═══════════ COBRANÇA ═══════════ -->
+    <section class="view" id="view-billing" aria-label="Cobrança"></section>
+
+    <!-- ═══════════ CHECKOUT ═══════════ -->
+    <section class="view" id="view-checkout" aria-label="Checkout"></section>
+
+    <!-- ═══════════ CONTADOR ═══════════ -->
+    <section class="view" id="view-accountant" aria-label="Portal do Contador"></section>
+
+    <!-- ═══════════ ASSINATURAS ═══════════ -->
+    <section class="view" id="view-plans" aria-label="Assinaturas SaaS"></section>
+
+    <!-- ═══════════ COMISSÕES ═══════════ -->
+    <section class="view" id="view-commissions" aria-label="Comissões"></section>
+
 </main>\n</div>\n\n<!-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MODAIS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 -->\n\n<!-- Modal Transa\u00e7\u00e3o -->\n<div class=\"modal-overlay\" id=\"txModal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"txModalTitle\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <div>\n        <h2 class=\"modal-title\" id=\"txModalTitle\">Nova Receita</h2>\n        <p class=\"modal-subtitle\" id=\"txModalSubtitle\">Preencha os dados do lan\u00e7amento</p>\n      </div>\n      <button class=\"modal-x\" onclick=\"closeModal('txModal')\" aria-label=\"Fechar\">\u2715</button>\n    </div>\n    <form id=\"txForm\" onsubmit=\"submitTransaction(event)\" novalidate>\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\" for=\"txDesc\">Descri\u00e7\u00e3o *</label>\n          <input type=\"text\" class=\"form-input\" id=\"txDesc\" placeholder=\"Ex: Consultoria Financeira Mensal\" required maxlength=\"120\" autocomplete=\"off\">\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txAmount\">Valor (R$) *</label>\n          <input type=\"number\" class=\"form-input\" id=\"txAmount\" placeholder=\"0,00\" step=\"0.01\" min=\"0.01\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txDate\">Data *</label>\n          <input type=\"date\" class=\"form-input\" id=\"txDate\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txCategory\">Categoria</label>\n          <select class=\"form-input\" id=\"txCategory\"></select>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txNotes\">Observa\u00e7\u00e3o</label>\n          <input type=\"text\" class=\"form-input\" id=\"txNotes\" placeholder=\"Opcional\" maxlength=\"200\">\n        </div>\n      </div>\n      <input type=\"hidden\" id=\"txType\" value=\"RECEITA\">\n      <input type=\"hidden\" id=\"txEditId\" value=\"\">\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('txModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\" id=\"txSubmitBtn\">Salvar Lan\u00e7amento</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n<!-- Modal Notifica\u00e7\u00f5es -->\n<div class=\"modal-overlay\" id=\"notifModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box modal-sm\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">\ud83d\udd14 Notifica\u00e7\u00f5es</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('notifModal')\">\u2715</button>\n    </div>\n    <div id=\"notifList\" style=\"padding:8px 0\"></div>\n    <div class=\"modal-foot\">\n      <button class=\"btn-ghost\" onclick=\"closeModal('notifModal')\">Fechar</button>\n    </div>\n  </div>\n</div>\n\n\n<!-- Modal CRM -->\n<div class=\"modal-overlay\" id=\"crmModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">👤 Novo Lead</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('crmModal')\">✕</button>\n    </div>\n    <form id=\"crmForm\" onsubmit=\"submitLead(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Empresa / Cliente</label>\n          <input type=\"text\" class=\"form-input\" id=\"crmName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Valor Estimado (R$)</label>\n          <input type=\"number\" class=\"form-input\" id=\"crmValue\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Risco</label>\n          <select class=\"form-input\" id=\"crmRisk\">\n            <option value=\"Baixo\">Baixo</option>\n            <option value=\"Moderado\">Moderado</option>\n            <option value=\"Alto\">Alto</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('crmModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Lead</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n\n<!-- Modal Estoque -->\n<div class=\"modal-overlay\" id=\"invModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">📦 Novo Produto</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('invModal')\">✕</button>\n    </div>\n    <form id=\"invForm\" onsubmit=\"submitProduct(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Nome do Produto</label>\n          <input type=\"text\" class=\"form-input\" id=\"invName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Qtd Atual</label>\n          <input type=\"number\" class=\"form-input\" id=\"invQty\" required>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('invModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Produto</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n
 <!-- Modal OCR Magico -->
 <div class="modal-overlay" id="ocrModal" role="dialog" aria-modal="true">
@@ -419,8 +437,132 @@ export default function DashboardPage() {
       </div>
     </div>
 
+</div>
+</div>
+
+<!-- Modal Billing -->
+<div class="modal-overlay" id="billingModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">💳 Nova Cobrança</h2>
+      <button class="modal-x" onclick="closeModal('billingModal')">✕</button>
+    </div>
+    <form onsubmit="submitBillingForm(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Cliente</label>
+          <input type="text" class="form-input" id="bilCliente" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" class="form-input" id="bilValor" step="0.01" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Vencimento</label>
+          <input type="date" class="form-input" id="bilVenc" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Tipo</label>
+          <select class="form-input" id="bilTipo">
+            <option>Pix</option>
+            <option>Boleto</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('billingModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Emitir Cobrança</button>
+      </div>
+    </form>
   </div>
 </div>
+
+<!-- Modal Checkout -->
+<div class="modal-overlay" id="checkoutModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">🔗 Novo Link de Checkout</h2>
+      <button class="modal-x" onclick="closeModal('checkoutModal')">✕</button>
+    </div>
+    <form onsubmit="submitCheckoutForm(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Título / Produto</label>
+          <input type="text" class="form-input" id="chkTitulo" required>
+        </div>
+        <div class="form-field span-2">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" class="form-input" id="chkValor" step="0.01" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('checkoutModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Gerar Link</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Plan -->
+<div class="modal-overlay" id="planModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">🔄 Nova Assinatura</h2>
+      <button class="modal-x" onclick="closeModal('planModal')">✕</button>
+    </div>
+    <form onsubmit="submitPlanForm(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Cliente</label>
+          <input type="text" class="form-input" id="planCliente" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Plano</label>
+          <input type="text" class="form-input" id="planNome" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">MRR (Mensalidade)</label>
+          <input type="number" class="form-input" id="planValor" step="0.01" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('planModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Criar Assinatura</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Commission -->
+<div class="modal-overlay" id="commModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">💰 Registrar Comissão</h2>
+      <button class="modal-x" onclick="closeModal('commModal')">✕</button>
+    </div>
+    <form onsubmit="submitCommForm(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Vendedor / Representante</label>
+          <input type="text" class="form-input" id="commVendedor" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Base (R$ Faturados)</label>
+          <input type="number" class="form-input" id="commBase" step="0.01" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Taxa (%)</label>
+          <input type="number" class="form-input" id="commTaxa" step="0.1" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('commModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Registrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- TOAST -->\n<div id=\"toastContainer\" aria-live=\"polite\" aria-atomic=\"true\"></div>\n\n\n\n` }} />
   );
 }

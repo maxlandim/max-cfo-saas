@@ -117,9 +117,24 @@ var initMaxCfoApp = () => {
   initChat();
   initKeyboard();
   initNotifications();
+  
+  // Initialize new modules
+  if (window.initTeamModule) window.initTeamModule();
+  if (window.initHRModule) window.initHRModule();
+  if (window.initNFeModule) window.initNFeModule();
+  if (window.initAssetsModule) window.initAssetsModule();
+  if (window.initTaxAuditModule) window.initTaxAuditModule();
+  if (window.initThermofinanceModule) window.initThermofinanceModule();
+  if (window.initBudgetModule) window.initBudgetModule();
+  if (window.initBillingModule) window.initBillingModule();
+  if (window.initCheckoutModule) window.initCheckoutModule();
+  if (window.initAccountantModule) window.initAccountantModule();
+  if (window.initPlansModule) window.initPlansModule();
+  if (window.initCommissionsModule) window.initCommissionsModule();
+
   updateSettingsPanel();
   renderDashboard();
-  showToast('⚡ MAX CFO AI v3.0 iniciado', 'success');
+  showToast('⚡ MAX CFO AI v4.0 iniciado', 'success');
 };
 
 if (document.readyState === 'loading') {
@@ -213,7 +228,19 @@ var viewMeta = {
     reports:   { label: 'Relatórios & BI', render: renderReportsV5 },
     settings:  { label: 'Configurações', render: updateSettingsPanel },
     crm:       { label: 'CRM & Vendas', render: renderCRM },
-    inventory: { label: 'Estoque', render: renderInventory }
+    inventory: { label: 'Estoque', render: renderInventory },
+    team:      { label: 'Equipe & Workspaces', render: () => { if(window.renderTeam) window.renderTeam(); } },
+    hr:        { label: 'RH & Provisões', render: () => { if(window.renderHR) window.renderHR(); } },
+    nfe:       { label: 'Emissão Fiscal (NF-e)', render: () => { if(window.renderNFe) window.renderNFe(); } },
+    assets:    { label: 'Gestão de Ativos', render: () => { if(window.renderAssets) window.renderAssets(); } },
+    'tax-audit': { label: 'Auditoria Tributária', render: () => { if(window.renderTaxAudit) window.renderTaxAudit(); } },
+    thermofinance: { label: 'Termofinança IA', render: () => { if(window.renderThermofinance) window.renderThermofinance(); } },
+    budget:    { label: 'Orçamentos', render: () => { if(window.renderBudget) window.renderBudget(); } },
+    billing:   { label: 'Cobrança', render: () => { if(window.renderBilling) window.renderBilling(); } },
+    checkout:  { label: 'Checkout', render: () => { if(window.renderCheckout) window.renderCheckout(); } },
+    accountant: { label: 'Portal Contador', render: () => { if(window.renderAccountant) window.renderAccountant(); } },
+    plans:     { label: 'Assinaturas', render: () => { if(window.renderPlans) window.renderPlans(); } },
+    commissions: { label: 'Comissões', render: () => { if(window.renderCommissions) window.renderCommissions(); } }
   };
 
 function initNavigation() {
@@ -1167,6 +1194,22 @@ function copyReport() {
 function initChat() {
   addAIMsg(engine.getGreeting());
 
+  try {
+      // Connect to WebSocket backend
+      const wsUrl = API_BASE.replace('http', 'ws') + '/ws/chat';
+      window.chatSocket = new WebSocket(`${wsUrl}?token=${localStorage.getItem('maxcfo_jwt') || 'demo_token'}`);
+      window.chatSocket.onmessage = function(event) {
+          // Remove typing indicator if it exists
+          const typingEl = document.getElementById('typingIndicator');
+          if (typingEl) typingEl.remove();
+          addAIMsg(event.data);
+          state.chatHistory.push({ role: 'ai', text: event.data });
+      };
+      window.chatSocket.onopen = function() { console.log('WebSocket Chat Connected'); };
+  } catch(e) {
+      console.warn("WebSocket init failed", e);
+  }
+
   const input = document.getElementById('chatInput');
   if (!input) return;
   input.addEventListener('keydown', e => {
@@ -1214,12 +1257,39 @@ async function sendChat() {
   }
 
   // Comandos regulares
-  setTimeout(() => {
-    removeTyping(tid);
+  setTimeout(async () => {
     const ctx = getCtx();
     const resp = engine.processCommand(msg, ctx);
-    addAIMsg(resp);
-    state.chatHistory.push({ role: 'ai', text: resp });
+    
+    if (resp === "Desculpe, não entendi. Pode reformular?") {
+       // Fallback: Tenta WebSocket, se não, API /api/chat
+       if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
+           window.chatSocket.send(msg);
+           // A resposta será tratada no onmessage do websocket
+       } else {
+           try {
+               const res = await fetch('/api/chat', { 
+                   method: 'POST', 
+                   headers: {'Content-Type': 'application/json'}, 
+                   body: JSON.stringify({message: msg}) 
+               });
+               removeTyping(tid);
+               if (res.ok) {
+                   const data = await res.json();
+                   addAIMsg(data.reply || "Resposta recebida do servidor.");
+               } else {
+                   addAIMsg("Erro ao processar mensagem via servidor NLP.");
+               }
+           } catch(e) {
+               removeTyping(tid);
+               addAIMsg("O servidor está indisponível e não consegui interpretar o comando localmente.");
+           }
+       }
+    } else {
+       removeTyping(tid);
+       addAIMsg(resp);
+       state.chatHistory.push({ role: 'ai', text: resp });
+    }
   }, 500 + Math.random() * 800);
 }
 
