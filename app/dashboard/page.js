@@ -29,6 +29,17 @@ export default function DashboardPage() {
       if (!document.querySelector('script[src="/engine.js"]')) {
         await loadScript('/engine.js');
       }
+
+      const modules = [
+        'accountant', 'assets', 'billing', 'budget', 'checkout', 
+        'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance'
+      ];
+      for (const mod of modules) {
+        if (!document.querySelector(`script[src="/modules/${mod}.js"]`)) {
+          await loadScript(`/modules/${mod}.js`);
+        }
+      }
+
       if (!document.querySelector('script[src="/app.js"]')) {
         await loadScript('/app.js');
       }
