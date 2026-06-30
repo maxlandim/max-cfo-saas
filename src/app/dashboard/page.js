@@ -351,7 +351,7 @@ export default function DashboardPage() {
           <p class=\"page-subtitle\">Gerencie multi-usu\u00e1rios, acessos e auditoria</p>
         </div>
         <div class=\"page-header-actions\">
-          <button class=\"btn-primary\">+ Novo Usu\u00e1rio</button>
+          <button class=\"btn-primary\" onclick=\"window.openTeamModal()\">+ Novo Usu\u00e1rio</button>
         </div>
       </div>
       <div class=\"grid-2col\" style=\"margin-top:20px;\">
