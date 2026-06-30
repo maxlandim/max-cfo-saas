@@ -967,10 +967,11 @@ export default function DashboardPage() {
 <div class="modal-overlay" id="teamModal" role="dialog" aria-modal="true">
   <div class="modal-box">
     <div class="modal-head">
-      <h2 class="modal-title">👥 Convidar Membro</h2>
-      <button class="modal-x" onclick="closeModal('teamModal')">×</button>
+      <h2 class="modal-title" id="teamModalTitle">👤 Convidar Membro</h2>
+      <button class="modal-x" onclick="closeModal('teamModal')">x</button>
     </div>
     <form id="teamForm" onsubmit="window.submitTeamMember(event)">
+      <input type="hidden" id="tmId" value="">
       <div class="modal-body">
         <div class="form-grid">
           <div class="form-field">
@@ -982,12 +983,38 @@ export default function DashboardPage() {
             <input type="email" class="form-input" id="tmEmail" required>
           </div>
           <div class="form-field" style="grid-column: span 2">
-            <label class="form-label">Nível de Acesso (Cargo)</label>
+            <label class="form-label">Nível de Acesso (Cargo principal)</label>
             <select class="form-input" id="tmRole">
               <option value="Admin">Administrador</option>
-              <option value="Editor">Editor (Financeiro)</option>
-              <option value="Viewer">Visualizador</option>
+              <option value="Operador">Operador (Financeiro)</option>
+              <option value="Visualizador">Visualizador (Somente Leitura)</option>
+              <option value="Contador (Read-Only)">Contador (Read-Only)</option>
             </select>
+          </div>
+          
+          <!-- Permissions Matrix -->
+          <div class="form-field" style="grid-column: span 2; margin-top: 10px;">
+            <label class="form-label">Permissões de Módulos</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" class="perm-checkbox" value="dashboard" checked> Dashboard & BI
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" class="perm-checkbox" value="finance" checked> Financeiro (Contas)
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" class="perm-checkbox" value="crm" checked> CRM & Vendas
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" class="perm-checkbox" value="inventory"> Estoque
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" class="perm-checkbox" value="nfe"> NF-e (Emissão)
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" class="perm-checkbox" value="os"> Ordens de Serviço
+              </label>
+            </div>
           </div>
         </div>
       </div>
