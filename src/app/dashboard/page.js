@@ -899,7 +899,7 @@ export default function DashboardPage() {
       <h2 class="modal-title">👥 Convidar Membro</h2>
       <button class="modal-x" onclick="closeModal('teamModal')">×</button>
     </div>
-    <form onsubmit="window.submitTeamMember(event)">
+    <form id="teamForm" onsubmit="window.submitTeamMember(event)">
       <div class="modal-body">
         <div class="form-grid">
           <div class="form-field">
