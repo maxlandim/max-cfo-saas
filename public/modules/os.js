@@ -1,6 +1,6 @@
 // Módulo de Ordem de Serviço (OS)
 
-if (!window.state.os) {
+window.state = window.state || {}; if (!window.state.os) {
   window.state.os = [];
 }
 

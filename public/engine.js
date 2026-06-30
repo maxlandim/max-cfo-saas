@@ -753,7 +753,7 @@ window.switchView = function(viewId) {
   if (originalSwitchViewV4) {
     originalSwitchViewV4(viewId);
   }
-  
+};
 
 
 // ═══════════ FINTECH & ESTOQUE INTEGRATION ═══════════
@@ -837,10 +837,10 @@ async function loadInventory() {
 }
 
 // Hook into switchView
-const originalSwitchView = window.switchView;
+const originalSwitchView3 = window.switchView;
 window.switchView = function(viewId) {
-  if (originalSwitchView) {
-    originalSwitchView(viewId);
+  if (originalSwitchView3) {
+    originalSwitchView3(viewId);
   }
   
   // Specific view logic
@@ -950,7 +950,7 @@ function saveOCRTransaction() {
     // Show a success notification
     if (typeof showToast === 'function') showToast('Despesa lançada com sucesso via OCR Mágico! ✅', 'success');
 
-// Add drag and drop listeners
+} // Add drag and drop listeners
 document.addEventListener('DOMContentLoaded', () => {
     // We have to wait or run it if DOM is already loaded, but engine.js is loaded dynamically or synchronously.
     // For safety, let's just add it to the window load

@@ -1,5 +1,5 @@
 window.initAuditModule = function() {
-    if (!window.state.auditLogs) {
+    window.state = window.state || {}; if (!window.state.auditLogs) {
         window.state.auditLogs = [];
     }
 
@@ -96,3 +96,5 @@ window.renderAudit = function() {
 
     view.innerHTML = html;
 };
+
+window.initAuditModule();
