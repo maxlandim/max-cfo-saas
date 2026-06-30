@@ -10,7 +10,6 @@ export default function PricingPage() {
   const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
-    // Recupera o email do usuario para repassar ao Stripe
     const user = JSON.parse(localStorage.getItem('maxcfo_user') || '{}');
     if (user.email) setUserEmail(user.email);
   }, []);
@@ -59,14 +58,14 @@ export default function PricingPage() {
 
       <h1 style={{ fontSize: '36px', marginBottom: '16px', textAlign: 'center' }}>Escolha o plano ideal para sua empresa</h1>
       <p style={{ color: '#8899B0', marginBottom: '40px', fontSize: '18px', textAlign: 'center', maxWidth: '600px' }}>
-        Desbloqueie o acesso completo ao dashboard financeiro mais inteligente do mercado. Todos os planos incluem 7 dias grátis.
+        O ERP inteligente que cresce com você. De autônomos a grandes corporações.
       </p>
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
         gap: '24px',
-        maxWidth: '1000px',
+        maxWidth: '1200px',
         width: '100%'
       }}>
         
@@ -75,40 +74,59 @@ export default function PricingPage() {
           backgroundColor: '#131d30',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '16px',
-          padding: '32px',
+          padding: '24px',
           display: 'flex',
           flexDirection: 'column'
         }}>
           <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Básico</h2>
-          <p style={{ color: '#8899B0', marginBottom: '24px', height: '48px' }}>Ideal para autônomos e MEIs que precisam de organização.</p>
-          <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
-            R$ 49<span style={{ fontSize: '16px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Ideal para começar com organização.</p>
+          <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
+            R$ 49,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8' }}>
-            <li style={{ marginBottom: '12px' }}>✅ Controle Financeiro</li>
-            <li style={{ marginBottom: '12px' }}>✅ Relatórios Básicos</li>
-            <li style={{ marginBottom: '12px' }}>✅ 1 Usuário</li>
-            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ OCR Mágico</li>
-            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ Chat IA Avançado</li>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
+            <li style={{ marginBottom: '12px' }}>✅ 1 Usuário (Admin)</li>
+            <li style={{ marginBottom: '12px' }}>✅ Estoque Básico (Manual)</li>
+            <li style={{ marginBottom: '12px' }}>✅ CFO IA Limitado</li>
+            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ Sem Integração Bancária</li>
+            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ Sem Emissão Fiscal</li>
           </ul>
-          <button 
-            disabled={loading}
-            onClick={() => handleSubscribe('basic')}
-            style={{
-              width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #C5A059', 
-              backgroundColor: 'transparent', color: '#C5A059', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            {loading ? 'Processando...' : 'Começar Teste Grátis'}
+          <button disabled={loading} onClick={() => handleSubscribe('basic')} className="plan-btn">
+            {loading ? 'Processando...' : 'Assinar Básico'}
           </button>
         </div>
 
-        {/* Medium Plan */}
+        {/* Intermediário Plan */}
+        <div style={{
+          backgroundColor: '#131d30',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Intermediário</h2>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Para pequenas empresas em crescimento.</p>
+          <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
+            R$ 129,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
+          </div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
+            <li style={{ marginBottom: '12px' }}>✅ Até 3 Usuários</li>
+            <li style={{ marginBottom: '12px' }}>✅ Estoque + Ordem de Serviço</li>
+            <li style={{ marginBottom: '12px' }}>✅ Importação OFX/CSV</li>
+            <li style={{ marginBottom: '12px' }}>✅ Trilha de Auditoria</li>
+            <li style={{ marginBottom: '12px' }}>✅ CFO IA Ilimitado</li>
+          </ul>
+          <button disabled={loading} onClick={() => handleSubscribe('intermediate')} className="plan-btn">
+            {loading ? 'Processando...' : 'Assinar Intermediário'}
+          </button>
+        </div>
+
+        {/* Completo Plan */}
         <div style={{
           backgroundColor: '#1a243a',
           border: '2px solid #C5A059',
           borderRadius: '16px',
-          padding: '32px',
+          padding: '24px',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative'
@@ -116,71 +134,68 @@ export default function PricingPage() {
           <div style={{
             position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
             backgroundColor: '#C5A059', color: '#0B1220', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold'
-          }}>
-            MAIS POPULAR
+          }}>MAIS POPULAR</div>
+          <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Completo</h2>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Operação de ponta a ponta integrada.</p>
+          <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#C5A059', marginBottom: '8px' }}>
+            R$ 269,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
-          <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Pro</h2>
-          <p style={{ color: '#8899B0', marginBottom: '24px', height: '48px' }}>Para pequenas empresas com foco em crescimento.</p>
-          <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#C5A059', marginBottom: '8px' }}>
-            R$ 99<span style={{ fontSize: '16px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
-          </div>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8' }}>
-            <li style={{ marginBottom: '12px' }}>✅ Tudo do plano Básico</li>
-            <li style={{ marginBottom: '12px' }}>✅ OCR Mágico Ilimitado</li>
-            <li style={{ marginBottom: '12px' }}>✅ Chat IA (CFO Virtual)</li>
-            <li style={{ marginBottom: '12px' }}>✅ 5 Usuários</li>
-            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ Portal do Contador</li>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
+            <li style={{ marginBottom: '12px' }}>✅ Até 5 Usuários</li>
+            <li style={{ marginBottom: '12px' }}>✅ Open Finance Automático</li>
+            <li style={{ marginBottom: '12px' }}>✅ Emissão Fiscal + Boletos</li>
+            <li style={{ marginBottom: '12px' }}>✅ Anexos e GED</li>
+            <li style={{ marginBottom: '12px' }}>✅ Portal do Contador</li>
           </ul>
-          <button 
-            disabled={loading}
-            onClick={() => handleSubscribe('medium')}
-            style={{
-              width: '100%', padding: '14px', borderRadius: '8px', border: 'none', 
-              background: 'linear-gradient(135deg, #C5A059, #A0823A)', color: '#0B1220', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            {loading ? 'Processando...' : 'Começar Teste Grátis'}
+          <button disabled={loading} onClick={() => handleSubscribe('complete')} className="plan-btn-gold">
+            {loading ? 'Processando...' : 'Assinar Completo'}
           </button>
         </div>
 
-        {/* Ultimate Plan */}
+        {/* Unlimited Plan */}
         <div style={{
           backgroundColor: '#131d30',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '16px',
-          padding: '32px',
+          padding: '24px',
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Ultimate</h2>
-          <p style={{ color: '#8899B0', marginBottom: '24px', height: '48px' }}>Solução definitiva para empresas estruturadas.</p>
-          <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
-            R$ 199<span style={{ fontSize: '16px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
+          <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Unlimited</h2>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Escalabilidade para Holdings e BPOs.</p>
+          <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
+            R$ 299,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8' }}>
-            <li style={{ marginBottom: '12px' }}>✅ Tudo do plano Pro</li>
-            <li style={{ marginBottom: '12px' }}>✅ Portal do Contador</li>
-            <li style={{ marginBottom: '12px' }}>✅ Open Finance VIP</li>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
             <li style={{ marginBottom: '12px' }}>✅ Usuários Ilimitados</li>
-            <li style={{ marginBottom: '12px' }}>✅ Suporte Prioritário</li>
+            <li style={{ marginBottom: '12px' }}>✅ Tudo do plano Completo</li>
+            <li style={{ marginBottom: '12px' }}>✅ Múltiplos CNPJs</li>
+            <li style={{ marginBottom: '12px' }}>✅ Acesso à API</li>
+            <li style={{ marginBottom: '12px' }}>✅ Relatórios White-label</li>
           </ul>
-          <button 
-            disabled={loading}
-            onClick={() => handleSubscribe('ultimate')}
-            style={{
-              width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #C5A059', 
-              backgroundColor: 'transparent', color: '#C5A059', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            {loading ? 'Processando...' : 'Começar Teste Grátis'}
+          <button disabled={loading} onClick={() => handleSubscribe('unlimited')} className="plan-btn">
+            {loading ? 'Processando...' : 'Assinar Unlimited'}
           </button>
         </div>
 
       </div>
 
-      <Link href="/dashboard" style={{ marginTop: '32px', color: '#8899B0', textDecoration: 'underline' }}>
-        Voltar para o Dashboard
+      <Link href="/success?session_id=dev" style={{ marginTop: '32px', color: '#8899B0', textDecoration: 'underline' }}>
+        Acessar com Passe Livre
       </Link>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .plan-btn {
+          width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #C5A059; 
+          background-color: transparent; color: #C5A059; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .plan-btn:hover { background-color: rgba(197, 160, 89, 0.1); }
+        .plan-btn-gold {
+          width: 100%; padding: 14px; border-radius: 8px; border: none; 
+          background: linear-gradient(135deg, #C5A059, #A0823A); color: #0B1220; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .plan-btn-gold:hover { opacity: 0.9; transform: translateY(-1px); }
+      `}} />
     </div>
   );
 }

@@ -24,33 +24,28 @@ export async function POST(req) {
     const host = req.headers.get('host') || 'localhost:3000';
     const origin = `${protocol}://${host}`;
 
-    let price = 4900;
-    let name = 'MAX CFO AI - Plano Básico';
-    
-    if (planId === 'medium') {
-      price = 9900;
-      name = 'MAX CFO AI - Plano Médio';
-    } else if (planId === 'ultimate') {
-      price = 19900;
-      name = 'MAX CFO AI - Plano Ultimate';
-    }
+    const plans = {
+      basic: {
+        price_data: { currency: 'brl', product_data: { name: 'MAX CFO AI - Básico', images: [`${origin}/icon-512.png`] }, unit_amount: 4990, recurring: { interval: 'month' } },
+      },
+      intermediate: {
+        price_data: { currency: 'brl', product_data: { name: 'MAX CFO AI - Intermediário', images: [`${origin}/icon-512.png`] }, unit_amount: 12990, recurring: { interval: 'month' } },
+      },
+      complete: {
+        price_data: { currency: 'brl', product_data: { name: 'MAX CFO AI - Completo', images: [`${origin}/icon-512.png`] }, unit_amount: 26990, recurring: { interval: 'month' } },
+      },
+      unlimited: {
+        price_data: { currency: 'brl', product_data: { name: 'MAX CFO AI - Unlimited', images: [`${origin}/icon-512.png`] }, unit_amount: 29990, recurring: { interval: 'month' } },
+      }
+    };
+
+    const selectedPlan = plans[planId] || plans['basic'];
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
-          price_data: {
-            currency: 'brl',
-            product_data: {
-              name: name,
-              description: 'Acesso completo ao CFO Virtual',
-              images: [`${origin}/icon-512.png`],
-            },
-            unit_amount: price,
-            recurring: {
-              interval: 'month',
-            },
-          },
+          price_data: selectedPlan.price_data,
           quantity: 1,
         },
       ],
