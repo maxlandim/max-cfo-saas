@@ -92,7 +92,7 @@ window.renderNFe = function() {
 };
 
 window.openNFeModal = function() {
-    if (window.openModal) window.openModal('nfeModal');
+    if (window.openModalEl) window.openModalEl('nfeModal');
 };
 
 // This overrides the mock one in app.js

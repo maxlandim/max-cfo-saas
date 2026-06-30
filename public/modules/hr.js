@@ -50,7 +50,7 @@ window.renderHR = function() {
           <p class="page-subtitle">Projeção automática de Férias, 13º e Encargos no fluxo de caixa</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('hrModal')">+ Novo Colaborador</button>
+          <button class="btn-primary" onclick="openModalEl('hrModal')">+ Novo Colaborador</button>
         </div>
       </div>
       

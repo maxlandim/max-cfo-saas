@@ -150,7 +150,7 @@ window.openTeamModal = function(id = null) {
         document.getElementById('btnTeamSubmit').innerText = "Enviar Convite";
     }
     
-    if (window.openModal) window.openModal('teamModal');
+    if (window.openModalEl) window.openModalEl('teamModal');
 };
 
 window.submitTeamMember = function(e) {

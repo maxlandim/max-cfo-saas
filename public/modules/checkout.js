@@ -42,7 +42,7 @@ window.renderCheckout = function() {
           <p class="page-subtitle">Venda rápida por WhatsApp ou Instagram (Stripe/Pix nativo)</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('checkoutModal')">+ Novo Link</button>
+          <button class="btn-primary" onclick="openModalEl('checkoutModal')">+ Novo Link</button>
         </div>
       </div>
       

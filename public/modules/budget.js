@@ -51,7 +51,7 @@ window.renderBudget = function() {
           <p class="page-subtitle">Pipeline comercial (Quote-to-Cash)</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('budgetModal')">+ Novo Orçamento</button>
+          <button class="btn-primary" onclick="openModalEl('budgetModal')">+ Novo Orçamento</button>
         </div>
       </div>
       

@@ -49,7 +49,7 @@ window.renderBilling = function() {
           <p class="page-subtitle">Emissão nativa sem depender de bancos externos</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('billingModal')">+ Nova Cobrança</button>
+          <button class="btn-primary" onclick="openModalEl('billingModal')">+ Nova Cobrança</button>
         </div>
       </div>
       

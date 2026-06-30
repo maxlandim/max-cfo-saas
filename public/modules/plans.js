@@ -57,7 +57,7 @@ window.renderPlans = function() {
           <p class="page-subtitle">Gestão de assinaturas, MRR, ARR e Churn Rate</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('planModal')">+ Nova Assinatura</button>
+          <button class="btn-primary" onclick="openModalEl('planModal')">+ Nova Assinatura</button>
         </div>
       </div>
       

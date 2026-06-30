@@ -66,7 +66,7 @@ window.renderAssets = function() {
           <p class="page-subtitle">Controle de ROI imobiliário, depreciação e transferências (Real Estate)</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('assetModal')">+ Cadastrar Ativo</button>
+          <button class="btn-primary" onclick="openModalEl('assetModal')">+ Cadastrar Ativo</button>
         </div>
       </div>
       

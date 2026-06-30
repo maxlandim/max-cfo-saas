@@ -47,7 +47,7 @@ window.renderCommissions = function() {
           <p class="page-subtitle">Cálculo automatizado sobre vendas faturadas</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn-primary" onclick="openModal('commModal')">+ Registrar Comissão</button>
+          <button class="btn-primary" onclick="openModalEl('commModal')">+ Registrar Comissão</button>
         </div>
       </div>
       
