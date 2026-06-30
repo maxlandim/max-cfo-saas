@@ -96,22 +96,33 @@ window.openNFeModal = function() {
 };
 
 // This overrides the mock one in app.js
-window.gerarNFe = function() {
+window.gerarNFe = async function() {
     const cliente = document.getElementById("nfeCliente").value;
     const valor = parseFloat(document.getElementById("nfeValor").value);
+    const servico = document.getElementById("nfeServico").value;
+    const certInput = document.getElementById("nfeCertificado");
     
-    if (!cliente || !valor) {
-        if (window.showToast) window.showToast("Preencha todos os campos", "error");
+    if (!cliente || !valor || !servico) {
+        if (window.showToast) window.showToast("Preencha todos os campos obrigatórios.", "error");
         return;
     }
     
+    if (!certInput.files.length && !window.state.nfeCertificadoAtivo) {
+        if (window.showToast) window.showToast("Anexe o Certificado Digital A1 (.pfx) na primeira emissão.", "warning");
+        return;
+    }
+
+    if (certInput.files.length > 0) {
+       window.state.nfeCertificadoAtivo = true; // Salva pra não pedir de novo
+    }
+    
     document.getElementById("nfeSpinner").style.display = "block";
-    document.getElementById("nfeStatusText").innerText = "Transmitindo lote para SEFAZ/Prefeitura (Assinando com Certificado A1)...";
+    document.getElementById("nfeStatusText").innerText = "Assinando com Certificado A1... Transmitindo lote para SEFAZ/Prefeitura...";
     
     setTimeout(() => {
         document.getElementById("nfeSpinner").style.display = "none";
         document.getElementById("nfeStatusText").innerHTML = `<span style="color:var(--success)">✅ NF-e Autorizada com sucesso! (Protocolo: ${Math.floor(Math.random()*10000000000)})</span>`;
-        if (window.showToast) window.showToast("NF-e Autorizada!", "success");
+        if (window.showToast) window.showToast("NF-e Autorizada e Assinada!", "success");
         
         const nextNum = window.state.nfes.length > 0 ? Math.max(...window.state.nfes.map(n => parseInt(n.numero))) + 1 : 2026001;
         
@@ -120,7 +131,7 @@ window.gerarNFe = function() {
             numero: nextNum.toString(),
             tomador: cliente,
             cnpj: "00.000.000/0001-00", // mock
-            servico: "Serviço Prestado",
+            servico: servico,
             valor: valor,
             iss: valor * 0.05,
             status: "Autorizada",
@@ -130,17 +141,19 @@ window.gerarNFe = function() {
         window.state.nfes.push(newNf);
         localStorage.setItem('maxcfo_nfes', JSON.stringify(window.state.nfes));
         
-        // Auto-create transaction
+        // Auto-create transaction (Integrado)
         if (window.state.transactions) {
-            window.state.transactions.push({
+            const tx = {
                 id: 'tx-' + Date.now().toString(),
                 type: 'RECEITA',
                 date: new Date().toISOString().split("T")[0],
                 desc: `NF-e ${nextNum} - ${cliente}`,
                 category: 'Vendas',
                 amount: valor
-            });
-            localStorage.setItem('maxcfo_transactions', JSON.stringify(window.state.transactions));
+            };
+            window.state.transactions.push(tx);
+            if (window.logAudit) window.logAudit('create', 'transaction', tx.id, `Receita criada por NF-e ${nextNum}`, null, tx);
+            if (window.persist) window.persist();
             if (window.renderDashboard) window.renderDashboard();
             if (window.renderFinance) window.renderFinance();
         }

@@ -144,6 +144,7 @@ var initMaxCfoApp = async () => {
   if (window.initAccountantModule) window.initAccountantModule();
   if (window.initPlansModule) window.initPlansModule();
   if (window.initCommissionsModule) window.initCommissionsModule();
+  if (window.initAuditModule) window.initAuditModule();
 
   updateSettingsPanel();
   renderDashboard();
@@ -214,9 +215,10 @@ function setValue(id, val) {
   if (el && val !== undefined) el.value = val;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════════════════
 // TOPBAR DATE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 function initTopbar() {
   const el = document.getElementById('topbarDateTime');
   function upd() {
@@ -228,9 +230,9 @@ function initTopbar() {
   setInterval(upd, 60000);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════════════════
 // NAVIGATION
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════════════════
 var viewMeta = {
     dashboard: { label: 'Dashboard', render: renderDashboard },
     chat:      { label: 'CFO IA', render: () => setTimeout(scrollChat, 50) },
@@ -253,7 +255,9 @@ var viewMeta = {
     checkout:  { label: 'Checkout', render: () => { if(window.renderCheckout) window.renderCheckout(); } },
     accountant: { label: 'Portal Contador', render: () => { if(window.renderAccountant) window.renderAccountant(); } },
     plans:     { label: 'Assinaturas', render: () => { if(window.renderPlans) window.renderPlans(); } },
-    commissions: { label: 'Comissões', render: () => { if(window.renderCommissions) window.renderCommissions(); } }
+    commissions: { label: 'Comissões', render: () => { if(window.renderCommissions) window.renderCommissions(); } },
+    audit:       { label: 'Auditoria', render: () => { if(window.renderAudit) window.renderAudit(); } },
+    os:          { label: 'Ordem de Servio', render: () => { if(window.initOS) window.initOS(); } }
   };
 
 function initNavigation() {
@@ -720,6 +724,7 @@ function renderTxTable() {
         ${t.type === 'RECEITA' ? '+' : '-'}${fmt(t.amount)}
       </td>
       <td style="display:flex;gap:4px">
+        ${t.attachmentUrl ? `<a href="${t.attachmentUrl}" target="_blank" class="action-btn" title="Ver Anexo">📎</a>` : ''}
         <button class="action-btn" onclick="editTx('${t.id}')" title="Editar">âœï¸</button>
         <button class="action-btn del" onclick="deleteTx('${t.id}')" title="Excluir">🗑ï¸</button>
       </td>
@@ -817,6 +822,21 @@ async function submitTransaction(e) {
   const notes    = document.getElementById('txNotes')?.value.trim();
   const type     = document.getElementById('txType')?.value;
   const editId   = document.getElementById('txEditId')?.value;
+  let attachmentUrl = document.getElementById('txAttachmentUrl')?.value || '';
+
+  const fileInput = document.getElementById('txAttachment');
+  if (fileInput && fileInput.files.length > 0 && window.uploadFileToFirebase && window.workspaceId) {
+    const btn = document.getElementById('txSubmitBtn');
+    if (btn) btn.innerText = 'Enviando anexo...';
+    try {
+      const url = await window.uploadFileToFirebase(window.workspaceId, fileInput.files[0]);
+      if (url) attachmentUrl = url;
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao enviar anexo', 'error');
+    }
+    if (btn) btn.innerText = 'Salvar Lançamento';
+  }
 
   if (!desc) return showToast('Informe uma descrição', 'error');
   if (isNaN(amount) || amount <= 0) return showToast('Valor inválido', 'error');
@@ -826,13 +846,16 @@ async function submitTransaction(e) {
     // Edit
     const idx = state.transactions.findIndex(t => t.id === editId);
     if (idx !== -1) {
-      state.transactions[idx] = { ...state.transactions[idx], desc, amount, date, category, notes, type };
+      const oldTx = { ...state.transactions[idx] };
+      state.transactions[idx] = { ...state.transactions[idx], desc, amount, date, category, notes, type, attachmentUrl };
+      if (window.logAudit) window.logAudit('update', 'transaction', editId, `Transação "${desc}" atualizada`, oldTx, state.transactions[idx]);
       showToast('✅ Lançamento atualizado', 'success');
     }
   } else {
     // Create
-    const tx = { id: genId(), desc, amount, date, category, notes, type };
+    const tx = { id: genId(), desc, amount, date, category, notes, type, attachmentUrl };
     state.transactions.push(tx);
+    if (window.logAudit) window.logAudit('create', 'transaction', tx.id, `Transação "${desc}" criada`, null, tx);
     showToast(`✅ ${type === 'RECEITA' ? 'Receita' : 'Despesa'} de ${fmt(amount)} registrada!`, 'success');
   }
 

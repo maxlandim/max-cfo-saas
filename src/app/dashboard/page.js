@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { db } from '../../lib/firebase';
+import { db, storage } from '../../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -29,11 +30,24 @@ export default function DashboardPage() {
         }
       } catch (e) {
         console.error("Firebase load error:", e);
+        return null;
       }
-      return null;
     };
 
-    // Auth Guard
+    window.uploadFileToFirebase = async (workspaceId, file) => {
+      if (!workspaceId || !file) return null;
+      try {
+        const fileRef = ref(storage, `workspaces/${workspaceId}/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytesResumable(fileRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+      } catch (e) {
+        console.error("Firebase upload error:", e);
+        return null;
+      }
+    };
+
+    // Initialization of Dashboard Scripts
     const userStr = localStorage.getItem('maxcfo_user');
     if (!userStr) {
       router.push('/login');
@@ -68,7 +82,7 @@ export default function DashboardPage() {
 
       const modules = [
         'accountant', 'assets', 'billing', 'budget', 'checkout', 
-        'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance'
+        'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance', 'audit', 'os'
       ];
       for (const mod of modules) {
         if (!document.querySelector(`script[src="/modules/${mod}.js"]`)) {
@@ -132,6 +146,9 @@ export default function DashboardPage() {
     <a class="nav-item" data-view="settings" id="nav-settings">
       <span class="nav-icon">⚙️</span><span class="nav-label">Configurações</span>
     </a>
+    <a class="nav-item" data-view="audit" id="nav-audit">
+      <span class="nav-icon">🛡️</span><span class="nav-label">Auditoria de Logs</span>
+    </a>
     <a class="nav-item" data-view="plans" id="nav-plans">
       <span class="nav-icon">⭐</span><span class="nav-label">Assinaturas SaaS</span>
     </a>
@@ -139,6 +156,9 @@ export default function DashboardPage() {
     <div class="nav-section-label">2. OPERAÇÃO & VENDAS</div>
     <a class="nav-item" data-view="finance" id="nav-finance">
       <span class="nav-icon">💰</span><span class="nav-label">Financeiro & OCR</span>
+    </a>
+    <a class="nav-item" data-view="os" id="nav-os">
+      <span class="nav-icon">📋</span><span class="nav-label">Ordem de Serviço (OS)</span>
     </a>
     <a class="nav-item" data-view="reconciliation" id="nav-reconciliation">
       <span class="nav-icon">🔄</span><span class="nav-label">Open Finance</span>
@@ -457,6 +477,12 @@ export default function DashboardPage() {
     <!-- ═══════════ COMISSÕES ═══════════ -->
     <section class="view" id="view-commissions" aria-label="Comissões"></section>
 
+    <!-- ═══════════ OS ═══════════ -->
+    <section class="view" id="view-os" aria-label="Ordem de Serviço"></section>
+
+    <!-- ═══════════ AUDITORIA ═══════════ -->
+    <section class="view" id="view-audit" aria-label="Auditoria"></section>
+
 </main>
 </div>
 
@@ -494,8 +520,13 @@ export default function DashboardPage() {
           <label class="form-label" for="txNotes">Observação</label>
           <input type="text" class="form-input" id="txNotes" placeholder="Opcional" maxlength="200">
         </div>
+        <div class="form-field span-2">
+          <label class="form-label" for="txAttachment">Anexo / Recibo (Opcional)</label>
+          <input type="file" class="form-input" id="txAttachment" accept=".pdf,.png,.jpg,.jpeg">
+        </div>
       </div>
       <input type="hidden" id="txType" value="RECEITA">
+      <input type="hidden" id="txAttachmentUrl" value="">
       <input type="hidden" id="txEditId" value="">
       <div class="modal-foot">
         <button type="button" class="btn-ghost" onclick="closeModal('txModal')">Cancelar</button>
@@ -732,7 +763,12 @@ export default function DashboardPage() {
         </div>
         <div class="form-field">
           <label class="form-label">Plano</label>
-          <input type="text" class="form-input" id="planNome" required>
+          <select class="form-input" id="planNome" onchange="document.getElementById('planValor').value = this.options[this.selectedIndex].dataset.price" required>
+            <option value="">Selecione...</option>
+            <option value="Básico" data-price="99.00">Básico</option>
+            <option value="Médio" data-price="199.00">Médio</option>
+            <option value="Ultimate" data-price="499.00">Ultimate</option>
+          </select>
         </div>
         <div class="form-field">
           <label class="form-label">MRR (Mensalidade)</label>
@@ -899,6 +935,13 @@ export default function DashboardPage() {
         <div class="form-field span-2">
           <label class="form-label">Tomador do Serviço (Cliente)</label>
           <input type="text" class="form-input" id="nfeCliente" required>
+        </div>
+        <div class="form-field span-2">
+          <label class="form-label">Certificado Digital A1 (.pfx)</label>
+          <div style="display:flex;gap:10px;align-items:center;">
+             <input type="file" class="form-input" id="nfeCertificado" accept=".pfx,.p12" style="flex:1">
+             <span id="nfeCertStatus" class="chip" style="display:none;background:var(--success);color:white">OK</span>
+          </div>
         </div>
         <div class="form-field">
           <label class="form-label">Descrição do Serviço</label>

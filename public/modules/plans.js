@@ -24,6 +24,9 @@ window.renderPlans = function() {
     let ativos = 0;
     let churn = 0;
     
+    // Calcula CAC baseado no Marketing
+    const mktDesp = window.state.transactions ? window.state.transactions.filter(t => t.category === 'Marketing e Publicidade').reduce((a, b) => a + b.amount, 0) : 0;
+    
     let tbody = '';
     window.state.assinaturas.forEach(sub => {
         if (sub.status === 'Ativa') {
@@ -58,19 +61,26 @@ window.renderPlans = function() {
         </div>
       </div>
       
-      <div class="grid-3col" style="margin-top:20px;">
-        <div class="card">
-            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px;">MRR (Receita Recorrente Mensal)</div>
-            <div style="font-size:32px; font-weight:bold; color:var(--success);">R$ ${mrr.toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">ARR Projetado: R$ ${(mrr * 12).toLocaleString('pt-BR')}</div>
+      <div class="grid-4col" style="margin-top:20px;">
+        <div class="card fin-kpi">
+            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px;">MRR (Receita Recorrente)</div>
+            <div style="font-size:28px; font-weight:bold; color:var(--success);">R$ ${mrr.toLocaleString('pt-BR', {minimumFractionDigits:2})}</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">ARR: R$ ${(mrr * 12).toLocaleString('pt-BR')}</div>
         </div>
-        <div class="card">
+        <div class="card fin-kpi">
             <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px;">Assinantes Ativos</div>
-            <div style="font-size:32px; font-weight:bold; color:white;">${ativos}</div>
+            <div style="font-size:28px; font-weight:bold; color:white;">${ativos}</div>
         </div>
-        <div class="card">
-            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px;">Taxa de Churn (Cancelamentos)</div>
-            <div style="font-size:32px; font-weight:bold; color:var(--danger);">${(churn / (ativos + churn) * 100).toFixed(1)}%</div>
+        <div class="card fin-kpi">
+            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px;">Taxa de Churn</div>
+            <div style="font-size:28px; font-weight:bold; color:var(--danger);">${(churn / (ativos + churn || 1) * 100).toFixed(1)}%</div>
+        </div>
+        <div class="card fin-kpi">
+            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px;">LTV / CAC</div>
+            <div style="font-size:28px; font-weight:bold; color:var(--gold);">
+               ${ativos > 0 ? 'R$ ' + ((mrr / ativos) * 24).toLocaleString('pt-BR', {maximumFractionDigits:0}) : 'R$ 0'}
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">CAC Est.: R$ ${(ativos > 0 ? mktDesp / ativos : 0).toLocaleString('pt-BR', {maximumFractionDigits:0})}</div>
         </div>
       </div>
       
