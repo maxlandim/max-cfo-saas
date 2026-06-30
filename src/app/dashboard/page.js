@@ -592,6 +592,172 @@ export default function DashboardPage() {
   </div>
 </div>
 
-<!-- TOAST -->\n<div id=\"toastContainer\" aria-live=\"polite\" aria-atomic=\"true\"></div>\n\n\n\n` }} />
+<!-- MISSING MODALS -->
+<div class="modal-overlay" id="assetModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">🏙️ Cadastrar Ativo</h2>
+      <button class="modal-x" onclick="closeModal('assetModal')">×</button>
+    </div>
+    <form onsubmit="window.submitAssetForm(event)">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Nome/Descrição</label>
+            <input type="text" class="form-input" id="assetNome" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Tipo de Ativo</label>
+            <select class="form-input" id="assetTipo">
+              <option value="Imóvel">Imóvel</option>
+              <option value="Veículo">Veículo</option>
+              <option value="Equipamento">Equipamento</option>
+              <option value="Investimento">Investimento</option>
+            </select>
+          </div>
+          <div class="form-field" style="grid-column: span 2">
+            <label class="form-label">Valor Avaliado (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="assetValor" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('assetModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar Ativo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="budgetModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">🎯 Novo Orçamento</h2>
+      <button class="modal-x" onclick="closeModal('budgetModal')">×</button>
+    </div>
+    <form onsubmit="window.submitBudgetForm(event)">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Nome do Cliente</label>
+            <input type="text" class="form-input" id="budCliente" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Valor Total (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="budTotal" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('budgetModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Criar Orçamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="hrModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">📋 Novo Colaborador</h2>
+      <button class="modal-x" onclick="closeModal('hrModal')">×</button>
+    </div>
+    <form onsubmit="window.submitHRForm(event)">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field" style="grid-column: span 2">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-input" id="hrNome" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Cargo</label>
+            <input type="text" class="form-input" id="hrCargo" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Salário Bruto (CLT)</label>
+            <input type="number" step="0.01" class="form-input" id="hrSalario" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('hrModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Registrar Colaborador</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="nfeModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">🧾 Emitir NF-e (Serviço)</h2>
+      <button class="modal-x" onclick="closeModal('nfeModal')">×</button>
+    </div>
+    <form onsubmit="window.submitNFeForm(event)">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field" style="grid-column: span 2">
+            <label class="form-label">Tomador do Serviço (Cliente)</label>
+            <input type="text" class="form-input" id="nfeTomador" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Descrição do Serviço</label>
+            <input type="text" class="form-input" id="nfeServico" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Valor (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="nfeValor" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('nfeModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Emitir Nota Fiscal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="teamModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">👥 Convidar Membro</h2>
+      <button class="modal-x" onclick="closeModal('teamModal')">×</button>
+    </div>
+    <form onsubmit="window.submitTeamForm(event)">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-input" id="tmNome" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="tmEmail" required>
+          </div>
+          <div class="form-field" style="grid-column: span 2">
+            <label class="form-label">Nível de Acesso (Cargo)</label>
+            <select class="form-input" id="tmRole">
+              <option value="Admin">Administrador</option>
+              <option value="Editor">Editor (Financeiro)</option>
+              <option value="Viewer">Visualizador</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('teamModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Enviar Convite</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+
+
+` }} />
   );
 }
