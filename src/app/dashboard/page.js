@@ -63,23 +63,32 @@ export default function DashboardPage() {
   </div>
 
   <nav class=\"sidebar-nav\">
-    <div class=\"nav-section-label\">1. ONBOARDING & EQUIPE</div>
-    <a class=\"nav-item\" data-view=\"team\" id=\"nav-team\">
-      <span class=\"nav-icon\">\ud83d\udc65</span><span class=\"nav-label\">Equipe & Workspaces</span>
+    <div class="nav-section-label">1. ONBOARDING & EQUIPE</div>
+    <a class="nav-item" data-view="team" id="nav-team">
+      <span class="nav-icon">👥</span><span class="nav-label">Equipe & Workspaces</span>
     </a>
-    <a class=\"nav-item\" data-view=\"settings\" id=\"nav-settings\">
-      <span class=\"nav-icon\">\u2699\ufe0f</span><span class=\"nav-label\">Configura\u00e7\u00f5es</span>
+    <a class="nav-item" data-view="settings" id="nav-settings">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Configurações</span>
+    </a>
+    <a class="nav-item" data-view="plans" id="nav-plans">
+      <span class="nav-icon">⭐</span><span class="nav-label">Assinaturas SaaS</span>
     </a>
 
-    <div class=\"nav-section-label\">2. OPERA\u00c7\u00c3O & VENDAS</div>
-    <a class=\"nav-item\" data-view=\"finance\" id=\"nav-finance\">
-      <span class=\"nav-icon\">\ud83d\udcb0</span><span class=\"nav-label\">Financeiro & OCR</span>
+    <div class="nav-section-label">2. OPERAÇÃO & VENDAS</div>
+    <a class="nav-item" data-view="finance" id="nav-finance">
+      <span class="nav-icon">💰</span><span class="nav-label">Financeiro & OCR</span>
     </a>
-    <a class=\"nav-item\" data-view=\"reconciliation\" id=\"nav-reconciliation\">
-      <span class=\"nav-icon\">\ud83d\udd04</span><span class=\"nav-label\">Open Finance</span>
+    <a class="nav-item" data-view="reconciliation" id="nav-reconciliation">
+      <span class="nav-icon">🔄</span><span class="nav-label">Open Finance</span>
     </a>
-    <a class=\"nav-item\" data-view=\"crm\" id=\"nav-crm\">
+    <a class="nav-item" data-view="crm" id=\"nav-crm\">
       <span class=\"nav-icon\">\ud83e\udd1d</span><span class=\"nav-label\">CRM & Vendas</span>
+    </a>
+    <a class="nav-item" data-view="budget" id="nav-budget">
+      <span class="nav-icon">🎯</span><span class="nav-label">Orçamentos</span>
+    </a>
+    <a class="nav-item" data-view="commissions" id="nav-commissions">
+      <span class="nav-icon">💸</span><span class="nav-label">Comissões</span>
     </a>
     <a class=\"nav-item\" data-view=\"inventory\" id=\"nav-inventory\">
       <span class=\"nav-icon\">\ud83d\udce6</span><span class=\"nav-label\">Estoque & Compras</span>
@@ -95,6 +104,12 @@ export default function DashboardPage() {
     <a class=\"nav-item\" data-view=\"nfe\" id=\"nav-nfe\">
       <span class=\"nav-icon\">\ud83e\uddfe</span><span class=\"nav-label\">Emiss\u00e3o Fiscal (NF-e)</span>
     </a>
+    <a class="nav-item" data-view="billing" id="nav-billing">
+      <span class="nav-icon">💳</span><span class="nav-label">Cobrança Automática</span>
+    </a>
+    <a class="nav-item" data-view="checkout" id="nav-checkout">
+      <span class="nav-icon">🛒</span><span class="nav-label">Links de Pagamento</span>
+    </a>
 
     <div class=\"nav-section-label\">4. ENTERPRISE & PATRIM\u00d4NIO</div>
     <a class=\"nav-item\" data-view=\"assets\" id=\"nav-assets\">
@@ -102,6 +117,9 @@ export default function DashboardPage() {
     </a>
     <a class=\"nav-item\" data-view=\"tax-audit\" id=\"nav-tax-audit\">
       <span class=\"nav-icon\">\ud83d\udd0d</span><span class=\"nav-label\">Auditoria Tribut\u00e1ria</span>
+    </a>
+    <a class="nav-item" data-view="accountant" id="nav-accountant">
+      <span class="nav-icon">🧮</span><span class="nav-label">Portal do Contador</span>
     </a>
     <a class=\"nav-item\" data-view=\"companies\" id=\"nav-companies\">
       <span class=\"nav-icon\">\ud83c\udfe2</span><span class=\"nav-label\">CNPJs & Compliance</span>
