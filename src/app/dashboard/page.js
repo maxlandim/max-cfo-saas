@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [hasPaywall, setHasPaywall] = useState(false);
 
   useEffect(() => {
     // Auth Guard
@@ -12,6 +13,13 @@ export default function DashboardPage() {
     if (!user) {
       router.push('/login');
       return;
+    }
+
+    // Paywall Guard (SaaS)
+    const proStatus = localStorage.getItem('maxcfo_pro_status');
+    if (proStatus !== 'active') {
+      setHasPaywall(true);
+      // Wait for scripts but don't init properly or block view
     }
 
     // Load original vanilla JS scripts
@@ -52,7 +60,33 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <div dangerouslySetInnerHTML={{ __html: `\n\n<!-- SIDEBAR -->
+    <>
+      {hasPaywall && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(10, 15, 30, 0.95)', zIndex: 99999,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontFamily: 'sans-serif', backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔒</div>
+          <h1 style={{ fontSize: '28px', marginBottom: '16px' }}>Assinatura Necessária</h1>
+          <p style={{ color: '#8899B0', maxWidth: '400px', textAlign: 'center', marginBottom: '32px' }}>
+            Seu período de testes expirou ou você ainda não possui uma assinatura ativa.
+            Para acessar o MAX CFO AI, escolha um plano.
+          </p>
+          <button 
+            onClick={() => router.push('/pricing')}
+            style={{
+              padding: '16px 32px', backgroundColor: '#C5A059', color: '#0B1220',
+              fontWeight: 'bold', fontSize: '16px', border: 'none', borderRadius: '8px',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            Ver Planos e Assinar
+          </button>
+        </div>
+      )}
+      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `\n\n<!-- SIDEBAR -->
 <aside class=\"sidebar\" id=\"sidebar\">
   <div class=\"sidebar-brand\">
     <div class=\"brand-logo\">\u26a1</div>
@@ -395,7 +429,130 @@ export default function DashboardPage() {
     <!-- ═══════════ COMISSÕES ═══════════ -->
     <section class="view" id="view-commissions" aria-label="Comissões"></section>
 
-</main>\n</div>\n\n<!-- \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 MODAIS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 -->\n\n<!-- Modal Transa\u00e7\u00e3o -->\n<div class=\"modal-overlay\" id=\"txModal\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"txModalTitle\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <div>\n        <h2 class=\"modal-title\" id=\"txModalTitle\">Nova Receita</h2>\n        <p class=\"modal-subtitle\" id=\"txModalSubtitle\">Preencha os dados do lan\u00e7amento</p>\n      </div>\n      <button class=\"modal-x\" onclick=\"closeModal('txModal')\" aria-label=\"Fechar\">\u2715</button>\n    </div>\n    <form id=\"txForm\" onsubmit=\"submitTransaction(event)\" novalidate>\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\" for=\"txDesc\">Descri\u00e7\u00e3o *</label>\n          <input type=\"text\" class=\"form-input\" id=\"txDesc\" placeholder=\"Ex: Consultoria Financeira Mensal\" required maxlength=\"120\" autocomplete=\"off\">\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txAmount\">Valor (R$) *</label>\n          <input type=\"number\" class=\"form-input\" id=\"txAmount\" placeholder=\"0,00\" step=\"0.01\" min=\"0.01\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txDate\">Data *</label>\n          <input type=\"date\" class=\"form-input\" id=\"txDate\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txCategory\">Categoria</label>\n          <select class=\"form-input\" id=\"txCategory\"></select>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\" for=\"txNotes\">Observa\u00e7\u00e3o</label>\n          <input type=\"text\" class=\"form-input\" id=\"txNotes\" placeholder=\"Opcional\" maxlength=\"200\">\n        </div>\n      </div>\n      <input type=\"hidden\" id=\"txType\" value=\"RECEITA\">\n      <input type=\"hidden\" id=\"txEditId\" value=\"\">\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('txModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\" id=\"txSubmitBtn\">Salvar Lan\u00e7amento</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n<!-- Modal Notifica\u00e7\u00f5es -->\n<div class=\"modal-overlay\" id=\"notifModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box modal-sm\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">\ud83d\udd14 Notifica\u00e7\u00f5es</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('notifModal')\">\u2715</button>\n    </div>\n    <div id=\"notifList\" style=\"padding:8px 0\"></div>\n    <div class=\"modal-foot\">\n      <button class=\"btn-ghost\" onclick=\"closeModal('notifModal')\">Fechar</button>\n    </div>\n  </div>\n</div>\n\n\n<!-- Modal CRM -->\n<div class=\"modal-overlay\" id=\"crmModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">👤 Novo Lead</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('crmModal')\">✕</button>\n    </div>\n    <form id=\"crmForm\" onsubmit=\"submitLead(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Empresa / Cliente</label>\n          <input type=\"text\" class=\"form-input\" id=\"crmName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Valor Estimado (R$)</label>\n          <input type=\"number\" class=\"form-input\" id=\"crmValue\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Risco</label>\n          <select class=\"form-input\" id=\"crmRisk\">\n            <option value=\"Baixo\">Baixo</option>\n            <option value=\"Moderado\">Moderado</option>\n            <option value=\"Alto\">Alto</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('crmModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Lead</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n\n<!-- Modal Estoque -->\n<div class=\"modal-overlay\" id=\"invModal\" role=\"dialog\" aria-modal=\"true\">\n  <div class=\"modal-box\">\n    <div class=\"modal-head\">\n      <h2 class=\"modal-title\">📦 Novo Produto</h2>\n      <button class=\"modal-x\" onclick=\"closeModal('invModal')\">✕</button>\n    </div>\n    <form id=\"invForm\" onsubmit=\"submitProduct(event)\">\n      <div class=\"form-grid\">\n        <div class=\"form-field span-2\">\n          <label class=\"form-label\">Nome do Produto</label>\n          <input type=\"text\" class=\"form-input\" id=\"invName\" required>\n        </div>\n        <div class=\"form-field\">\n          <label class=\"form-label\">Qtd Atual</label>\n          <input type=\"number\" class=\"form-input\" id=\"invQty\" required>\n        </div>\n      </div>\n      <div class=\"modal-foot\">\n        <button type=\"button\" class=\"btn-ghost\" onclick=\"closeModal('invModal')\">Cancelar</button>\n        <button type=\"submit\" class=\"btn-primary\">Salvar Produto</button>\n      </div>\n    </form>\n  </div>\n</div>\n\n
+</main>
+</div>
+
+<!-- ═══════════ MODAIS ═══════════ -->
+
+<!-- Modal Transação -->
+<div class="modal-overlay" id="txModal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <h2 class="modal-title" id="txModalTitle">Nova Receita</h2>
+        <p class="modal-subtitle" id="txModalSubtitle">Preencha os dados do lançamento</p>
+      </div>
+      <button class="modal-x" onclick="closeModal('txModal')" aria-label="Fechar">✕</button>
+    </div>
+    <form id="txForm" onsubmit="window.submitTransaction(event)" novalidate>
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label" for="txDesc">Descrição *</label>
+          <input type="text" class="form-input" id="txDesc" placeholder="Ex: Consultoria Financeira Mensal" required maxlength="120" autocomplete="off">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txAmount">Valor (R$) *</label>
+          <input type="number" class="form-input" id="txAmount" placeholder="0,00" step="0.01" min="0.01" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txDate">Data *</label>
+          <input type="date" class="form-input" id="txDate" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txCategory">Categoria</label>
+          <select class="form-input" id="txCategory"></select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="txNotes">Observação</label>
+          <input type="text" class="form-input" id="txNotes" placeholder="Opcional" maxlength="200">
+        </div>
+      </div>
+      <input type="hidden" id="txType" value="RECEITA">
+      <input type="hidden" id="txEditId" value="">
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('txModal')">Cancelar</button>
+        <button type="submit" class="btn-primary" id="txSubmitBtn">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Notificações -->
+<div class="modal-overlay" id="notifModal" role="dialog" aria-modal="true">
+  <div class="modal-box modal-sm">
+    <div class="modal-head">
+      <h2 class="modal-title">🔔 Notificações</h2>
+      <button class="modal-x" onclick="closeModal('notifModal')">✕</button>
+    </div>
+    <div id="notifList" style="padding:8px 0"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeModal('notifModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal CRM -->
+<div class="modal-overlay" id="crmModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">👤 Novo Lead</h2>
+      <button class="modal-x" onclick="closeModal('crmModal')">✕</button>
+    </div>
+    <form id="crmForm" onsubmit="window.submitLead(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Empresa / Cliente</label>
+          <input type="text" class="form-input" id="crmName" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Valor Estimado (R$)</label>
+          <input type="number" class="form-input" id="crmValue" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Risco</label>
+          <select class="form-input" id="crmRisk">
+            <option value="Baixo">Baixo</option>
+            <option value="Moderado">Moderado</option>
+            <option value="Alto">Alto</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('crmModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar Lead</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- Modal Estoque -->
+<div class="modal-overlay" id="invModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 class="modal-title">📦 Novo Produto</h2>
+      <button class="modal-x" onclick="closeModal('invModal')">✕</button>
+    </div>
+    <form id="invForm" onsubmit="window.submitProduct(event)">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Nome do Produto</label>
+          <input type="text" class="form-input" id="invName" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Qtd Atual</label>
+          <input type="number" class="form-input" id="invQty" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost" onclick="closeModal('invModal')">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar Produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal OCR Magico -->
 <div class="modal-overlay" id="ocrModal" role="dialog" aria-modal="true">
   <div class="modal-box">
@@ -476,7 +633,7 @@ export default function DashboardPage() {
       <h2 class="modal-title">💳 Nova Cobrança</h2>
       <button class="modal-x" onclick="closeModal('billingModal')">✕</button>
     </div>
-    <form onsubmit="submitBillingForm(event)">
+    <form onsubmit="window.submitBillingForm(event)">
       <div class="form-grid">
         <div class="form-field span-2">
           <label class="form-label">Cliente</label>
@@ -513,7 +670,7 @@ export default function DashboardPage() {
       <h2 class="modal-title">🔗 Novo Link de Checkout</h2>
       <button class="modal-x" onclick="closeModal('checkoutModal')">✕</button>
     </div>
-    <form onsubmit="submitCheckoutForm(event)">
+    <form onsubmit="window.submitCheckoutForm(event)">
       <div class="form-grid">
         <div class="form-field span-2">
           <label class="form-label">Título / Produto</label>
@@ -539,7 +696,7 @@ export default function DashboardPage() {
       <h2 class="modal-title">🔄 Nova Assinatura</h2>
       <button class="modal-x" onclick="closeModal('planModal')">✕</button>
     </div>
-    <form onsubmit="submitPlanForm(event)">
+    <form onsubmit="window.submitPlanForm(event)">
       <div class="form-grid">
         <div class="form-field span-2">
           <label class="form-label">Cliente</label>
@@ -569,7 +726,7 @@ export default function DashboardPage() {
       <h2 class="modal-title">💰 Registrar Comissão</h2>
       <button class="modal-x" onclick="closeModal('commModal')">✕</button>
     </div>
-    <form onsubmit="submitCommForm(event)">
+    <form onsubmit="window.submitCommForm(event)">
       <div class="form-grid">
         <div class="form-field span-2">
           <label class="form-label">Vendedor / Representante</label>
@@ -599,25 +756,37 @@ export default function DashboardPage() {
       <h2 class="modal-title">🏙️ Cadastrar Ativo</h2>
       <button class="modal-x" onclick="closeModal('assetModal')">×</button>
     </div>
-    <form onsubmit="window.submitAssetForm(event)">
+    <form onsubmit="window.submitAsset(event)">
       <div class="modal-body">
         <div class="form-grid">
-          <div class="form-field">
+          <div class="form-field span-2">
             <label class="form-label">Nome/Descrição</label>
-            <input type="text" class="form-input" id="assetNome" required>
+            <input type="text" class="form-input" id="assetName" required>
           </div>
           <div class="form-field">
             <label class="form-label">Tipo de Ativo</label>
-            <select class="form-input" id="assetTipo">
+            <select class="form-input" id="assetType">
               <option value="Imóvel">Imóvel</option>
               <option value="Veículo">Veículo</option>
-              <option value="Equipamento">Equipamento</option>
+              <option value="Máquina">Máquina</option>
               <option value="Investimento">Investimento</option>
             </select>
           </div>
-          <div class="form-field" style="grid-column: span 2">
-            <label class="form-label">Valor Avaliado (R$)</label>
-            <input type="number" step="0.01" class="form-input" id="assetValor" required>
+          <div class="form-field">
+            <label class="form-label">Valor (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="assetValue" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Vida Útil (Anos)</label>
+            <input type="number" class="form-input" id="assetLife" required value="10">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Aluguel Mensal (R$)</label>
+            <input type="number" step="0.01" class="form-input" id="assetRent" placeholder="Se aplicável">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Data de Aquisição</label>
+            <input type="date" class="form-input" id="assetDate" required>
           </div>
         </div>
       </div>
@@ -662,20 +831,24 @@ export default function DashboardPage() {
       <h2 class="modal-title">📋 Novo Colaborador</h2>
       <button class="modal-x" onclick="closeModal('hrModal')">×</button>
     </div>
-    <form onsubmit="window.submitHRForm(event)">
+    <form onsubmit="window.submitEmployee(event)">
       <div class="modal-body">
         <div class="form-grid">
-          <div class="form-field" style="grid-column: span 2">
+          <div class="form-field span-2">
             <label class="form-label">Nome Completo</label>
-            <input type="text" class="form-input" id="hrNome" required>
+            <input type="text" class="form-input" id="hrName" required>
           </div>
           <div class="form-field">
             <label class="form-label">Cargo</label>
-            <input type="text" class="form-input" id="hrCargo" required>
+            <input type="text" class="form-input" id="hrRole" required>
           </div>
           <div class="form-field">
             <label class="form-label">Salário Bruto (CLT)</label>
-            <input type="number" step="0.01" class="form-input" id="hrSalario" required>
+            <input type="number" step="0.01" class="form-input" id="hrSalary" required>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Data de Admissão</label>
+            <input type="date" class="form-input" id="hrDate" required>
           </div>
         </div>
       </div>
@@ -693,28 +866,30 @@ export default function DashboardPage() {
       <h2 class="modal-title">🧾 Emitir NF-e (Serviço)</h2>
       <button class="modal-x" onclick="closeModal('nfeModal')">×</button>
     </div>
-    <form onsubmit="window.submitNFeForm(event)">
-      <div class="modal-body">
-        <div class="form-grid">
-          <div class="form-field" style="grid-column: span 2">
-            <label class="form-label">Tomador do Serviço (Cliente)</label>
-            <input type="text" class="form-input" id="nfeTomador" required>
-          </div>
-          <div class="form-field">
-            <label class="form-label">Descrição do Serviço</label>
-            <input type="text" class="form-input" id="nfeServico" required>
-          </div>
-          <div class="form-field">
-            <label class="form-label">Valor (R$)</label>
-            <input type="number" step="0.01" class="form-input" id="nfeValor" required>
-          </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field span-2">
+          <label class="form-label">Tomador do Serviço (Cliente)</label>
+          <input type="text" class="form-input" id="nfeCliente" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Descrição do Serviço</label>
+          <input type="text" class="form-input" id="nfeServico" required>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Valor (R$)</label>
+          <input type="number" step="0.01" class="form-input" id="nfeValor" required>
         </div>
       </div>
-      <div class="modal-foot">
-        <button type="button" class="btn-ghost" onclick="closeModal('nfeModal')">Cancelar</button>
-        <button type="submit" class="btn-primary">Emitir Nota Fiscal</button>
+      <div id="nfeSpinner" style="display:none; text-align:center; padding: 20px;">
+         <div style="color:var(--primary); margin-bottom:10px;">⏳</div>
+         <div id="nfeStatusText" style="color:var(--text-muted); font-size:14px;">Processando...</div>
       </div>
-    </form>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn-ghost" onclick="closeModal('nfeModal')">Cancelar</button>
+      <button type="button" class="btn-primary" onclick="window.gerarNFe()">Emitir Nota Fiscal</button>
+    </div>
   </div>
 </div>
 
@@ -724,7 +899,7 @@ export default function DashboardPage() {
       <h2 class="modal-title">👥 Convidar Membro</h2>
       <button class="modal-x" onclick="closeModal('teamModal')">×</button>
     </div>
-    <form onsubmit="window.submitTeamForm(event)">
+    <form onsubmit="window.submitTeamMember(event)">
       <div class="modal-body">
         <div class="form-grid">
           <div class="form-field">
@@ -759,5 +934,6 @@ export default function DashboardPage() {
 
 
 ` }} />
+    </>
   );
 }

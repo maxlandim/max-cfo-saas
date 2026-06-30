@@ -18,28 +18,35 @@ export async function POST(req) {
       body = await req.json();
     } catch(e) {}
     
-    // Opcional: E-mail do usuário logado/cadastrado
-    const { email } = body;
+    const { email, planId } = body;
 
-    // URL base dinâmica
     const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
     const host = req.headers.get('host') || 'localhost:3000';
     const origin = `${protocol}://${host}`;
 
-    // Cria a sessão de pagamento (Assinatura mensal de R$49,00)
-    // Usamos price_data para criar um preço na hora, ou você pode usar um price_id do painel do Stripe
+    let price = 4900;
+    let name = 'MAX CFO AI - Plano Básico';
+    
+    if (planId === 'medium') {
+      price = 9900;
+      name = 'MAX CFO AI - Plano Médio';
+    } else if (planId === 'ultimate') {
+      price = 19900;
+      name = 'MAX CFO AI - Plano Ultimate';
+    }
+
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'], // 'pix' também pode ser ativado no dashboard do Stripe
+      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
             currency: 'brl',
             product_data: {
-              name: 'MAX CFO AI - Acesso Mensal',
-              description: 'Inteligência Financeira Completa + Exportação de Relatórios',
+              name: name,
+              description: 'Acesso completo ao CFO Virtual',
               images: [`${origin}/icon-512.png`],
             },
-            unit_amount: 4900, // R$ 49,00 (em centavos)
+            unit_amount: price,
             recurring: {
               interval: 'month',
             },
@@ -49,11 +56,11 @@ export async function POST(req) {
       ],
       mode: 'subscription',
       subscription_data: {
-        trial_period_days: 7, // 7 dias grátis!
+        trial_period_days: 7, // 7 dias grátis para qualquer plano
       },
-      customer_email: email, // Pré-preenche o e-mail no checkout
+      customer_email: email,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/`,
+      cancel_url: `${origin}/pricing`,
     });
 
     return NextResponse.json({ url: session.url });

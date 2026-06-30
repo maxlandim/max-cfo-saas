@@ -14,25 +14,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const processStripeCheckout = async (userEmail) => {
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail })
-      });
-      
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url; // Vai para o Stripe
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err) {
-      console.error(err);
-      router.push('/dashboard');
-    }
-  };
+  // Redirect to pricing is handled in handleRegister
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -46,7 +28,7 @@ export default function RegisterPage() {
         await updateProfile(user, { displayName: name });
         localStorage.setItem('maxcfo_user', JSON.stringify({ name, email }));
         
-        await processStripeCheckout(email);
+        router.push('/pricing');
       } catch (err) {
         console.error(err);
         if (err.code === 'auth/email-already-in-use') {
@@ -72,7 +54,7 @@ export default function RegisterPage() {
       const user = userCredential.user;
       localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName, email: user.email }));
       
-      await processStripeCheckout(user.email);
+      router.push('/pricing');
     } catch (err) {
       console.error("Erro completo do Google Login:", err);
       setErrorMsg(`Erro: ${err.message}`);
