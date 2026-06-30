@@ -76,8 +76,8 @@ export default function DashboardPage() {
     };
 
     const initScripts = async () => {
-      if (!document.querySelector('script[src="/engine.js"]')) {
-        await loadScript('/engine.js');
+      if (!document.querySelector('script[src="/engine.js?v=2"]')) {
+        await loadScript('/engine.js?v=2');
       }
 
       const modules = [
@@ -85,13 +85,13 @@ export default function DashboardPage() {
         'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance', 'audit', 'os'
       ];
       for (const mod of modules) {
-        if (!document.querySelector(`script[src="/modules/${mod}.js"]`)) {
-          await loadScript(`/modules/${mod}.js`);
+        if (!document.querySelector(`script[src="/modules/${mod}.js?v=2"]`)) {
+          await loadScript(`/modules/${mod}.js?v=2`);
         }
       }
 
-      if (!document.querySelector('script[src="/app.js"]')) {
-        await loadScript('/app.js');
+      if (!document.querySelector('script[src="/app.js?v=2"]')) {
+        await loadScript('/app.js?v=2');
       }
       if (typeof window.initMaxCfoApp === 'function') {
         window.initMaxCfoApp();
