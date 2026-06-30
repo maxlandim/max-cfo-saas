@@ -2,18 +2,46 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { db } from '../../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [hasPaywall, setHasPaywall] = useState(false);
 
   useEffect(() => {
+    // Firebase Bridge for Vanilla Modules
+    window.saveStateToFirebase = async (workspaceId, stateObj) => {
+      if (!workspaceId) return;
+      try {
+        await setDoc(doc(db, 'workspaces', workspaceId), { data: JSON.stringify(stateObj) }, { merge: true });
+      } catch (e) {
+        console.error("Firebase save error:", e);
+      }
+    };
+    
+    window.loadStateFromFirebase = async (workspaceId) => {
+      if (!workspaceId) return null;
+      try {
+        const snap = await getDoc(doc(db, 'workspaces', workspaceId));
+        if (snap.exists() && snap.data().data) {
+          return JSON.parse(snap.data().data);
+        }
+      } catch (e) {
+        console.error("Firebase load error:", e);
+      }
+      return null;
+    };
+
     // Auth Guard
-    const user = localStorage.getItem('maxcfo_user');
-    if (!user) {
+    const userStr = localStorage.getItem('maxcfo_user');
+    if (!userStr) {
       router.push('/login');
       return;
     }
+    
+    const user = JSON.parse(userStr);
+    window.workspaceId = user.email || 'demo_workspace';
 
     // Paywall Guard (SaaS)
     const proStatus = localStorage.getItem('maxcfo_pro_status');

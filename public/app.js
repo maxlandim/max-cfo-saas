@@ -31,7 +31,11 @@ var DB = {
     try { const v = localStorage.getItem('maxcfo_' + k); return v ? JSON.parse(v) : def; }
     catch { return def; }
   },
-  set(k, v) { try { localStorage.setItem('maxcfo_' + k, JSON.stringify(v)); } catch {} },
+  set(k, v) { 
+    try { 
+      localStorage.setItem('maxcfo_' + k, JSON.stringify(v)); 
+    } catch {} 
+  },
   size() {
     let t = 0;
     for (let k in localStorage) if (k.startsWith('maxcfo_')) t += (localStorage[k]||'').length * 2;
@@ -53,9 +57,11 @@ var state = {
 };
 
 function persist() {
-  // DB.set('transactions', state.transactions); // Managed by API
   DB.set('companies', state.companies);
   DB.set('settings', state.settings);
+  if (window.saveStateToFirebase && window.workspaceId) {
+    window.saveStateToFirebase(window.workspaceId, window.state);
+  }
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -108,7 +114,14 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // INIT
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-var initMaxCfoApp = () => {
+var initMaxCfoApp = async () => {
+  if (window.loadStateFromFirebase && window.workspaceId) {
+    const remoteState = await window.loadStateFromFirebase(window.workspaceId);
+    if (remoteState) {
+      window.state = Object.assign(window.state, remoteState);
+    }
+  }
+
   applySettings();
   initTopbar();
   initNavigation();

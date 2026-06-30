@@ -9,6 +9,7 @@ import { auth, googleProvider } from '../lib/firebase';
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [documento, setDocumento] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -18,7 +19,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (email && password && name) {
+    if (email && password && name && documento) {
       setLoading(true);
       setErrorMsg('');
       
@@ -26,7 +27,7 @@ export default function RegisterPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         await updateProfile(user, { displayName: name });
-        localStorage.setItem('maxcfo_user', JSON.stringify({ name, email }));
+        localStorage.setItem('maxcfo_user', JSON.stringify({ name, email, documento }));
         
         router.push('/pricing');
       } catch (err) {
@@ -86,6 +87,10 @@ export default function RegisterPage() {
           <div className="form-group">
             <label>E-mail Profissional</label>
             <input type="email" className="form-input" required value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@empresa.com" />
+          </div>
+          <div className="form-group">
+            <label>CPF ou CNPJ</label>
+            <input type="text" className="form-input" required value={documento} onChange={e => setDocumento(e.target.value)} placeholder="000.000.000-00 ou 00.000.000/0001-00" />
           </div>
           <div className="form-group">
             <label>Crie uma Senha</label>
