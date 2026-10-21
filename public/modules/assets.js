@@ -4,15 +4,8 @@
 
 window.initAssetsModule = function() {
     if (!window.state) window.state = {};
-    let assets = JSON.parse(localStorage.getItem('maxcfo_assets') || 'null');
-    if (!assets) {
-        assets = [
-            { id: "1", nome: "Sede Corporativa", tipo: "Imóvel", valor: 2500000, vidaUtil: 25, aluguel: 15000, data: "2020-01-15" },
-            { id: "2", nome: "Frota - Caminhão VW", tipo: "Veículo", valor: 450000, vidaUtil: 5, aluguel: 0, data: "2024-02-10" }
-        ];
-        localStorage.setItem('maxcfo_assets', JSON.stringify(assets));
-    }
-    window.state.assets = assets;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.assets = Array.isArray(window.state.assets) ? window.state.assets : [];
 };
 
 window.renderAssets = function() {
@@ -115,7 +108,7 @@ window.submitAsset = function(e) {
         aluguel: parseFloat(document.getElementById('assetRent').value) || 0,
         data: document.getElementById('assetDate').value
     });
-    localStorage.setItem('maxcfo_assets', JSON.stringify(window.state.assets));
+    if (window.persist) window.persist();
     closeModal('assetModal');
     if (window.showToast) window.showToast('Ativo imobilizado cadastrado!', 'success');
     renderAssets();
@@ -124,7 +117,7 @@ window.submitAsset = function(e) {
 window.removeAsset = function(id) {
     if(!confirm('Realizar baixa deste ativo?')) return;
     window.state.assets = window.state.assets.filter(a => a.id !== id);
-    localStorage.setItem('maxcfo_assets', JSON.stringify(window.state.assets));
+    if (window.persist) window.persist();
     if (window.showToast) window.showToast('Ativo baixado.', 'success');
     renderAssets();
 };

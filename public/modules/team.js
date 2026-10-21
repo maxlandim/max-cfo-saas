@@ -4,34 +4,22 @@
 
 window.initTeamModule = function() {
     if (!window.state) window.state = {};
-    
-    // Initialize state if empty
-    let team = JSON.parse(localStorage.getItem('maxcfo_team') || 'null');
-    if (!team) {
-        team = [
-            { id: "1", name: "João Silva", email: "joao@empresa.com", role: "Admin", permissions: ['dashboard', 'finance', 'crm', 'inventory', 'nfe', 'os'], lastLogin: new Date().toISOString() },
-            { id: "2", name: "Maria Souza", email: "maria@empresa.com", role: "Operador", permissions: ['dashboard', 'finance'], lastLogin: new Date(Date.now() - 86400000).toISOString() },
-            { id: "3", name: "Contabilidade Externo", email: "contato@contabilidade.com", role: "Contador (Read-Only)", permissions: ['finance', 'nfe'], lastLogin: new Date(Date.now() - 172800000).toISOString() }
-        ];
-        localStorage.setItem('maxcfo_team', JSON.stringify(team));
+    // Equipe começa só com o dono da conta; o histórico de ações começa vazio
+    if (!Array.isArray(window.state.team) || !window.state.team.length) {
+        const u = window.maxcfoUser || {};
+        window.state.team = [{ id: "dono", name: u.name || u.email || "Titular da conta", email: u.email || "", role: "Admin", permissions: ['dashboard', 'finance', 'crm', 'inventory', 'nfe', 'os'], lastLogin: new Date().toISOString() }];
     }
-    window.state.team = team;
-    
-    let audit = JSON.parse(localStorage.getItem('maxcfo_audit') || 'null');
-    if (!audit) {
-        audit = [
-            { id: "a1", time: new Date().toISOString(), user: "João Silva", action: "aprovou pagamento de R$ 5.000,00" },
-            { id: "a2", time: new Date(Date.now() - 3600000).toISOString(), user: "Maria Souza", action: "cadastrou nota de despesa" },
-            { id: "a3", time: new Date(Date.now() - 7200000).toISOString(), user: "João Silva", action: "alterou permissões do contador" }
-        ];
-        localStorage.setItem('maxcfo_audit', JSON.stringify(audit));
-    }
-    window.state.audit = audit;
+    window.state.audit = Array.isArray(window.state.audit) ? window.state.audit : [];
 };
 
 window.renderTeam = function() {
     const tbody = document.getElementById('teamTableBody');
     if (!tbody) return;
+    // Aviso honesto: o cadastro é interno; o login de outras pessoas na mesma empresa ainda não existe
+    const sub = document.querySelector('#view-team .page-subtitle');
+    if (sub) sub.textContent = 'Cadastro interno da equipe e responsáveis. O login próprio de cada membro na mesma empresa chega na próxima versão.';
+    const tit = document.querySelector('#view-team h1');
+    if (tit) tit.textContent = 'Equipe';
     
     let html = '';
     window.state.team.forEach(member => {
@@ -111,7 +99,7 @@ window.addAuditEntry = function(action, userName = "Sistema") {
         user: userName,
         action: action
     });
-    localStorage.setItem('maxcfo_audit', JSON.stringify(window.state.audit));
+    if (window.persist) window.persist();
     
     if (document.getElementById('view-team') && document.getElementById('view-team').classList.contains('active')) {
         if (window.renderAuditTrail) window.renderAuditTrail();
@@ -192,7 +180,7 @@ window.submitTeamMember = function(e) {
         if (window.showToast) window.showToast('Usuário adicionado com sucesso', 'success');
     }
     
-    localStorage.setItem('maxcfo_team', JSON.stringify(window.state.team));
+    if (window.persist) window.persist();
     
     if (window.closeModal) window.closeModal('teamModal');
     document.getElementById('teamForm').reset();
@@ -206,7 +194,7 @@ window.removeTeamMember = function(id) {
     if (!member) return;
     
     window.state.team = window.state.team.filter(m => m.id !== id);
-    localStorage.setItem('maxcfo_team', JSON.stringify(window.state.team));
+    if (window.persist) window.persist();
     
     window.addAuditEntry(`removeu o usuário ${member.name}`);
     

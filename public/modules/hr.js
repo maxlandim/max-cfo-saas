@@ -4,16 +4,8 @@
 
 window.initHRModule = function() {
     if (!window.state) window.state = {};
-    
-    let employees = JSON.parse(localStorage.getItem('maxcfo_employees') || 'null');
-    if (!employees) {
-        employees = [
-            { id: "e1", nome: "Carlos Almeida", cargo: "Desenvolvedor Sênior", salarioBruto: 12500, dataAdmissao: "2023-01-15", ativo: true },
-            { id: "e2", nome: "Ana Paula", cargo: "Analista Financeiro", salarioBruto: 6800, dataAdmissao: "2024-03-10", ativo: true }
-        ];
-        localStorage.setItem('maxcfo_employees', JSON.stringify(employees));
-    }
-    window.state.employees = employees;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.employees = Array.isArray(window.state.employees) ? window.state.employees : [];
 };
 
 window.renderHR = function() {
@@ -121,7 +113,7 @@ window.submitEmployee = function(e) {
         ativo: true
     });
     
-    localStorage.setItem('maxcfo_employees', JSON.stringify(window.state.employees));
+    if (window.persist) window.persist();
     closeModal('hrModal');
     if (window.showToast) window.showToast('Colaborador adicionado!', 'success');
     renderHR();
@@ -131,7 +123,7 @@ window.removeEmployee = function(id) {
     if (!confirm('Demitir colaborador?')) return;
     const emp = window.state.employees.find(e => e.id === id);
     if (emp) emp.ativo = false;
-    localStorage.setItem('maxcfo_employees', JSON.stringify(window.state.employees));
+    if (window.persist) window.persist();
     if (window.showToast) window.showToast('Colaborador desligado.', 'success');
     renderHR();
 };

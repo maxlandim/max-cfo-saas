@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { db, storage, authFetch } from '../../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../context/AuthContext';
 
@@ -51,13 +51,16 @@ export default function DashboardPage() {
     if (!user || !acesso?.acesso || iniciado.current) return;
     iniciado.current = true;
 
-    const workspaceId = user.uid;
     const emailLegado = (user.email || '').toLowerCase();
-    window.workspaceId = workspaceId;
     window.maxcfoUser = { uid: user.uid, name: user.displayName || '', email: user.email || '' };
     // Módulos antigos (equipe, auditoria) leem o usuário daqui
     try { localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName || '', email: user.email || '' })); } catch {}
     window.getAuthToken = () => user.getIdToken();
+    const nomesPlano = { basic: 'Plano Básico', intermediate: 'Plano Intermediário', complete: 'Plano Completo', unlimited: 'Plano Ilimitado' };
+    window.maxcfoPlanoTexto = acesso.motivo === 'teste' ? `Teste grátis · ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia' : 'dias'}`
+      : acesso.motivo === 'admin' ? 'Administrador'
+      : acesso.motivo === 'assinatura' ? (nomesPlano[acesso.plano] || 'Assinante')
+      : '';
 
     let timer = null, pendente = null, aviso = false;
     const gravar = async (wsId, estado) => {
@@ -80,7 +83,7 @@ export default function DashboardPage() {
       clearTimeout(timer);
       timer = setTimeout(() => { const e = pendente; pendente = null; gravar(wsId, e); }, 1200);
     };
-    const salvarAgora = () => { if (pendente) { clearTimeout(timer); gravar(workspaceId, pendente); pendente = null; } };
+    const salvarAgora = () => { if (pendente) { clearTimeout(timer); const e = pendente; pendente = null; return gravar(window.workspaceId, e); } return Promise.resolve(); };
     window.addEventListener('pagehide', salvarAgora);
 
     window.loadStateFromFirebase = async (wsId) => {
@@ -88,8 +91,8 @@ export default function DashboardPage() {
       try {
         const snap = await getDoc(doc(db, 'workspaces', wsId));
         if (snap.exists() && snap.data().data) return JSON.parse(snap.data().data);
-        // Migração: versões antigas guardavam os dados com o e-mail como identificador
-        if (emailLegado) {
+        // Migração: versões antigas guardavam os dados com o e-mail como identificador (só na empresa principal)
+        if (emailLegado && wsId === user.uid) {
           const antigo = await getDoc(doc(db, 'workspaces', emailLegado)).catch(() => null);
           if (antigo && antigo.exists() && antigo.data().data) {
             const dados = JSON.parse(antigo.data().data);
@@ -125,10 +128,70 @@ export default function DashboardPage() {
       document.body.appendChild(script);
     });
 
+    // Empresas do mesmo login (BPO, grupo de empresas). A principal usa o uid; as demais, "<uid>__<id>".
+    const LIMITES = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
+    const limiteEmpresas = acesso.motivo === 'assinatura' ? (LIMITES[acesso.plano] || 1)
+      : acesso.motivo === 'teste' ? 3 : 9999; // admin e modo de configuração
+    const chaveAtiva = 'maxcfo_empresa_' + user.uid;
+    const perfilRef = doc(db, 'perfis', user.uid);
+    const empresas = { lista: [], ativa: '', limite: limiteEmpresas, plano: acesso.plano || null, motivo: acesso.motivo };
+    const novoIdEmpresa = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, '0');
+    const salvarPerfil = () => setDoc(perfilRef, { empresas: empresas.lista, principal: empresas.principal || '', updatedAt: new Date().toISOString() }, { merge: true });
+    empresas.espacoDe = (id) => (id ? `${user.uid}__${id}` : user.uid);
+    empresas.trocar = async (id) => {
+      await salvarAgora();
+      try { if (id) localStorage.setItem(chaveAtiva, id); else localStorage.removeItem(chaveAtiva); } catch {}
+      window.location.reload();
+    };
+    empresas.criar = async (nome, cnpj) => {
+      if (1 + empresas.lista.length >= empresas.limite) { // a principal conta como uma
+        return { erro: `Seu plano permite ${empresas.limite} ${empresas.limite === 1 ? 'empresa' : 'empresas'}. Mude de plano para cadastrar mais.` };
+      }
+      const item = { id: novoIdEmpresa(), nome: String(nome || '').trim().slice(0, 80) || 'Nova empresa', cnpj: String(cnpj || '').replace(/\D/g, '').slice(0, 14), criadaEm: new Date().toISOString() };
+      empresas.lista.push(item);
+      await salvarPerfil();
+      // Cria o espaço já com o nome da empresa nas configurações
+      await setDoc(doc(db, 'workspaces', empresas.espacoDe(item.id)), { data: JSON.stringify({ transactions: [], settings: { company: item.nome, cnpj: item.cnpj } }), owner: user.uid, updatedAt: new Date().toISOString() }, { merge: true });
+      return { item };
+    };
+    empresas.renomear = async (id, nome) => {
+      if (!id) { empresas.principal = String(nome || '').slice(0, 80); await salvarPerfil(); return; }
+      const e = empresas.lista.find((x) => x.id === id); if (!e) return;
+      e.nome = String(nome || '').trim().slice(0, 80) || e.nome; await salvarPerfil();
+    };
+    empresas.remover = async (id) => {
+      if (!id) return;
+      empresas.lista = empresas.lista.filter((x) => x.id !== id);
+      await salvarPerfil();
+      try { await deleteDoc(doc(db, 'workspaces', empresas.espacoDe(id))); } catch (e) { console.warn(e); }
+      if (empresas.ativa === id) await empresas.trocar('');
+    };
+    // Lê os dados de todas as empresas (painel do BPO)
+    empresas.carregarTodas = async () => {
+      const todas = [{ id: '', nome: empresas.principal || 'Empresa principal' }].concat(empresas.lista);
+      return Promise.all(todas.map(async (e) => {
+        try {
+          const snap = await getDoc(doc(db, 'workspaces', empresas.espacoDe(e.id)));
+          return { ...e, estado: snap.exists() && snap.data().data ? JSON.parse(snap.data().data) : { transactions: [] }, atualizadoEm: snap.exists() ? snap.data().updatedAt : null };
+        } catch (err) { return { ...e, estado: { transactions: [] }, erro: true }; }
+      }));
+    };
+    window.maxcfoEmpresas = empresas;
+
     (async () => {
-      const v = 'v=4';
+      try {
+        const snap = await getDoc(perfilRef);
+        if (snap.exists()) { empresas.lista = Array.isArray(snap.data().empresas) ? snap.data().empresas : []; empresas.principal = snap.data().principal || ''; }
+      } catch (e) { console.warn('Não foi possível ler a lista de empresas:', e); }
+      let ativa = '';
+      try { ativa = localStorage.getItem(chaveAtiva) || ''; } catch {}
+      if (ativa && !empresas.lista.some((e) => e.id === ativa)) ativa = '';
+      empresas.ativa = ativa;
+      window.workspaceId = empresas.espacoDe(ativa);
+
+      const v = 'v=5';
       if (!document.querySelector(`script[src="/engine.js?${v}"]`)) await loadScript(`/engine.js?${v}`);
-      const modules = ['accountant', 'assets', 'billing', 'budget', 'checkout', 'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance', 'audit', 'os'];
+      const modules = ['financeiro', 'empresas', 'accountant', 'assets', 'billing', 'budget', 'checkout', 'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance', 'audit', 'os'];
       for (const mod of modules) {
         if (!document.querySelector(`script[src="/modules/${mod}.js?${v}"]`)) await loadScript(`/modules/${mod}.js?${v}`);
       }

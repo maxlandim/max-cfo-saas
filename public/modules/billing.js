@@ -4,15 +4,8 @@
 
 window.initBillingModule = function() {
     if (!window.state) window.state = {};
-    let billings = JSON.parse(localStorage.getItem('maxcfo_billings') || 'null');
-    if (!billings) {
-        billings = [
-            { id: "1", cliente: "João Silva", valor: 1500, vencimento: "2026-07-10", tipo: "Boleto", status: "Pendente" },
-            { id: "2", cliente: "Maria Souza", valor: 850, vencimento: "2026-06-25", tipo: "Pix", status: "Vencido" }
-        ];
-        localStorage.setItem('maxcfo_billings', JSON.stringify(billings));
-    }
-    window.state.billings = billings;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.billings = Array.isArray(window.state.billings) ? window.state.billings : [];
 };
 
 window.renderBilling = function() {
@@ -87,7 +80,7 @@ window.markBillingPaid = function(id) {
     const b = window.state.billings.find(x => x.id === id);
     if (!b) return;
     b.status = 'Pago';
-    localStorage.setItem('maxcfo_billings', JSON.stringify(window.state.billings));
+    if (window.persist) window.persist();
     
     // Auto-create transaction
     if (window.state.transactions) {
@@ -99,7 +92,7 @@ window.markBillingPaid = function(id) {
             category: 'Vendas',
             amount: b.valor
         });
-        localStorage.setItem('maxcfo_transactions', JSON.stringify(window.state.transactions));
+        if (window.persist) window.persist();
     }
     
     if (window.showToast) window.showToast('Cobrança recebida e contabilizada!', 'success');
@@ -116,7 +109,7 @@ window.submitBillingForm = function(e) {
         tipo: document.getElementById('bilTipo').value,
         status: 'Pendente'
     });
-    localStorage.setItem('maxcfo_billings', JSON.stringify(window.state.billings));
+    if (window.persist) window.persist();
     closeModal('billingModal');
     if (window.showToast) window.showToast('Cobrança emitida (via Open Finance)!', 'success');
     renderBilling();

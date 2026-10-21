@@ -397,37 +397,11 @@ Acompanhe os cards na página inicial para ver gráficos da evolução históric
     };
   }
 
-  analyzeCreditRisk(document_digits, name, docType) {
-    // Fallback determ e Mock de Risco de Credito (CPF/CNPJ)
-    const hash = document_digits.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    const score = 30 + (hash % 50);
-    const riskLevel = score >= 70 ? "Baixo" : score >= 45 ? "Moderado" : "Alto";
-    
-    // Simulacao de restricoes CADIN/Serasa dependendo do Score
-    const restricoes = [];
-    if (score < 50) restricoes.push("Apontamento Serasa");
-    if (score < 60 && docType === "CNPJ") restricoes.push("Pendencia CADIN");
-    if (score < 40) restricoes.push("Protestos em Cartorio");
-
-    return {
-      isReal: false,
-      name: name,
-      status: restricoes.length > 0 ? "Com Restricoes" : "Regular",
-      capital_social: 0,
-      data_abertura: "",
-      idade: "N/D",
-      sector: "Nao identificado (simulacao)",
-      natureza_juridica: docType === "CPF" ? "Pessoa Fisica" : "Pessoa Juridica",
-      endereco: "",
-      contatos: "",
-      qsa: [],
-      cnaes_secundarios: [],
-      score: score,
-      riskLevel: riskLevel,
-      restricoes: restricoes,
-      docType: docType
-    };
+  analyzeCreditRisk() {
+    // Removido: gerava score e restrições (Serasa, CADIN, protestos) sem nenhuma consulta real.
+    return null;
   }
+
 
   analyzeCompany(cnpj, name) {
     // Fallback determinístico quando a API da Receita não responde

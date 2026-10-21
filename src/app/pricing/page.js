@@ -101,11 +101,13 @@ export default function PricingPage() {
             R$ 49,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
-            <li style={{ marginBottom: '12px' }}>✅ 1 Usuário (Admin)</li>
-            <li style={{ marginBottom: '12px' }}>✅ Estoque Básico (Manual)</li>
-            <li style={{ marginBottom: '12px' }}>✅ CFO IA Limitado</li>
-            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ Sem Integração Bancária</li>
-            <li style={{ marginBottom: '12px', color: '#4a5568' }}>❌ Sem Emissão Fiscal</li>
+            <li style={{ marginBottom: '12px' }}>✅ 1 empresa</li>
+            <li style={{ marginBottom: '12px' }}>✅ Contas a pagar e receber com parcelas</li>
+            <li style={{ marginBottom: '12px' }}>✅ Fluxo de caixa de 90 dias e DRE</li>
+            <li style={{ marginBottom: '12px' }}>✅ Cobrança por Pix e WhatsApp</li>
+            <li style={{ marginBottom: '12px' }}>✅ Conciliação de extrato OFX/CSV</li>
+            <li style={{ marginBottom: '12px' }}>✅ Simulador tributário e da reforma</li>
+            <li style={{ marginBottom: '12px' }}>✅ CFO IA e leitura de boletos com IA</li>
           </ul>
           <button disabled={loading} onClick={() => handleSubscribe('basic')} className="plan-btn">
             {loading ? 'Processando...' : 'Assinar Básico'}
@@ -122,16 +124,16 @@ export default function PricingPage() {
           flexDirection: 'column'
         }}>
           <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Intermediário</h2>
-          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Para pequenas empresas em crescimento.</p>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Para quem cuida de mais de um CNPJ.</p>
           <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
             R$ 129,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
-            <li style={{ marginBottom: '12px' }}>✅ Até 3 Usuários</li>
-            <li style={{ marginBottom: '12px' }}>✅ Estoque + Ordem de Serviço</li>
-            <li style={{ marginBottom: '12px' }}>✅ Importação OFX/CSV</li>
-            <li style={{ marginBottom: '12px' }}>✅ Trilha de Auditoria</li>
-            <li style={{ marginBottom: '12px' }}>✅ CFO IA Ilimitado</li>
+            <li style={{ marginBottom: '12px' }}>✅ Até 3 empresas</li>
+            <li style={{ marginBottom: '12px' }}>✅ Tudo do Básico</li>
+            <li style={{ marginBottom: '12px' }}>✅ Painel multiempresas</li>
+            <li style={{ marginBottom: '12px' }}>✅ Portal do contador (pacote mensal)</li>
+            <li style={{ marginBottom: '12px' }}>✅ Notas fiscais, estoque e OS</li>
           </ul>
           <button disabled={loading} onClick={() => handleSubscribe('intermediate')} className="plan-btn">
             {loading ? 'Processando...' : 'Assinar Intermediário'}
@@ -153,16 +155,16 @@ export default function PricingPage() {
             backgroundColor: '#C5A059', color: '#0B1220', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold'
           }}>MAIS POPULAR</div>
           <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Completo</h2>
-          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Operação de ponta a ponta integrada.</p>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Para BPOs e escritórios em crescimento.</p>
           <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#C5A059', marginBottom: '8px' }}>
             R$ 269,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
-            <li style={{ marginBottom: '12px' }}>✅ Até 5 Usuários</li>
-            <li style={{ marginBottom: '12px' }}>✅ Open Finance Automático</li>
-            <li style={{ marginBottom: '12px' }}>✅ Emissão Fiscal + Boletos</li>
-            <li style={{ marginBottom: '12px' }}>✅ Anexos e GED</li>
-            <li style={{ marginBottom: '12px' }}>✅ Portal do Contador</li>
+            <li style={{ marginBottom: '12px' }}>✅ Até 10 empresas</li>
+            <li style={{ marginBottom: '12px' }}>✅ Tudo do Intermediário</li>
+            <li style={{ marginBottom: '12px' }}>✅ Ideal para BPO financeiro</li>
+            <li style={{ marginBottom: '12px' }}>✅ Comprovantes anexados em cada lançamento</li>
+            <li style={{ marginBottom: '12px' }}>✅ Suporte prioritário pelo WhatsApp</li>
           </ul>
           <button disabled={loading} onClick={() => handleSubscribe('complete')} className="plan-btn-gold">
             {loading ? 'Processando...' : 'Assinar Completo'}
@@ -179,16 +181,15 @@ export default function PricingPage() {
           flexDirection: 'column'
         }}>
           <h2 style={{ fontSize: '24px', color: '#E8EFF8', marginBottom: '8px' }}>Unlimited</h2>
-          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Escalabilidade para Holdings e BPOs.</p>
+          <p style={{ color: '#8899B0', marginBottom: '24px', height: '40px', fontSize: '14px' }}>Sem limite de empresas.</p>
           <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>
             R$ 299,90<span style={{ fontSize: '14px', color: '#8899B0', fontWeight: 'normal' }}>/mês</span>
           </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0', flex: 1, color: '#E8EFF8', fontSize: '14px' }}>
-            <li style={{ marginBottom: '12px' }}>✅ Usuários Ilimitados</li>
+            <li style={{ marginBottom: '12px' }}>✅ Empresas ilimitadas</li>
             <li style={{ marginBottom: '12px' }}>✅ Tudo do plano Completo</li>
-            <li style={{ marginBottom: '12px' }}>✅ Múltiplos CNPJs</li>
-            <li style={{ marginBottom: '12px' }}>✅ Acesso à API</li>
-            <li style={{ marginBottom: '12px' }}>✅ Relatórios White-label</li>
+            <li style={{ marginBottom: '12px' }}>✅ Para escritórios e grupos</li>
+            <li style={{ marginBottom: '12px' }}>✅ Suporte prioritário pelo WhatsApp</li>
           </ul>
           <button disabled={loading} onClick={() => handleSubscribe('unlimited')} className="plan-btn">
             {loading ? 'Processando...' : 'Assinar Unlimited'}

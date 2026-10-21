@@ -2,15 +2,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Dados do painel: cada conta só lê e grava o próprio espaço (o id é o uid do usuário).
-    // A segunda condição permite ler o espaço antigo, que usava o e-mail como id, para a migração automática.
+    // Espaço de dados de uma empresa. O dono é o usuário cujo uid é o id do espaço (empresa principal)
+    // ou o prefixo do id, no formato "<uid>__<empresa>" (demais empresas do mesmo login, para BPOs e grupos).
+    function donoDoEspaco(wsId) {
+      return request.auth != null
+        && (wsId == request.auth.uid || wsId.matches(request.auth.uid + '__[a-z0-9]{4,24}'));
+    }
+
     match /workspaces/{wsId} {
-      allow read: if request.auth != null
-        && (request.auth.uid == wsId
-            || (request.auth.token.email != null && request.auth.token.email.lower() == wsId));
-      allow create, update: if request.auth != null && request.auth.uid == wsId
-        && request.resource.data.owner == request.auth.uid;
-      allow delete: if request.auth != null && request.auth.uid == wsId;
+      // A segunda condição permite ler o espaço antigo, que usava o e-mail como id, para a migração automática.
+      allow read: if donoDoEspaco(wsId)
+        || (request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == wsId);
+      allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
+      // A empresa principal não pode ser apagada pelo painel
+      allow delete: if donoDoEspaco(wsId) && wsId != request.auth.uid;
+    }
+
+    // Lista de empresas do usuário (nomes e CNPJs), lida e gravada só por ele.
+    match /perfis/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
     // Assinaturas: o usuário pode ler a própria, mas só o servidor (Firebase Admin) escreve.
