@@ -89,7 +89,7 @@
         '<div class="lay-mod-itens">' + on.map(function (i) { return item(i, true); }).join('') +
         (off.length ? (verMais[sec[0]] ? off.map(function (i) { return item(i, true); }).join('') + '<button class="lay-vermais" data-mais="' + esc(sec[0]) + '">Mostrar menos</button>' : '<button class="lay-vermais" data-mais="' + esc(sec[0]) + '">+ ' + off.length + ' outra' + (off.length > 1 ? 's' : '') + '</button>') : '') + '</div></div>';
     });
-    html += '<button class="lay-btn-menu" onclick="layout.personalizar()">Personalizar menu</button>';
+    html += '<button class="lay-btn-menu" onclick="layout.personalizar()">Personalizar menu</button>' + (window.maxcfoSair ? '<button class="lay-btn-menu" style="border-style:solid" onclick="if(confirm(\'Sair da sua conta neste aparelho?\'))window.maxcfoSair()">Sair da conta</button>' : '');
     nav.innerHTML = html;
     nav.querySelectorAll('.nav-item').forEach(function (a) { a.addEventListener('click', function () { window.switchView(a.dataset.view); }); });
     nav.querySelectorAll('.lay-mod-h').forEach(function (h) {
