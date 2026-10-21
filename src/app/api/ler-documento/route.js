@@ -22,10 +22,15 @@ export async function POST(request) {
     if (!genAI) return NextResponse.json({ error: 'A leitura com IA ainda não foi ativada neste site (falta a chave da IA no servidor).' }, { status: 503 });
 
     const body = await request.json();
-    const arquivo = String(body.arquivo || '');
-    const tipo = String(body.tipo || '').toLowerCase();
+    const arquivo = String(body.arquivo || '').replace(/^data:[^,]*,/, '');
     if (!arquivo) return NextResponse.json({ error: 'Envie um arquivo.' }, { status: 400 });
+    // O tipo é confirmado pelo conteúdo (o navegador às vezes manda PDF sem tipo ou como "octet-stream")
+    const inicio = arquivo.slice(0, 16);
+    const pelaAssinatura = inicio.startsWith('JVBER') ? 'application/pdf' : inicio.startsWith('/9j/') ? 'image/jpeg' : inicio.startsWith('iVBOR') ? 'image/png' : inicio.startsWith('UklGR') ? 'image/webp' : '';
+    let tipo = String(body.tipo || '').toLowerCase().replace('image/jpg', 'image/jpeg').replace('application/x-pdf', 'application/pdf');
+    if (pelaAssinatura) tipo = pelaAssinatura;
     if (!TIPOS.includes(tipo)) return NextResponse.json({ error: 'Use foto (JPG, PNG) ou PDF.' }, { status: 400 });
+    const textoPdf = String(body.texto || '').slice(0, 20000);
     if (arquivo.length * 0.75 > LIMITE_BYTES) return NextResponse.json({ error: 'O arquivo precisa ter até 3 MB.' }, { status: 413 });
 
     const cats = body.categorias && typeof body.categorias === 'object' ? body.categorias : {};
@@ -50,11 +55,25 @@ Hoje é ${hoje}. Extraia os dados e responda SOMENTE com um JSON neste formato:
 }
 Categorias de DESPESA: ${lista('DESPESA').join(' | ')}
 Categorias de RECEITA: ${lista('RECEITA').join(' | ')}
-Se não conseguir ler um campo, use "" (ou 0 para valor). Não invente.`;
+Se não conseguir ler um campo, use "" (ou 0 para valor). Não invente.${textoPdf ? `
+
+Texto extraído do arquivo (use para conferir números, nomes e a linha digitável):
+---
+${textoPdf}
+---` : ''}`;
 
     const model = genAI.getGenerativeModel({ model: MODELO, generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } });
-    const result = await model.generateContent([{ inlineData: { data: arquivo, mimeType: tipo } }, { text: prompt }]);
-    const texto = result.response.text();
+    let texto;
+    try {
+      const result = await model.generateContent([{ inlineData: { data: arquivo, mimeType: tipo } }, { text: prompt }]);
+      texto = result.response.text();
+    } catch (e) {
+      console.error('Gemini recusou o arquivo:', tipo, Math.round(arquivo.length * 0.75 / 1024) + ' KB', e && e.message);
+      const msg = String((e && e.message) || '');
+      if (/API key|API_KEY|permission|403/i.test(msg)) return NextResponse.json({ error: 'A chave da IA no servidor não é válida. Confira a GEMINI_API_KEY na Vercel.' }, { status: 503 });
+      if (/quota|429|rate/i.test(msg)) return NextResponse.json({ error: 'A IA está com muitos pedidos agora. Tente de novo em 1 minuto.' }, { status: 429 });
+      return NextResponse.json({ error: tipo === 'application/pdf' ? 'A IA não conseguiu abrir este PDF (pode estar protegido por senha).' : 'A IA não conseguiu ler esta imagem. Tente uma foto mais nítida.' }, { status: 422 });
+    }
     let dados;
     try { dados = JSON.parse(texto.replace(/^```json\s*|\s*```$/g, '')); } catch { return NextResponse.json({ error: 'Não consegui entender o documento. Tente uma foto mais nítida.' }, { status: 422 }); }
 

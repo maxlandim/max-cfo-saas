@@ -1481,7 +1481,7 @@
       '<p style="color:var(--text-muted);margin-bottom:14px">Envie a foto ou o PDF. A IA lê valor, vencimento, fornecedor e sugere a categoria. Você confere antes de salvar.</p>' +
       '<label class="drop-zone" style="display:block;cursor:pointer;text-align:center;padding:28px;border:2px dashed var(--gold-border);border-radius:var(--radius-sm)" id="finIADrop">' +
       '<div style="font-size:34px">🧾</div><div style="font-weight:700;margin-top:6px">Toque para escolher o arquivo</div><div class="fin-sub">Foto ou PDF até 3 MB</div>' +
-      '<input type="file" id="finIAArquivo" accept="image/*,application/pdf" style="display:none" onchange="fin.lerArquivo(this.files[0])"></label>' +
+      '<input type="file" id="finIAArquivo" accept="image/*,application/pdf,.pdf" style="display:none" onchange="fin.lerArquivo(this.files[0])"></label>' +
       '<div id="finIAStatus" style="margin-top:12px"></div>',
       '<button class="btn-ghost" onclick="fin.fechar(\'finIAModal\')">Cancelar</button>');
     var drop = el('finIADrop');
@@ -1511,24 +1511,111 @@
       leitor.readAsDataURL(arq);
     });
   };
+  // Tipo do arquivo pelo conteúdo/extensão (no Windows e em downloads do WhatsApp o PDF às vezes vem sem tipo)
+  F.tipoArquivo = function (arq) {
+    var t = String(arq.type || '').toLowerCase(), n = String(arq.name || '').toLowerCase();
+    if (t === 'application/pdf' || t === 'application/x-pdf' || /\.pdf$/.test(n)) return 'application/pdf';
+    if (/^image\/(jpeg|jpg|png|webp|heic|heif)$/.test(t)) return t.replace('jpg', 'jpeg');
+    if (/\.(jpe?g)$/.test(n)) return 'image/jpeg';
+    if (/\.png$/.test(n)) return 'image/png';
+    if (/\.webp$/.test(n)) return 'image/webp';
+    if (/\.(heic|heif)$/.test(n)) return 'image/heic';
+    return t;
+  };
+  function lerBase64(arq) {
+    return new Promise(function (ok, falha) { var r = new FileReader(); r.onerror = function () { falha(new Error('Não consegui abrir o arquivo.')); }; r.onload = function () { ok(String(r.result).split(',')[1] || ''); }; r.readAsDataURL(arq); });
+  }
+  // PDF: extrai o texto e faz uma imagem da 1ª página (plano B quando a IA não consegue abrir o PDF)
+  var pdfjs = null;
+  function carregarPdfJs() {
+    if (pdfjs) return pdfjs;
+    pdfjs = new Promise(function (ok, falha) {
+      if (window.pdfjsLib) return ok(window.pdfjsLib);
+      var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      sc.onload = function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; ok(window.pdfjsLib); };
+      sc.onerror = function () { pdfjs = null; falha(new Error('pdf.js indisponível')); };
+      document.head.appendChild(sc);
+    });
+    return pdfjs;
+  }
+  F.analisarPdf = async function (arq) {
+    var lib = await carregarPdfJs();
+    var doc = await lib.getDocument({ data: new Uint8Array(await arq.arrayBuffer()) }).promise;
+    var texto = '', pags = Math.min(doc.numPages, 3);
+    for (var i = 1; i <= pags; i++) { var pg = await doc.getPage(i); var c = await pg.getTextContent(); texto += c.items.map(function (x) { return x.str; }).join(' ') + '\n'; }
+    var p1 = await doc.getPage(1), vp0 = p1.getViewport({ scale: 1 }), escala = Math.min(2.2, 1800 / Math.max(vp0.width, vp0.height)), vp = p1.getViewport({ scale: escala });
+    var cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+    var ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    await p1.render({ canvasContext: ctx, viewport: vp }).promise;
+    return { texto: texto.replace(/[ \t]+/g, ' ').trim().slice(0, 20000), imagem: cv.toDataURL('image/jpeg', 0.88).split(',')[1], paginas: doc.numPages };
+  };
+  // Boleto pela linha digitável: valor e vencimento sem depender da IA
+  F.boletoDaLinha = function (texto) {
+    var t = String(texto || ''), cands = [];
+    [/\d{5}[.\s]?\d{5}\s*\d{5}[.\s]?\d{6}\s*\d{5}[.\s]?\d{6}\s*\d\s*\d{14}/g, /8\d{10}[-\s]?\d\s*\d{11}[-\s]?\d\s*\d{11}[-\s]?\d\s*\d{11}[-\s]?\d/g, /\b\d{47,48}\b/g].forEach(function (re) {
+      (t.match(re) || []).forEach(function (x) { cands.push(x.replace(/\D/g, '')); });
+    });
+    for (var i = 0; i < cands.length; i++) {
+      var d = cands[i];
+      if (d.length === 47 && d[0] !== '8') { // boleto bancário
+        var fator = +d.slice(33, 37), valor = +d.slice(37, 47) / 100, venc = '';
+        if (fator >= 1000) { var base = new Date(2025, 1, 22, 12); base.setDate(base.getDate() + (fator - 1000)); venc = base.getFullYear() + '-' + pad(base.getMonth() + 1) + '-' + pad(base.getDate()); }
+        if (venc && F.diffDias(F.hoje(), venc) < -3000) venc = '';
+        return { linha: d, valor: r2(valor), vencimento: venc, tipo: 'bancario' };
+      }
+      if (d.length === 48 && d[0] === '8') { // conta de consumo / tributo (arrecadação)
+        var cod = d.slice(0, 11) + d.slice(12, 23) + d.slice(24, 35) + d.slice(36, 47);
+        var real = cod[2] === '6' || cod[2] === '8';
+        return { linha: d, valor: real ? r2(+cod.slice(4, 15) / 100) : 0, vencimento: '', tipo: 'arrecadacao' };
+      }
+    }
+    return null;
+  };
+  async function enviarLeitura(base64, tipo, texto) {
+    var token = window.getAuthToken ? await window.getAuthToken() : '';
+    var r = await fetch('/api/ler-documento', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token ? 'Bearer ' + token : '' }, body: JSON.stringify({ arquivo: base64, tipo: tipo, texto: texto || '', categorias: window.CATEGORIES }) });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok || !d.dados) { var e = new Error(d.error || (r.status === 413 ? 'O arquivo é grande demais para enviar.' : 'Não foi possível ler o documento.')); e.status = r.status; throw e; }
+    return d.dados;
+  }
   F.lerArquivo = async function (arq) {
     var status = el('finIAStatus'); if (!arq || !status) return;
-    if (arq.type === 'application/pdf' && arq.size > 3 * 1024 * 1024) { status.innerHTML = '<div class="fin-alerta red">O PDF precisa ter até 3 MB.</div>'; return; }
-    if (arq.size > 15 * 1024 * 1024) { status.innerHTML = '<div class="fin-alerta red">Arquivo grande demais.</div>'; return; }
+    var tipo = F.tipoArquivo(arq);
+    if (tipo !== 'application/pdf' && !/^image\//.test(tipo)) { status.innerHTML = '<div class="fin-alerta red">Use uma foto (JPG ou PNG) ou um PDF.</div>'; return; }
+    if (arq.size > 15 * 1024 * 1024) { status.innerHTML = '<div class="fin-alerta red">Arquivo grande demais (máximo 15 MB).</div>'; return; }
     status.innerHTML = '<div class="fin-alerta gold">⏳ Lendo o documento…</div>';
+    var dados = null, erro = null, pdf = null, linha = null;
     try {
-      var prep = await F.prepararArquivo(arq);
-      if (prep.base64.length * 0.75 > 3.2 * 1024 * 1024) throw new Error('O arquivo precisa ter até 3 MB.');
-      var token = window.getAuthToken ? await window.getAuthToken() : '';
-      var r = await fetch('/api/ler-documento', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token ? 'Bearer ' + token : '' }, body: JSON.stringify({ arquivo: prep.base64, tipo: prep.tipo || arq.type, categorias: window.CATEGORIES }) });
-      var d = await r.json().catch(function () { return {}; });
-      if (!r.ok || !d.dados) throw new Error(d.error || 'Não foi possível ler o documento.');
-      fechar('finIAModal');
-      F.preencherComLeitura(d.dados);
-      F.anexoPendente = arq; // o arquivo original vira o anexo do lançamento
-    } catch (e) {
-      status.innerHTML = '<div class="fin-alerta red">' + esc(e.message) + '</div>';
+      if (tipo === 'application/pdf') {
+        try { pdf = await F.analisarPdf(arq); } catch (e) { console.warn('Leitura local do PDF:', e); }
+        linha = pdf ? F.boletoDaLinha(pdf.texto) : null;
+        if (arq.size <= 2.9 * 1024 * 1024) {
+          try { dados = await enviarLeitura(await lerBase64(arq), 'application/pdf', pdf && pdf.texto); } catch (e) { erro = e; }
+        }
+        // Plano B: PDF grande, protegido ou que a IA não abriu → manda a imagem da 1ª página
+        if (!dados && pdf && pdf.imagem && !(erro && [401, 429, 503].indexOf(erro.status) > -1)) {
+          status.innerHTML = '<div class="fin-alerta gold">⏳ Lendo a primeira página do PDF…</div>';
+          try { dados = await enviarLeitura(pdf.imagem, 'image/jpeg', pdf.texto); erro = null; } catch (e) { erro = e; }
+        }
+      } else {
+        var prep = await F.prepararArquivo(arq);
+        if (prep.base64.length * 0.75 > 3.2 * 1024 * 1024) throw new Error('A foto precisa ter até 3 MB.');
+        dados = await enviarLeitura(prep.base64, prep.tipo || tipo, '');
+      }
+    } catch (e) { erro = e; }
+    // Sem IA: se o PDF tem a linha digitável, preenche valor e vencimento por ela
+    if (!dados && linha && linha.valor > 0) dados = { tipo: 'DESPESA', descricao: 'Boleto', valor: linha.valor, vencimento: linha.vencimento, linhaDigitavel: linha.linha, forma: 'Boleto', _soLinha: true };
+    if (!dados) { status.innerHTML = '<div class="fin-alerta red">' + esc((erro && erro.message) || 'Não foi possível ler o documento.') + '</div>'; return; }
+    if (linha) { // a linha digitável é a fonte mais confiável de valor e vencimento
+      if (!(dados.valor > 0) && linha.valor > 0) dados.valor = linha.valor;
+      if (!dados.vencimento && linha.vencimento) dados.vencimento = linha.vencimento;
+      if (!dados.linhaDigitavel) dados.linhaDigitavel = linha.linha;
+      if (!dados.forma) dados.forma = 'Boleto';
     }
+    fechar('finIAModal');
+    F.preencherComLeitura(dados);
+    F.anexoPendente = arq; // o arquivo original vira o anexo do lançamento
+    if (dados._soLinha) setTimeout(function () { var sub = el('txModalSubtitle'); if (sub) sub.textContent = 'Valor e vencimento lidos do código do boleto. Preencha a descrição e confira.'; }, 150);
   };
   F.preencherComLeitura = function (x) {
     var tipo = x.tipo === 'RECEITA' ? 'RECEITA' : 'DESPESA';
