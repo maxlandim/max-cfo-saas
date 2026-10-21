@@ -257,8 +257,20 @@
     secoes: SECOES
   };
 
+  // Botão de tema claro/escuro na barra do topo
+  function botaoTema() {
+    if (el('temaBtn')) return;
+    var dir = document.querySelector('.topbar-right'); if (!dir) return;
+    var b = document.createElement('button'); b.id = 'temaBtn'; b.className = 'topbar-icon-btn tema-btn'; b.setAttribute('aria-label', 'Tema claro ou escuro');
+    b.addEventListener('click', function () { if (window.alternarTema) window.alternarTema(); var sel = el('cfTema'); if (sel) { try { sel.value = localStorage.getItem('maxcfo_tema') || 'escuro'; } catch (e) { } } });
+    var notif = el('notifBtn'); dir.insertBefore(b, notif || dir.firstChild);
+    var fr = el('tributarioFrame');
+    if (fr) fr.addEventListener('load', function () { try { fr.contentDocument.documentElement.dataset.theme = document.documentElement.dataset.tema === 'claro' ? 'light' : 'dark'; } catch (e) { } });
+  }
+
   window.initLayoutModule = function () {
     estilos();
+    botaoTema(); if (window.applySettings) window.applySettings();
     montarMenu();
     barraCelular();
     window.quickAdd = novo;

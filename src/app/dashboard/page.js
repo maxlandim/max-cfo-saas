@@ -114,6 +114,8 @@ export default function DashboardPage() {
     if (!user || !acesso?.acesso || iniciado.current) return;
     iniciado.current = true;
     if (raiz.current && !raiz.current.firstChild) raiz.current.innerHTML = PAINEL_HTML;
+    // aplica o tema salvo neste aparelho antes de mostrar o painel (evita piscar)
+    try { const t = localStorage.getItem('maxcfo_tema'); const claro = t === 'claro' || (t === 'auto' && window.matchMedia('(prefers-color-scheme: light)').matches); document.documentElement.dataset.tema = claro ? 'claro' : 'escuro'; } catch {}
 
     const emailLegado = (user.email || '').toLowerCase();
     window.maxcfoUser = { uid: user.uid, name: user.displayName || '', email: user.email || '' };
@@ -338,7 +340,7 @@ export default function DashboardPage() {
   return (
     <>
       {carregando && (
-        <div style={{ position: 'fixed', inset: 0, background: '#070B14', zIndex: 99998, display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'center', justifyContent: 'center', color: '#8899B0', fontFamily: 'var(--font-inter), sans-serif', fontSize: 14 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg, #070B14)', zIndex: 99998, display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'center', justifyContent: 'center', color: '#8899B0', fontFamily: 'var(--font-inter), sans-serif', fontSize: 14 }}>
           <style>{'@keyframes maxcfoGira{to{transform:rotate(360deg)}}'}</style>
           <div style={{ width: 54, height: 54, borderRadius: 14, background: 'linear-gradient(135deg,#C5A059,#8a6d2f)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>⚡</div>
           <div style={{ width: 26, height: 26, border: '3px solid rgba(197,160,89,.25)', borderTopColor: '#C5A059', borderRadius: '50%', animation: 'maxcfoGira .8s linear infinite' }} />

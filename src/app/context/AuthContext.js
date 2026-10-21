@@ -35,6 +35,8 @@ export function AuthProvider({ children }) {
       // cópias locais dos dados das empresas não ficam no aparelho depois de sair
       Object.keys(localStorage).filter((k) => k.startsWith('maxcfo_copia_') || k.startsWith('maxcfo_acesso_')).forEach((k) => localStorage.removeItem(k));
     } catch {}
+    // o tema do painel não vale para as páginas de fora
+    try { const r = document.documentElement; delete r.dataset.tema; ['--bg', '--bg-surf', '--bg-card'].forEach((k) => r.style.removeProperty(k)); } catch {}
     router.push('/login');
   };
 
