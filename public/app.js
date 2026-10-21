@@ -154,6 +154,7 @@ var initMaxCfoApp = async () => {
   if (window.initAuditModule) window.initAuditModule();
   if (window.initOperacaoModule) window.initOperacaoModule();
   if (window.initGestaoModule) window.initGestaoModule();
+  if (window.initLayoutModule) window.initLayoutModule();
 
   updateSettingsPanel();
   renderDashboard();
@@ -426,6 +427,7 @@ function openNotifModal() {
 // DASHBOARD
 // ════════════════════════════════════════════
 function renderDashboard() {
+  if (window.renderInicio) return window.renderInicio();
   const F = window.fin;
   if (!F) return;
   F.garantirModelo();
