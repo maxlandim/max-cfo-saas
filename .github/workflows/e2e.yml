@@ -3,6 +3,8 @@ on:
   push:
     branches: [teste-e2e]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -12,8 +14,15 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install playwright==1.47.0 && python -m playwright install --with-deps chromium
-      - run: python tests/e2e_producao.py
+      - run: python e2e_producao.py 2>&1 | tee saida_log.txt
         working-directory: tests
+        continue-on-error: true
+      - name: Publica o resultado no branch resultado-e2e
+        if: always()
+        run: |
+          mkdir -p /tmp/r && cp -r tests/saida /tmp/r/ 2>/dev/null; cp tests/saida_log.txt /tmp/r/ 2>/dev/null
+          git config user.name robo-teste && git config user.email robo@users.noreply.github.com
+          git checkout --orphan resultado-e2e && git rm -rfq . && cp -r /tmp/r/* . && git add -A && git commit -qm "resultado $GITHUB_RUN_ID" && git push -f origin resultado-e2e
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: saida, path: tests/saida }
