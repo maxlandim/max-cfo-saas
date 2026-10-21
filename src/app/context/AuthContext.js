@@ -30,7 +30,11 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     const [fb, fa] = await Promise.all([import('../../lib/firebase'), import('firebase/auth')]);
     await fa.signOut(fb.auth);
-    try { localStorage.removeItem('maxcfo_user'); } catch {}
+    try {
+      localStorage.removeItem('maxcfo_user');
+      // cópias locais dos dados das empresas não ficam no aparelho depois de sair
+      Object.keys(localStorage).filter((k) => k.startsWith('maxcfo_copia_') || k.startsWith('maxcfo_acesso_')).forEach((k) => localStorage.removeItem(k));
+    } catch {}
     router.push('/login');
   };
 

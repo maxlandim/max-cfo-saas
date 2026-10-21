@@ -1,10 +1,11 @@
-// Firebase no navegador: login, banco (Firestore) e arquivos (Storage).
+// Firebase no navegador: login e banco (Firestore). O Storage (anexos) é carregado só quando usado.
 // As chaves Web do Firebase são públicas por natureza; a proteção dos dados vem das
 // regras em firestore.rules e storage.rules.
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+// Firestore "lite": cada leitura/gravação é uma chamada HTTPS comum. A versão completa abre um canal
+// de streaming que antivírus e proxies costumam travar (o painel ficava minutos carregando).
+import { getFirestore } from 'firebase/firestore/lite';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyAsQS2b0oYMHJ_BExiXH0xgD49j68pwZ6M',
@@ -25,7 +26,6 @@ try {
 export { app };
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
-export const storage = app ? getStorage(app) : null;
 export const googleProvider = app && typeof window !== 'undefined' ? new GoogleAuthProvider() : null;
 
 // Token de sessão para chamar as rotas /api do próprio site.

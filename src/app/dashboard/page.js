@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { db, storage, authFetch } from '../../lib/firebase';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { app, db, authFetch } from '../../lib/firebase';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore/lite';
 import { useAuth } from '../context/AuthContext';
 
 // Campos do estado do painel que não devem ir para a nuvem (são temporários da tela)
@@ -15,6 +14,14 @@ const LIMITE_DOC = 900 * 1024; // o Firestore aceita até 1 MB por documento
 const VERSAO = 'v=' + (process.env.NEXT_PUBLIC_BUILD_ID || '9');
 const SCRIPTS = ['/engine.js', ...['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'layout'].map((m) => `/modules/${m}.js`), '/app.js'].map((s) => `${s}?${VERSAO}`);
 const CACHE_ACESSO_MS = 12 * 3600 * 1000; // a verificação da assinatura é refeita em segundo plano
+
+// Nenhuma etapa de rede pode travar a abertura: depois do prazo, desiste e segue com o plano B
+function comPrazo(promessa, ms) {
+  return Promise.race([promessa, new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), ms))]);
+}
+// Cópia dos dados da empresa neste aparelho: abre mesmo com a nuvem lenta e não perde nada offline
+function lerCopia(wsId) { try { return JSON.parse(localStorage.getItem('maxcfo_copia_' + wsId) || 'null'); } catch { return null; } }
+function gravarCopia(wsId, c) { try { localStorage.setItem('maxcfo_copia_' + wsId, JSON.stringify(c)); } catch {} }
 
 function lerCache(chave) { try { const v = JSON.parse(localStorage.getItem(chave) || 'null'); return v && Date.now() - v.t < CACHE_ACESSO_MS ? v.dados : null; } catch { return null; } }
 function gravarCache(chave, dados) { try { localStorage.setItem(chave, JSON.stringify({ t: Date.now(), dados })); } catch {} }
@@ -29,9 +36,12 @@ function limparEstado(estado) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [acesso, setAcesso] = useState(null); // resposta de /api/subscription
   const [pronto, setPronto] = useState(false);
+  const [etapa, setEtapa] = useState('');
+  const [segundos, setSegundos] = useState(0);
+  const [erroNuvem, setErroNuvem] = useState(false);
   const iniciado = useRef(false);
   const leituras = useRef(null); // leituras do Firestore iniciadas junto com o login
 
@@ -42,6 +52,13 @@ export default function DashboardPage() {
       const l = document.createElement('link'); l.rel = 'preload'; l.as = 'script'; l.href = src; document.head.appendChild(l);
     }
   }, []);
+
+  // Relógio da tela de carregamento (mostra há quanto tempo está abrindo)
+  useEffect(() => {
+    if (pronto) return;
+    const t0 = Date.now(), id = setInterval(() => setSegundos(Math.round((Date.now() - t0) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [pronto]);
 
   // 1) Sem login, volta para a tela de entrada
   useEffect(() => {
@@ -71,15 +88,21 @@ export default function DashboardPage() {
 
     (async () => {
       try {
-        const r = await authFetch('/api/subscription');
+        const r = await comPrazo(authFetch('/api/subscription'), 12000);
         const dados = await r.json();
         if (!vivo) return;
         if (r.ok) {
           gravarCache(chave, dados);
           if (!anterior || !dados.acesso || anterior.motivo !== dados.motivo || anterior.plano !== dados.plano || anterior.diasRestantes !== dados.diasRestantes) setAcesso(dados);
         } else if (!anterior) setAcesso({ acesso: false, motivo: 'erro', erro: dados.error });
-      } catch {
-        if (vivo && !anterior) setAcesso({ acesso: false, motivo: 'erro', erro: 'Sem conexão. Verifique a internet e recarregue a página.' });
+      } catch (e) {
+        // Servidor lento ou fora: abre o painel e confere de novo em seguida (bloqueia se o acesso tiver acabado)
+        if (!vivo) return;
+        console.warn('Verificação de acesso:', e.message);
+        if (!anterior) setAcesso({ acesso: true, motivo: 'verificando' });
+        setTimeout(async () => {
+          try { const r2 = await authFetch('/api/subscription'); const d2 = await r2.json(); if (vivo && r2.ok) { gravarCache(chave, d2); setAcesso(d2); } } catch {}
+        }, 20000);
       }
     })();
     return () => { vivo = false; };
@@ -95,24 +118,36 @@ export default function DashboardPage() {
     // Módulos antigos (equipe, auditoria) leem o usuário daqui
     try { localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName || '', email: user.email || '' })); } catch {}
     window.getAuthToken = () => user.getIdToken();
+    window.maxcfoSair = async () => { await salvarAgora(); await logout(); };
     const nomesPlano = { basic: 'Plano Básico', intermediate: 'Plano Intermediário', complete: 'Plano Completo', unlimited: 'Plano Ilimitado' };
     window.maxcfoPlanoTexto = acesso.motivo === 'teste' ? `Teste grátis · ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia' : 'dias'}`
       : acesso.motivo === 'admin' ? 'Administrador'
       : acesso.motivo === 'assinatura' ? (nomesPlano[acesso.plano] || 'Assinante')
       : '';
 
-    let timer = null, pendente = null, aviso = false;
+    let timer = null, pendente = null, aviso = false, avisoNuvem = false;
+    // Enquanto a nuvem não foi lida com sucesso, nada é enviado para ela (evita apagar dados com um painel vazio)
+    let nuvemLida = false;
     const gravar = async (wsId, estado) => {
+      const json = JSON.stringify(limparEstado(estado));
+      const copia = lerCopia(wsId) || {};
+      gravarCopia(wsId, { ...copia, t: Date.now(), pendente: true, dados: json });
+      if (!nuvemLida) return;
       try {
-        const json = JSON.stringify(limparEstado(estado));
         if (json.length > LIMITE_DOC) {
           if (!aviso && window.showToast) window.showToast('Seus dados estão perto do limite de armazenamento. Exporte um backup em Configurações.', 'error');
           aviso = true;
         }
-        await setDoc(doc(db, 'workspaces', wsId), { data: json, owner: user.uid, updatedAt: new Date().toISOString() }, { merge: true });
+        const quando = new Date().toISOString();
+        await comPrazo(setDoc(doc(db, 'workspaces', wsId), { data: json, owner: user.uid, updatedAt: quando }, { merge: true }), 20000);
+        const atual = lerCopia(wsId) || {};
+        if (atual.dados === json) gravarCopia(wsId, { ...atual, pendente: false, nuvem: quando });
+        avisoNuvem = false;
       } catch (e) {
         console.error('Erro ao salvar na nuvem:', e);
-        if (window.showToast) window.showToast('Não foi possível salvar na nuvem agora. Seus dados continuam neste aparelho.', 'error');
+        if (!avisoNuvem && window.showToast) window.showToast('Sem conexão com a nuvem agora. Suas alterações ficam guardadas neste aparelho e sobem quando a conexão voltar.', 'error');
+        avisoNuvem = true;
+        clearTimeout(timer); timer = setTimeout(() => { if (window.state) gravar(wsId, window.state); }, 30000);
       }
     };
     // Junta várias alterações seguidas numa gravação só
@@ -125,33 +160,75 @@ export default function DashboardPage() {
     const salvarAgora = () => { if (pendente) { clearTimeout(timer); const e = pendente; pendente = null; return gravar(window.workspaceId, e); } return Promise.resolve(); };
     window.addEventListener('pagehide', salvarAgora);
 
+    // Lê a nuvem (com prazo). Se a cópia do aparelho tiver alterações que ainda não subiram, ela vale.
+    const lerNuvem = async (wsId, pre) => {
+      const snap = (pre && await comPrazo(pre, 15000)) || await comPrazo(getDoc(doc(db, 'workspaces', wsId)), 15000);
+      if (snap.exists() && snap.data().data) return { dados: snap.data().data, quando: snap.data().updatedAt || '' };
+      if (emailLegado && wsId === user.uid) {
+        // Migração: versões antigas guardavam os dados com o e-mail como identificador (só na empresa principal)
+        const antigo = await comPrazo(getDoc(doc(db, 'workspaces', emailLegado)), 10000).catch(() => null);
+        if (antigo && antigo.exists() && antigo.data().data) return { dados: antigo.data().data, quando: '', migrar: true };
+      }
+      return { dados: null, quando: '' };
+    };
     window.loadStateFromFirebase = async (wsId) => {
       if (!wsId) return null;
+      setEtapa('Lendo os dados da empresa…');
+      const pre = leituras.current && leituras.current.wsId === wsId ? leituras.current.espaco : null;
+      if (leituras.current) leituras.current.espaco = null; // a leitura antecipada vale só uma vez
+      const copia = lerCopia(wsId);
       try {
-        const pre = leituras.current && leituras.current.wsId === wsId ? leituras.current.espaco : null;
-        if (leituras.current) leituras.current.espaco = null; // a leitura antecipada vale só uma vez
-        const snap = (pre && await pre) || await getDoc(doc(db, 'workspaces', wsId));
-        if (snap.exists() && snap.data().data) return JSON.parse(snap.data().data);
-        // Migração: versões antigas guardavam os dados com o e-mail como identificador (só na empresa principal)
-        if (emailLegado && wsId === user.uid) {
-          const antigo = await getDoc(doc(db, 'workspaces', emailLegado)).catch(() => null);
-          if (antigo && antigo.exists() && antigo.data().data) {
-            const dados = JSON.parse(antigo.data().data);
-            await gravar(wsId, dados);
-            return dados;
-          }
+        const n = await lerNuvem(wsId, pre);
+        nuvemLida = true;
+        if (copia && copia.pendente && copia.dados && (!n.quando || !copia.nuvem || n.quando <= copia.nuvem)) {
+          // alterações feitas sem internet neste aparelho: sobem agora
+          setTimeout(() => gravar(wsId, JSON.parse(copia.dados)), 1500);
+          return JSON.parse(copia.dados);
         }
+        if (n.dados) {
+          gravarCopia(wsId, { t: Date.now(), pendente: false, nuvem: n.quando, dados: n.dados });
+          const dados = JSON.parse(n.dados);
+          if (n.migrar) setTimeout(() => gravar(wsId, dados), 1500);
+          return dados;
+        }
+        return null; // empresa nova, sem dados ainda
       } catch (e) {
         console.error('Erro ao carregar da nuvem:', e);
+        if (copia && copia.dados) {
+          // Abre com a cópia do aparelho e tenta a nuvem de novo em segundo plano
+          setTimeout(async function tentar() {
+            try {
+              const n = await lerNuvem(wsId, null);
+              const atual = lerCopia(wsId) || {};
+              if (n.quando && atual.nuvem && n.quando > atual.nuvem) {
+                if (window.showToast) window.showToast('Há dados mais novos na nuvem (de outro aparelho). Recarregando…', 'info');
+                gravarCopia(wsId, { t: Date.now(), pendente: false, nuvem: n.quando, dados: n.dados });
+                setTimeout(() => window.location.reload(), 1500);
+                return;
+              }
+              nuvemLida = true;
+              if (atual.pendente && window.state) gravar(wsId, window.state);
+            } catch { setTimeout(tentar, 30000); }
+          }, 15000);
+          if (window.showToast) setTimeout(() => window.showToast('A nuvem está lenta: abrimos a cópia salva neste aparelho. Ela será sincronizada sozinha.', 'info'), 800);
+          return JSON.parse(copia.dados);
+        }
+        if (e && e.code === 'permission-denied') {
+          // Regras do Firestore desatualizadas: abre (sem risco, a nuvem também recusa gravar) e avisa
+          if (window.showToast) setTimeout(() => window.showToast('O banco de dados recusou o acesso. Publique as regras do Firestore (firestore.rules) no console do Firebase.', 'error'), 800);
+          return null;
+        }
+        setErroNuvem(true);
+        return null;
       }
-      return null;
     };
 
     window.uploadFileToFirebase = async (wsId, file) => {
       if (!wsId || !file) return null;
       if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('O anexo precisa ter até 10 MB.', 'error'); return null; }
       try {
-        const fileRef = ref(storage, `workspaces/${wsId}/${Date.now()}_${file.name}`);
+        const { getStorage, ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
+        const fileRef = ref(getStorage(app), `workspaces/${wsId}/${Date.now()}_${file.name}`);
         const snapshot = await uploadBytesResumable(fileRef, file);
         return await getDownloadURL(snapshot.ref);
       } catch (e) {
@@ -214,7 +291,7 @@ export default function DashboardPage() {
       const todas = [{ id: '', nome: empresas.principal || 'Empresa principal' }].concat(empresas.lista);
       return Promise.all(todas.map(async (e) => {
         try {
-          const snap = await getDoc(doc(db, 'workspaces', empresas.espacoDe(e.id)));
+          const snap = await comPrazo(getDoc(doc(db, 'workspaces', empresas.espacoDe(e.id))), 20000);
           return { ...e, estado: snap.exists() && snap.data().data ? JSON.parse(snap.data().data) : { transactions: [] }, atualizadoEm: snap.exists() ? snap.data().updatedAt : null };
         } catch (err) { return { ...e, estado: { transactions: [] }, erro: true }; }
       }));
@@ -223,7 +300,8 @@ export default function DashboardPage() {
 
     (async () => {
       try {
-        const snap = (leituras.current && await leituras.current.perfil) || await getDoc(perfilRef);
+        setEtapa('Lendo suas empresas…');
+        const snap = (leituras.current && await comPrazo(leituras.current.perfil, 10000).catch(() => null)) || await comPrazo(getDoc(perfilRef), 10000);
         if (snap.exists()) { empresas.lista = Array.isArray(snap.data().empresas) ? snap.data().empresas : []; empresas.principal = snap.data().principal || ''; }
       } catch (e) { console.warn('Não foi possível ler a lista de empresas:', e); }
       let ativa = '';
@@ -232,6 +310,7 @@ export default function DashboardPage() {
       empresas.ativa = ativa;
       window.workspaceId = empresas.espacoDe(ativa);
 
+      setEtapa('Carregando o sistema…');
       await carregarScripts();
       try { if (typeof window.initMaxCfoApp === 'function') await window.initMaxCfoApp(); }
       catch (e) { console.error('Erro ao iniciar o painel:', e); }
@@ -258,7 +337,21 @@ export default function DashboardPage() {
           <style>{'@keyframes maxcfoGira{to{transform:rotate(360deg)}}'}</style>
           <div style={{ width: 54, height: 54, borderRadius: 14, background: 'linear-gradient(135deg,#C5A059,#8a6d2f)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>⚡</div>
           <div style={{ width: 26, height: 26, border: '3px solid rgba(197,160,89,.25)', borderTopColor: '#C5A059', borderRadius: '50%', animation: 'maxcfoGira .8s linear infinite' }} />
-          <span>{!user ? 'Entrando…' : !acesso ? 'Conferindo sua conta…' : 'Abrindo seu painel…'}</span>
+          <span>{!user ? 'Entrando…' : !acesso ? 'Conferindo sua conta…' : (etapa || 'Abrindo seu painel…')}{segundos >= 4 ? ` ${segundos}s` : ''}</span>
+          {segundos >= 20 && (
+            <div style={{ textAlign: 'center', maxWidth: 360, lineHeight: 1.6 }}>
+              <div>Está demorando mais que o normal. Verifique a internet; antivírus ou rede da empresa podem bloquear a conexão.</div>
+              <button onClick={() => window.location.reload()} style={{ marginTop: 12, padding: '10px 22px', background: '#C5A059', color: '#0B1220', fontWeight: 700, border: 0, borderRadius: 8, cursor: 'pointer' }}>Tentar de novo</button>
+            </div>
+          )}
+        </div>
+      )}
+      {erroNuvem && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(7,11,20,.97)', zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', justifyContent: 'center', color: '#E8EFF8', fontFamily: 'var(--font-inter), sans-serif', padding: 24, textAlign: 'center' }}>
+          <div style={{ fontSize: 40 }}>☁️</div>
+          <h1 style={{ fontSize: 22 }}>Não consegui buscar seus dados na nuvem</h1>
+          <p style={{ color: '#8899B0', maxWidth: 420, lineHeight: 1.6 }}>Para não mostrar o painel vazio, nada foi aberto. Verifique a internet (antivírus ou rede da empresa podem bloquear o Google Firebase) e tente de novo.</p>
+          <button onClick={() => window.location.reload()} style={{ padding: '12px 26px', background: '#C5A059', color: '#0B1220', fontWeight: 700, border: 0, borderRadius: 8, cursor: 'pointer' }}>Tentar de novo</button>
         </div>
       )}
       {bloqueado && (
