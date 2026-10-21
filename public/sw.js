@@ -1,4 +1,4 @@
-// Service worker do MAX CFO AI.
+// Service worker da Landim Advisory.
 // Internet primeiro (sempre a versão mais nova); a cópia salva só entra quando o aparelho está offline.
 const CACHE_NAME = 'max-cfo-ai-v8';
 

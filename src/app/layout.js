@@ -5,13 +5,13 @@ import ClientProviders from "./ClientProviders";
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 
 export const metadata = {
-  title: "MAX CFO AI — Seu CFO Virtual de Inteligência Artificial",
-  description: "MAX CFO AI: o financeiro da sua empresa num só lugar. Fluxo de caixa, DRE, conciliação, simulador tributário e reforma tributária, CNPJ e CFO com inteligência artificial.",
+  title: "Landim Advisory — Seu CFO Virtual de Inteligência Artificial",
+  description: "Landim Advisory: o financeiro da sua empresa num só lugar. Fluxo de caixa, DRE, conciliação, simulador tributário e reforma tributária, CNPJ e CFO com inteligência artificial.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "MAX CFO"
+    title: "Landim Advisory"
   },
   icons: {
     icon: "/icon-192.png",

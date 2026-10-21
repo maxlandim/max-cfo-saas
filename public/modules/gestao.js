@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Gestão
+ * Landim Advisory — Gestão
  * Auditoria (histórico de alterações), RH e folha, imobilizado, checklist fiscal,
  * configurações da empresa e simulador de cenários sobre a média real.
  */
@@ -191,7 +191,7 @@
     }
     var receitasMes = st().transactions.filter(function (t) { return t.type === 'RECEITA' && F().mes(t.date) === mesAnt && ['receita'].indexOf(F().grupoDe(t)) > -1; });
     var semNota = receitasMes.filter(function (t) { return !t.nfId; });
-    if (receitasMes.length) add(semNota.length ? 'alerta' : 'ok', semNota.length ? semNota.length + ' receita(s) de ' + F().nomeMes(mesAnt) + ' sem nota vinculada' : 'Receitas de ' + F().nomeMes(mesAnt) + ' com nota', semNota.length ? moeda(F().somar(semNota)) + ' em receitas sem nota fiscal registrada no MAX CFO. Se a nota foi emitida, registre-a em Notas Fiscais.' : 'Todas as receitas operacionais do mês têm nota registrada.', "switchView('nfe')");
+    if (receitasMes.length) add(semNota.length ? 'alerta' : 'ok', semNota.length ? semNota.length + ' receita(s) de ' + F().nomeMes(mesAnt) + ' sem nota vinculada' : 'Receitas de ' + F().nomeMes(mesAnt) + ' com nota', semNota.length ? moeda(F().somar(semNota)) + ' em receitas sem nota fiscal registrada na Landim Advisory. Se a nota foi emitida, registre-a em Notas Fiscais.' : 'Todas as receitas operacionais do mês têm nota registrada.', "switchView('nfe')");
     var impostoAnt = st().transactions.filter(function (t) { return t.type === 'DESPESA' && t.category === 'Impostos e Taxas' && (F().mes(t.date) === mesAnt || F().mes(t.vencimento) === mes); });
     var recAnt = (F().porMes([mesAnt], 'competencia')[mesAnt].grupos.receita || 0);
     if (recAnt > 0 && regime !== '') add(impostoAnt.length ? 'ok' : 'alerta', impostoAnt.length ? 'Imposto de ' + F().nomeMes(mesAnt) + ' lançado' : 'Nenhum imposto lançado para ' + F().nomeMes(mesAnt), impostoAnt.length ? moeda(F().somar(impostoAnt)) + ' em impostos e taxas.' : 'Houve faturamento de ' + moeda(recAnt) + '. Lance a guia (DAS, DARF ou ISS) em Contas a pagar; o DAS vence dia 20.', "fin.novo('DESPESA',{status:'pendente'})");
@@ -260,7 +260,7 @@
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center"><span class="fin-sub">Aparência:</span><select class="select-sm" id="cfTema" onchange="applyTheme(this.value)" aria-label="Tema">' + (function () { var t = 'escuro'; try { t = localStorage.getItem('maxcfo_tema') || 'escuro'; } catch (e) { } return [['escuro', '🌙 Escuro'], ['claro', '☀️ Claro'], ['auto', '💻 Automático (igual ao aparelho)']].map(function (o) { return '<option value="' + o[0] + '"' + (t === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join(''); })() + '</select>' +
       '<a class="fin-btn gold" href="/pricing">Plano e assinatura</a></div></div>' +
       '</div>' +
-      '<div class="card" style="margin-top:16px"><h3 class="card-title" style="margin-bottom:8px">ℹ️ Sobre</h3><p class="fin-sub" style="line-height:1.7">MAX CFO AI v5. Os dados de cada empresa ficam na nuvem do Google Firebase, separados por login, com cópia no navegador para abrir mais rápido. O CFO IA e a leitura de documentos usam o Google Gemini; a consulta de CNPJ usa dados públicos da Receita Federal (BrasilAPI). Detalhes na <a class="link-go" href="/privacidade" target="_blank">Política de Privacidade</a>.</p></div>';
+      '<div class="card" style="margin-top:16px"><h3 class="card-title" style="margin-bottom:8px">ℹ️ Sobre</h3><p class="fin-sub" style="line-height:1.7">Landim Advisory v5. Os dados de cada empresa ficam na nuvem do Google Firebase, separados por login, com cópia no navegador para abrir mais rápido. O CFO IA e a leitura de documentos usam o Google Gemini; a consulta de CNPJ usa dados públicos da Receita Federal (BrasilAPI). Detalhes na <a class="link-go" href="/privacidade" target="_blank">Política de Privacidade</a>.</p></div>';
     window.cfg.gruposDoTipo();
     var c = el('cfCnpj');
     c.addEventListener('blur', async function () {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CardsPlanos, INCLUSO, ESTILO_PLANOS } from './components/Planos';
 
-const WHATS = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Quero saber mais sobre o MAX CFO AI.');
+const WHATS = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Quero saber mais sobre a Landim Advisory.');
 
 const RESOLVE = [
   { icone: '🏦', titulo: 'Quanto tenho e quanto vou ter', texto: 'Saldo de cada banco hoje e a previsão dia a dia. O sistema avisa antes de o caixa ficar negativo.' },
@@ -20,8 +20,9 @@ const FAQ = [
   { q: 'Preciso conectar minha conta do banco?', a: 'Não. Você importa o extrato do banco (OFX ou CSV) quando quiser. O sistema reconhece o que já foi lançado, dá baixa nas contas em aberto e sugere a categoria do resto.' },
   { q: 'Como funciona o teste grátis?', a: 'Você cria a conta e usa tudo por 7 dias, sem cadastrar cartão. Depois escolhe um plano para continuar. Seus lançamentos ficam guardados.' },
   { q: 'Serve para quem faz BPO financeiro?', a: 'Sim. Você cuida de várias empresas no mesmo login, com os dados de cada uma separados, vê o caixa e os atrasados de todas num painel e gera o relatório mensal de cada cliente com a sua marca.' },
-  { q: 'O sistema emite nota fiscal?', a: 'Ainda não. Você emite a NFS-e no Emissor Nacional e registra a nota no MAX CFO, que cria a conta a receber e soma o faturamento dos últimos 12 meses.' },
+  { q: 'O sistema emite nota fiscal?', a: 'Ainda não. Você emite a NFS-e no Emissor Nacional e registra a nota na Landim Advisory, que cria a conta a receber e soma o faturamento dos últimos 12 meses.' },
   { q: 'Onde ficam os meus dados?', a: 'Na nuvem do Google (Firebase), separados por login e por empresa. Só quem entra com a sua conta vê os dados. Você pode baixar um backup completo quando quiser.' },
+  { q: 'Posso mudar de plano depois?', a: 'Sim, quando quiser. Seus lançamentos continuam e os recursos do novo plano liberam na hora.' },
   { q: 'Posso cancelar quando quiser?', a: 'Sim, sem multa e sem fidelidade. O acesso continua até o fim do período já pago.' },
 ];
 
@@ -35,7 +36,7 @@ export default function LandingPage() {
 
       <header className="lp-topo">
         <div className="lp-cx lp-topo-in">
-          <Link href="/" className="lp-marca"><span className="lp-logo">⚡</span>MAX CFO AI</Link>
+          <Link href="/" className="lp-marca"><span className="lp-logo">LA</span>Landim Advisory</Link>
           <nav className="lp-menu">
             <a href="#como">Como funciona</a>
             <a href="#precos">Preços</a>
@@ -97,7 +98,7 @@ export default function LandingPage() {
       {/* O que resolve */}
       <section className="lp-sec lp-sec-alt">
         <div className="lp-cx">
-          <h2>O que o MAX CFO resolve</h2>
+          <h2>O que a Landim Advisory resolve</h2>
           <div className="lp-grade">
             {RESOLVE.map((r) => (
               <div className="lp-card" key={r.titulo}><div className="lp-card-ic">{r.icone}</div><h3>{r.titulo}</h3><p>{r.texto}</p></div>
@@ -136,10 +137,10 @@ export default function LandingPage() {
       <section id="precos" className="lp-sec lp-sec-alt">
         <div className="lp-cx">
           <h2>Preços simples</h2>
-          <p className="lp-sec-sub">Todos os planos têm todas as funcionalidades. O que muda é quantas empresas você cuida. 7 dias grátis, sem cartão.</p>
+          <p className="lp-sec-sub">Cada plano soma recursos ao anterior. Teste 7 dias com tudo liberado, sem cartão.</p>
           <CardsPlanos onEscolher={() => router.push('/register')} textoBotao={() => 'Testar grátis'} />
           <div className="lp-incluso">
-            <div className="lp-incluso-t">Incluso em todos os planos</div>
+            <div className="lp-incluso-t">Em todos os planos</div>
             <ul>{INCLUSO.map((i) => <li key={i}>{i}</li>)}</ul>
           </div>
         </div>
@@ -172,9 +173,9 @@ export default function LandingPage() {
 
       <footer className="lp-rodape">
         <div className="lp-cx lp-rodape-in">
-          <span className="lp-marca"><span className="lp-logo">⚡</span>MAX CFO AI</span>
+          <span className="lp-marca"><span className="lp-logo">LA</span>Landim Advisory</span>
           <nav><Link href="/pricing">Planos</Link><Link href="/termos">Termos de Uso</Link><Link href="/privacidade">Privacidade</Link><a href={WHATS} target="_blank" rel="noopener">Contato</a></nav>
-          <small>© {new Date().getFullYear()} MAX CFO AI</small>
+          <small>© {new Date().getFullYear()} Landim Advisory</small>
         </div>
       </footer>
     </div>
@@ -188,7 +189,7 @@ const ESTILO = `
 .lp-topo{position:sticky;top:0;z-index:50;background:rgba(250,250,248,.9);backdrop-filter:blur(10px);border-bottom:1px solid #ECEEF2}
 .lp-topo-in{display:flex;align-items:center;gap:24px;height:64px}
 .lp-marca{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px;color:#0B1220;letter-spacing:-.01em}
-.lp-logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#C5A059,#8a6d2f);display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.lp-logo{width:34px;height:34px;border-radius:9px;background:#0B1220;color:#C5A059;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;letter-spacing:.02em}
 .lp-menu{display:flex;gap:26px;margin-left:12px}
 .lp-menu a{color:#4B5565;font-size:14.5px;font-weight:600}.lp-menu a:hover{color:#0B1220}
 .lp-topo-acoes{margin-left:auto;display:flex;align-items:center;gap:14px}

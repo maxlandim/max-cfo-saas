@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Layout simples para quem usa no dia a dia
+ * Landim Advisory — Layout simples para quem usa no dia a dia
  * Menu enxuto conforme o tipo de negócio (o resto fica em "Mais ferramentas"), nomes em português
  * do dia a dia, boas-vindas no primeiro acesso, "Primeiros passos", Início limpo,
  * botão "+ Novo" que pergunta o que registrar e barra de atalhos no celular.
@@ -39,6 +39,21 @@
   function moduloDe(id) { var m = null; SECOES.forEach(function (s) { s[2].forEach(function (i) { if (i[0] === id) m = s; }); }); return m; }
   var aberto = null, verMais = {};
 
+  // ── Planos: o que cada nível libera (1 Básico, 2 Intermediário, 3 Completo, 4 Ilimitado) ──
+  var NIVEL_TELA = { budget: 2, os: 2, plans: 2, crm: 2, commissions: 2, inventory: 2, nfe: 2, 'tax-audit': 2, accountant: 2, reports: 2, companies: 2,
+    chat: 3, simulator: 3, tributario: 3, bpo: 3, hr: 3, assets: 3, team: 3, audit: 3 };
+  var NOME_NIVEL = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4: 'Ilimitado' };
+  function nivelAtual() { var p = window.maxcfoPlano; return p && p.nivel ? p.nivel : 4; }
+  function liberado(id) { return (NIVEL_TELA[id] || 1) <= nivelAtual(); }
+  function oferta(nivel, oque) {
+    var p = window.maxcfoPlano || {}, atual = NOME_NIVEL[nivelAtual()] || '';
+    F().modal('layPlano', '🔒 Disponível no plano ' + NOME_NIVEL[nivel],
+      '<p style="font-size:15px;line-height:1.6;margin-bottom:10px"><b>' + esc(oque) + '</b> faz parte do plano <b>' + NOME_NIVEL[nivel] + '</b> ou superior.</p>' +
+      '<p class="fin-sub" style="line-height:1.6">Seu plano hoje: ' + esc(atual) + '. Ao mudar de plano, tudo o que você já lançou continua aqui e o recurso libera na hora.</p>',
+      '<button class="btn-ghost" onclick="fin.fechar(\'layPlano\')">Agora não</button><a class="btn-primary" href="/pricing" style="text-decoration:none">Ver planos</a>');
+    return false;
+  }
+
   function estilos() {
     if (el('lay-estilos')) return;
     var css = '' +
@@ -46,6 +61,7 @@
       '.lay-mod-h .nav-label{flex:1}.lay-mod-h .ch{font-size:11px;color:var(--text-faint);transition:transform .2s}.lay-mod.aberto .lay-mod-h .ch{transform:rotate(90deg)}.lay-mod.tem-ativa .lay-mod-h{color:var(--gold)}' +
       '.lay-mod-itens{display:none;margin:0 0 6px 22px;padding-left:8px;border-left:1px solid var(--border)}.lay-mod.aberto .lay-mod-itens{display:block}' +
       '.lay-mod-itens .nav-item{font-size:13px;padding:7px 10px}.lay-mod-itens .nav-icon{font-size:13px}' +
+      '.lay-trava{opacity:.62}.lay-trava:hover{opacity:1}.lay-cad{margin-left:auto;font-size:11px}' +
       '.lay-vermais{background:none;border:0;color:var(--text-faint);font-size:12px;padding:6px 10px;cursor:pointer}.lay-vermais:hover{color:var(--gold)}' +
       '.lay-subnav{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none;height:48px;box-sizing:border-box;padding:0 26px;border-bottom:1px solid var(--border);background:var(--bg-surf)}.lay-subnav::-webkit-scrollbar{display:none}' +
       'body.com-subnav .view{height:calc(100vh - var(--topbar-h) - 48px)}' +
@@ -77,7 +93,7 @@
     var vm = window.viewMeta || {}, vis = visiveis();
     var ativa = document.querySelector('.view.active'), idAtiva = ativa ? ativa.id.replace('view-', '') : 'dashboard';
     if (aberto === null) { var ma = moduloDe(idAtiva); aberto = ma && ma[2].length > 1 ? ma[0] : 'Financeiro'; }
-    var item = function (i, sub) { return '<a class="nav-item' + (sub ? ' lay-sub' : '') + '" data-view="' + i[0] + '" id="nav-' + i[0] + '"><span class="nav-icon">' + i[1] + '</span><span class="nav-label">' + i[2] + '</span></a>'; };
+    var item = function (i, sub) { var trava = !liberado(i[0]); return '<a class="nav-item' + (sub ? ' lay-sub' : '') + (trava ? ' lay-trava' : '') + '" data-view="' + i[0] + '" id="nav-' + i[0] + '"' + (trava ? ' title="Disponível no plano ' + NOME_NIVEL[NIVEL_TELA[i[0]]] + '"' : '') + '><span class="nav-icon">' + i[1] + '</span><span class="nav-label">' + i[2] + '</span>' + (trava ? '<span class="lay-cad">🔒</span>' : '') + '</a>'; };
     var html = '';
     SECOES.forEach(function (sec) {
       var todos = sec[2].filter(function (i) { return vm[i[0]]; }); if (!todos.length) return;
@@ -111,14 +127,14 @@
     var itens = m[2].filter(function (i) { return vm[i[0]] && (vis.indexOf(i[0]) > -1 || i[0] === id); });
     if (itens.length < 2) return esconder();
     box.style.display = ''; document.body.classList.add('com-subnav');
-    box.innerHTML = '<span class="lay-subnav-mod">' + m[1] + ' ' + m[0] + '</span>' + itens.map(function (i) { return '<button role="tab" aria-selected="' + (i[0] === id) + '" class="' + (i[0] === id ? 'on' : '') + '" onclick="switchView(\'' + i[0] + '\')">' + i[2] + '</button>'; }).join('');
+    box.innerHTML = '<span class="lay-subnav-mod">' + m[1] + ' ' + m[0] + '</span>' + itens.map(function (i) { return '<button role="tab" aria-selected="' + (i[0] === id) + '" class="' + (i[0] === id ? 'on' : '') + '" onclick="switchView(\'' + i[0] + '\')">' + i[2] + (liberado(i[0]) ? '' : ' 🔒') + '</button>'; }).join('');
     var on = box.querySelector('.on'); if (on && on.scrollIntoView && box.scrollWidth > box.clientWidth) box.scrollLeft = on.offsetLeft - 40;
   }
 
   // ═════════════ BOAS-VINDAS E PERSONALIZAÇÃO ═════════════
   function boasVindas() {
     var s = st().settings || {}, escolhido = s.perfil || '';
-    F().modal('layBoasVindas', '👋 Bem-vindo ao MAX CFO',
+    F().modal('layBoasVindas', '👋 Bem-vindo à Landim Advisory',
       '<p style="color:var(--text-muted);margin-bottom:14px">Duas perguntas rápidas para deixar o sistema do seu jeito. Dá para mudar depois em Configurações.</p>' +
       '<div class="form-grid" style="margin-bottom:14px"><div class="form-field"><label class="form-label" for="bvCnpj">CNPJ da empresa (opcional)</label><input class="form-input" id="bvCnpj" maxlength="18" placeholder="Preenche o nome sozinho" value="' + esc(F().docFmt(s.cnpj || '')) + '"></div>' +
       '<div class="form-field"><label class="form-label" for="bvNome">Nome da empresa</label><input class="form-input" id="bvNome" maxlength="80" value="' + esc(s.company || '') + '"></div></div>' +
@@ -200,9 +216,10 @@
       ['✅', 'Já recebi', "fin.novo('RECEITA',{status:'pago'})"], ['💳', 'Já paguei', "fin.novo('DESPESA',{status:'pago'})"],
       ['📷', 'Ler boleto ou nota', 'fin.abrirLeitura()'], ['👥', 'Cliente ou fornecedor', "switchView('contatos');setTimeout(function(){fin.editarContato()},80)"]
     ];
-    if (vis.indexOf('budget') > -1) op.push(['📝', 'Orçamento', "switchView('budget');setTimeout(function(){orc.editar()},80)"]);
-    if (vis.indexOf('os') > -1) op.push(['🛠️', 'Ordem de serviço', "switchView('os');setTimeout(function(){os.editar()},80)"]);
-    if (vis.indexOf('plans') > -1) op.push(['🔁', 'Mensalidade', "switchView('plans');setTimeout(function(){ctr.editar()},80)"]);
+    var se = function (tela, acao) { return liberado(tela) ? acao : "switchView('" + tela + "')"; };
+    if (vis.indexOf('budget') > -1) op.push(['📝', 'Orçamento', se('budget', "switchView('budget');setTimeout(function(){orc.editar()},80)")]);
+    if (vis.indexOf('os') > -1) op.push(['🛠️', 'Ordem de serviço', se('os', "switchView('os');setTimeout(function(){os.editar()},80)")]);
+    if (vis.indexOf('plans') > -1) op.push(['🔁', 'Mensalidade', se('plans', "switchView('plans');setTimeout(function(){ctr.editar()},80)")]);
     op.push(['🔄', 'Importar extrato', "switchView('reconciliation')"]);
     F().modal('layNovo', 'O que você quer registrar?', '<div class="lay-novo">' + op.map(function (o) { return '<button onclick="fin.fechar(\'layNovo\');' + o[2] + '"><span>' + o[0] + '</span>' + o[1] + '</button>'; }).join('') + '</div>', '<button class="btn-ghost" onclick="fin.fechar(\'layNovo\')">Fechar</button>');
   }
@@ -254,6 +271,7 @@
     },
     novo: novo,
     montarMenu: montarMenu,
+    liberado: liberado, nivel: nivelAtual, oferta: oferta,
     secoes: SECOES
   };
 
@@ -274,11 +292,13 @@
     montarMenu();
     barraCelular();
     window.quickAdd = novo;
+    var ler = F().abrirLeitura;
+    if (ler && !ler.__plano) { F().abrirLeitura = function () { if (nivelAtual() < 2) return oferta(2, 'Leitura de boleto e nota com IA'); return ler.apply(this, arguments); }; F().abrirLeitura.__plano = true; }
     // marca o atalho do celular e o menu na troca de tela
     var trocar = window.switchView;
     if (trocar && !trocar.__lay) {
       window.switchView = function (id) {
-        if (window.viewMeta && window.viewMeta[id] && !el('nav-' + id)) { /* tela fora do menu continua acessível */ }
+        if (!liberado(id)) { if (window.innerWidth <= 900) { var sb0 = el('sidebar'), ov0 = el('sidebarOverlay'); if (sb0) sb0.classList.remove('open'); if (ov0) ov0.style.display = 'none'; } return oferta(NIVEL_TELA[id], rotulo(id) || 'Este recurso'); }
         trocar(id); marcarBarra(id); subnav(id);
         var m = moduloDe(id); if (m && m[2].length > 1 && aberto !== m[0]) { aberto = m[0]; montarMenu(); }
         else { var nav = document.querySelector('.sidebar-nav'); if (nav) nav.querySelectorAll('.lay-mod').forEach(function (x) { x.classList.toggle('tem-ativa', !!x.querySelector('.nav-item.active')); }); }

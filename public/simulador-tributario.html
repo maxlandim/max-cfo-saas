@@ -215,7 +215,7 @@ footer a{color:var(--accent)}
 <div class="wrap">
   <header>
     <div class="htop">
-      <span class="eyebrow" id="eyebrow">MAX CFO AI · apuração mensal estimada</span>
+      <span class="eyebrow" id="eyebrow">Landim Advisory · apuração mensal estimada</span>
       <div class="modo" role="group" aria-label="Modo de uso">
         <button type="button" data-modo="cliente" aria-pressed="true">Cliente</button>
         <button type="button" data-modo="consultor" aria-pressed="false">Consultor</button>
@@ -662,7 +662,7 @@ footer a{color:var(--accent)}
   </section>
 
   <footer>
-    <p id="rodape">Estimativa para planejamento, gerada pelo MAX CFO AI. Não substitui a apuração contábil nem parecer tributário; confira enquadramento, benefícios estaduais e regras do município.</p>
+    <p id="rodape">Estimativa para planejamento, gerada pela Landim Advisory. Não substitui a apuração contábil nem parecer tributário; confira enquadramento, benefícios estaduais e regras do município.</p>
     <p>Referências: <a href="https://www.contadores.cnt.br/noticias/tecnicas/2026/09/28/reforma-tributaria-ibs-e-cbs-em-2027-aliquotas-e-proximos-passos.html" target="_blank" rel="noopener">prazos da CBS 2027</a> · <a href="https://notagateway.com.br/blog/receita-detalha-como-ficara-a-tributacao-de-lucros-e-dividendos-com-a-nova-regra-de-altas-rendas/" target="_blank" rel="noopener">dividendos na Lei 15.270/2025</a> · <a href="https://planning.com.br/reoneracao-folha-lei-cronograma/" target="_blank" rel="noopener">reoneração da folha</a> · <a href="https://simtax.com.br/tabela-icms-2026-aliquotas-de-todos-estados-atualizada/" target="_blank" rel="noopener">ICMS por estado em 2026</a> · <a href="https://www.migalhas.com.br/depeso/447666/pedagio-do-lucro-presumido-analise-da-lc-224-25-e-desafio-da-vigencia" target="_blank" rel="noopener">LC 224/2025</a> · <a href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm" target="_blank" rel="noopener">LC 214/2025</a> · <a href="https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm" target="_blank" rel="noopener">LC 123/2006</a></p>
     <p class="pro" id="vigencia"></p>
   </footer>
@@ -671,7 +671,7 @@ footer a{color:var(--accent)}
 <script>
 // ===== CONFIGURAÇÃO DE CONTATO =====
 // Preencha o WhatsApp (só números, com DDI e DDD, ex.: 5561999990000) para mostrar o botão "Falar com um especialista".
-const CONTATO={nome:'MAX CFO AI',whatsapp:'5561992105889',email:''};
+const CONTATO={nome:'Landim Advisory',whatsapp:'5561992105889',email:''};
 
 // CALC-START
 // ===== PARÂMETROS LEGAIS — revise quando a legislação mudar =====
@@ -1183,7 +1183,7 @@ const FASE={
   2033:'Fim da transição: ICMS e ISS extintos. IBS e CBS nas alíquotas de referência.'
 };
 $('uf').innerHTML=Object.keys(UFS).map(u=>`<option value="${u}"${u==='DF'?' selected':''}>${u}</option>`).join('');
-$('eyebrow').textContent=`MAX CFO AI · apuração mensal estimada · ${rotMes(ANO0,MES0)}`;
+$('eyebrow').textContent=`Landim Advisory · apuração mensal estimada · ${rotMes(ANO0,MES0)}`;
 $('cbsInfo').textContent=PARAMS.cbsStatus;
 $('vigencia').textContent=`Parâmetros legais atualizados em ${PARAMS.vigencia}.`;
 
@@ -1737,7 +1737,7 @@ function resumoTexto(){
   if(cur&&cur!==best) L.push(`Economia estimada ao mudar de ${NOME[cur]} para ${NOME[best]}: ${brl((R[cur].total-R[best].total)*12)} por ano.`);
   else L.push(`Regime de menor carga: ${NOME[best]}, ${brl(R[best].total*12)} por ano.`);
   const fr=fatorRIdeal(i); if(fr&&fr.eco>0) L.push(`Ajustando o pró-labore para ${brl(fr.plNovo)}, o Fator R economiza mais ${brl(fr.eco*12)} por ano.`);
-  L.push('','Estimativa para planejamento. MAX CFO AI.');
+  L.push('','Estimativa para planejamento. Landim Advisory.');
   return L.filter((x,k,a)=>!(x===''&&a[k-1]==='')).join('\n').replace(/^\n+/,'');
 }
 $('bCopiar').addEventListener('click',()=>{
@@ -1888,7 +1888,7 @@ async function gerarPDF(){
   };
   const nome=EMP&&EMP.nome?EMP.nome:(($('nomeSim').value||'').trim()||'Empresa simulada');
   doc.setFillColor(...ACC); doc.rect(0,0,210,4,'F');
-  T('MAX CFO AI',M,y,{s:8.5,c:ACC,b:true}); T(`Emitido em ${new Date().toLocaleDateString('pt-BR')}`,M+Wp,y,{s:8.5,c:MUT,a:'right'}); y+=9;
+  T('Landim Advisory',M,y,{s:8.5,c:ACC,b:true}); T(`Emitido em ${new Date().toLocaleDateString('pt-BR')}`,M+Wp,y,{s:8.5,c:MUT,a:'right'}); y+=9;
   T('Simulação tributária',M,y,{s:20,b:true}); y+=8;
   T(nome,M,y,{s:12,b:true}); y+=5.5;
   T([EMP&&EMP.cnpj?`CNPJ ${formatarCNPJ(EMP.cnpj)}`:'',i.at.nome,i.uf,cur?`regime atual: ${NOME[cur]}`:''].filter(Boolean).join('  ·  '),M,y,{s:9,c:MUT}); y+=8;

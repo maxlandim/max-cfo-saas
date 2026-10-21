@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Vendas e operação
+ * Landim Advisory — Vendas e operação
  * CRM (oportunidades), orçamentos, ordens de serviço, comissões, estoque e contratos recorrentes.
  * Tudo grava na nuvem com o restante da empresa e se liga ao contas a receber e a pagar.
  */
@@ -645,7 +645,7 @@
       '<div class="card">' + (lista.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Vence dia</th><th>Vigência</th><th>Situação</th><th></th></tr></thead><tbody>' +
         lista.map(function (c) { return '<tr><td><b>' + esc(c.cliente) + '</b></td><td>' + esc(c.descricao) + '</td><td style="font-weight:700">' + moeda(c.valor) + '</td><td>' + c.dia + '</td><td>' + F().nomeMes(c.inicio) + (c.fim ? ' a ' + F().nomeMes(c.fim) : ' em diante') + '</td><td><span class="fin-sit ' + (c.status === 'ativo' ? 'ok' : 'atraso') + '">' + (c.status === 'ativo' ? 'Ativo' : 'Encerrado') + '</span></td>' +
           '<td><div class="fin-acoes"><button class="fin-btn" onclick="fin.verContas(\'' + esc(c.cliente).replace(/'/g, '') + '\',\'todas\')">Cobranças</button><button class="fin-btn" onclick="ctr.editar(\'' + c.id + '\')">✏️</button>' + (c.status === 'ativo' ? '<button class="fin-btn" onclick="ctr.encerrar(\'' + c.id + '\')">Encerrar</button>' : '<button class="fin-btn ok" onclick="ctr.reativar(\'' + c.id + '\')">Reativar</button>') + '</div></td></tr>'; }).join('') +
-        '</tbody></table></div><p class="fin-sub" style="margin-top:8px">A cobrança do mês atual e do próximo é criada automaticamente em Contas a receber para cada contrato ativo.</p>' : '<div class="empty-block" style="padding:28px">Cadastre mensalidades (honorários, assinaturas, aluguéis) e o MAX CFO cria as contas a receber todo mês.</div>') + '</div>';
+        '</tbody></table></div><p class="fin-sub" style="margin-top:8px">A cobrança do mês atual e do próximo é criada automaticamente em Contas a receber para cada contrato ativo.</p>' : '<div class="empty-block" style="padding:28px">Cadastre mensalidades (honorários, assinaturas, aluguéis) e a Landim Advisory cria as contas a receber todo mês.</div>') + '</div>';
   };
   window.ctr = {
     editar: function (id) {

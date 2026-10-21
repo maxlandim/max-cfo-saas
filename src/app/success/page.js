@@ -43,7 +43,7 @@ function SuccessContent() {
       <h1 style={{ fontSize: '28px', marginBottom: '10px', color: '#E8EFF8' }}>Assinatura Confirmada!</h1>
       <p style={{ color: '#8899B0', marginBottom: '30px', lineHeight: '1.6' }}>
         Parabéns! Seu pagamento foi recebido.
-        Agora você tem acesso total ao <strong>MAX CFO AI</strong>.
+        Agora você tem acesso total ao <strong>Landim Advisory</strong>.
       </p>
 
       {aviso && <p style={{ color: '#C5A059', marginBottom: '20px', fontSize: '14px' }}>{aviso}</p>}

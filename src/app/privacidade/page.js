@@ -1,11 +1,11 @@
 import LegalPage from '../components/LegalPage';
 
-export const metadata = { title: 'Política de Privacidade — MAX CFO AI' };
+export const metadata = { title: 'Política de Privacidade — Landim Advisory' };
 
 export default function PrivacidadePage() {
   return (
     <LegalPage titulo="Política de Privacidade" atualizado="outubro de 2026">
-      <p>Esta política explica como o MAX CFO AI, operado por <span className="pendente">[RAZÃO SOCIAL]</span> (CNPJ <span className="pendente">[CNPJ]</span>), trata dados pessoais, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
+      <p>Esta política explica como a Landim Advisory, operado por <span className="pendente">[RAZÃO SOCIAL]</span> (CNPJ <span className="pendente">[CNPJ]</span>), trata dados pessoais, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
 
       <h2>1. Papéis</h2>
       <ul>

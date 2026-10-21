@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { limiteExcedido } from '../../../lib/limite';
 import { comModelos } from '../../../lib/modelosIA';
+import { statusDoUsuario } from '../../../lib/assinatura';
+import { nivelDoStatus } from '../../../lib/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +32,8 @@ export async function POST(request) {
     if (adminConfigurado) {
       const user = await usuarioDaRequisicao(request);
       if (!user) return NextResponse.json({ reply: 'Sua sessão expirou. Entre de novo para usar o CFO IA.' }, { status: 401 });
+      const st = await statusDoUsuario(user).catch(() => null);
+      if (st && nivelDoStatus(st) < 3) return NextResponse.json({ reply: 'O CFO com IA faz parte do plano Completo ou superior. Veja os planos em /pricing.' }, { status: 403 });
       if (limiteExcedido('chat:' + user.uid, Number(process.env.CHAT_LIMIT_PER_HOUR || 40))) return NextResponse.json({ reply: 'Você atingiu o limite de perguntas desta hora. Tente de novo mais tarde.' }, { status: 429 });
     }
     const body = await request.json();
@@ -42,13 +46,13 @@ export async function POST(request) {
       return NextResponse.json({ reply: 'O CFO IA ainda não foi ativado neste site (falta a chave da IA nas configurações do servidor).' }, { status: 503 });
     }
 
-    const systemPrompt = `Você é o MAX CFO AI, diretor financeiro virtual de pequenas e médias empresas brasileiras.
+    const systemPrompt = `Você é o CFO virtual da Landim Advisory, diretor financeiro virtual de pequenas e médias empresas brasileiras.
 Seja analítico, direto e educado. Fale português do Brasil, com números em reais.
 Use os dados reais do sistema abaixo. Não invente números que não estão aqui; se faltar dado, diga qual lançamento ou cadastro resolveria.
 Dê recomendações práticas (o que fazer esta semana). Em temas tributários, lembre que a decisão final é do contador.
 Formate com **negrito** nos números principais e listas curtas.
 
-Dados da empresa no MAX CFO (hoje):
+Dados da empresa (hoje):
 ${descreverContexto(context)}`;
 
     const historico = (Array.isArray(body.historico) ? body.historico : [])
