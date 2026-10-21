@@ -17,7 +17,7 @@ if [ -f gemini.enc ]; then
 fi
 if [ -n "$K" ]; then
   B=$(base64 -w0 boleto_teste.pdf)
-  for M in gemini-3.8-flash gemini-flash-latest; do
+  for M in gemini-3.8-flash gemini-3.6-flash gemini-3.5-flash gemini-flash-latest; do
     printf '{"contents":[{"parts":[{"inlineData":{"mimeType":"application/pdf","data":"%s"}},{"text":"Leia o boleto e responda SOMENTE JSON: {\\"descricao\\":\\"\\",\\"contato\\":\\"\\",\\"valor\\":0,\\"vencimento\\":\\"AAAA-MM-DD\\",\\"linhaDigitavel\\":\\"\\"}"}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0.1}}' "$B" > /tmp/req.json
     C=$(curl -s -o /tmp/r.json -w '%{http_code}' -H "x-goog-api-key: $K" -H 'Content-Type: application/json' "https://generativelanguage.googleapis.com/v1beta/models/$M:generateContent" -d @/tmp/req.json)
     python3 diag_resp.py "PDF $M" "$C" /tmp/r.json
