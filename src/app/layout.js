@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "MAX CFO AI — Seu CFO Virtual de Inteligência Artificial",
-  description: "MAX CFO AI: Seu CFO virtual. Análise financeira, DRE, simulações, empresas por CNPJ. 100% local, sem APIs.",
+  description: "MAX CFO AI: o financeiro da sua empresa num só lugar. Fluxo de caixa, DRE, conciliação, simulador tributário e reforma tributária, CNPJ e CFO com inteligência artificial.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

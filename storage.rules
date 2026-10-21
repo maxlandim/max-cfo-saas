@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Anexos dos lançamentos: só o dono acessa, até 10 MB por arquivo.
+    match /workspaces/{wsId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == wsId;
+      allow write: if request.auth != null && request.auth.uid == wsId
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

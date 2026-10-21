@@ -3,19 +3,31 @@
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { authFetch } from '../../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const { user, loading: carregandoLogin } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [aviso, setAviso] = useState('');
 
+  // Confirma o pagamento no servidor (o webhook do Stripe também confirma, em segundo plano)
   useEffect(() => {
-    if (sessionId) {
-      localStorage.setItem('maxcfo_pro_status', 'active');
-      localStorage.setItem('maxcfo_stripe_session', sessionId);
-    }
-    setLoading(false);
-  }, [sessionId]);
+    if (carregandoLogin) return;
+    if (!user || !sessionId) { setLoading(false); return; }
+    (async () => {
+      try {
+        const r = await authFetch('/api/subscription', { method: 'POST', body: JSON.stringify({ sessionId }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) setAviso(d.error || 'Estamos confirmando o pagamento. Pode levar alguns minutos.');
+      } catch {
+        setAviso('Estamos confirmando o pagamento. Pode levar alguns minutos.');
+      }
+      setLoading(false);
+    })();
+  }, [user, carregandoLogin, sessionId]);
 
   return (
     <div style={{
@@ -30,14 +42,15 @@ function SuccessContent() {
       <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚡🎉</div>
       <h1 style={{ fontSize: '28px', marginBottom: '10px', color: '#E8EFF8' }}>Assinatura Confirmada!</h1>
       <p style={{ color: '#8899B0', marginBottom: '30px', lineHeight: '1.6' }}>
-        Parabéns! Seu pagamento via Stripe foi processado com sucesso.
+        Parabéns! Seu pagamento foi recebido.
         Agora você tem acesso total ao <strong>MAX CFO AI</strong>.
       </p>
 
+      {aviso && <p style={{ color: '#C5A059', marginBottom: '20px', fontSize: '14px' }}>{aviso}</p>}
       {loading ? (
         <div style={{ color: '#C5A059' }}>Validando pagamento...</div>
       ) : (
-        <Link href="/login" style={{
+        <Link href="/dashboard" style={{
           display: 'inline-block',
           width: '100%',
           padding: '14px',

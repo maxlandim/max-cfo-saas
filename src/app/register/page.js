@@ -29,7 +29,7 @@ export default function RegisterPage() {
         await updateProfile(user, { displayName: name });
         localStorage.setItem('maxcfo_user', JSON.stringify({ name, email, documento }));
         
-        router.push('/pricing');
+        router.push('/dashboard');
       } catch (err) {
         console.error(err);
         if (err.code === 'auth/email-already-in-use') {
@@ -55,7 +55,7 @@ export default function RegisterPage() {
       const user = userCredential.user;
       localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName, email: user.email }));
       
-      router.push('/pricing');
+      router.push('/dashboard');
     } catch (err) {
       console.error("Erro completo do Google Login:", err);
       setErrorMsg(`Erro: ${err.message}`);
@@ -96,6 +96,9 @@ export default function RegisterPage() {
             <label>Crie uma Senha</label>
             <input type="password" className="form-input" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" minLength={6} />
           </div>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 12px', lineHeight: 1.5 }}>
+            Ao criar a conta você concorda com os <a href="/termos" style={{ color: 'var(--primary)' }}>Termos de Uso</a> e a <a href="/privacidade" style={{ color: 'var(--primary)' }}>Política de Privacidade</a>. Você tem 7 dias grátis, sem cartão.
+          </p>
           <button type="submit" className="btn-primary" style={{ background: 'linear-gradient(135deg, #C5A059, #A0823A)', color: '#0B1220' }} disabled={loading}>
             {loading ? 'Redirecionando...' : 'Criar Conta (7 dias grátis)'}
           </button>

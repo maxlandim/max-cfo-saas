@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Dados do painel: cada conta só lê e grava o próprio espaço (o id é o uid do usuário).
+    // A segunda condição permite ler o espaço antigo, que usava o e-mail como id, para a migração automática.
+    match /workspaces/{wsId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == wsId
+            || (request.auth.token.email != null && request.auth.token.email.lower() == wsId));
+      allow create, update: if request.auth != null && request.auth.uid == wsId
+        && request.resource.data.owner == request.auth.uid;
+      allow delete: if request.auth != null && request.auth.uid == wsId;
+    }
+
+    // Assinaturas: o usuário pode ler a própria, mas só o servidor (Firebase Admin) escreve.
+    match /subscriptions/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Todo o resto fica fechado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
