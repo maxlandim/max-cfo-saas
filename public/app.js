@@ -176,13 +176,14 @@ if (!window.workspaceId) {
 function applySettings() {
   const s = state.settings;
   // Apply theme
-  const themes = {
-    dark: { '--bg': '#0B1220', '--bg-surf': '#131D30', '--bg-card': '#182236' },
-    darker: { '--bg': '#060B12', '--bg-surf': '#0C1420', '--bg-card': '#111C2E' },
-    midnight: { '--bg': '#090B1A', '--bg-surf': '#0E1228', '--bg-card': '#131830' }
-  };
-  const t = themes[s.theme] || themes.dark;
-  Object.entries(t).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+  const tema = temaEfetivo(), raiz = document.documentElement;
+  raiz.dataset.tema = tema;
+  const escuro = { '--bg': '#0B1220', '--bg-surf': '#131D30', '--bg-card': '#182236' };
+  Object.entries(escuro).forEach(([k, v]) => { if (tema === 'claro') raiz.style.removeProperty(k); else raiz.style.setProperty(k, v); });
+  const tb = document.getElementById('temaBtn');
+  if (tb) { tb.textContent = tema === 'claro' ? '🌙' : '☀️'; tb.title = tema === 'claro' ? 'Mudar para o tema escuro' : 'Mudar para o tema claro'; }
+  const fr = document.getElementById('tributarioFrame');
+  try { if (fr && fr.contentDocument && fr.contentDocument.documentElement) fr.contentDocument.documentElement.dataset.theme = tema === 'claro' ? 'light' : 'dark'; } catch (e) {}
 
   // Update avatar
   const initial = (s.name || 'M')[0].toUpperCase();
@@ -199,11 +200,29 @@ function applySettings() {
   document.querySelectorAll('.brand-tagline').forEach(e => e.textContent = 'Gestão financeira com IA');
 }
 
-function applyTheme(val) {
-  state.settings.theme = val;
-  persist();
-  applySettings();
+// Aparência: claro, escuro ou automático (segue o aparelho). Fica guardada neste aparelho.
+function temaEscolhido() {
+  try { const t = localStorage.getItem('maxcfo_tema'); if (t) return t; } catch (e) {}
+  return 'escuro';
 }
+function temaEfetivo() {
+  const t = temaEscolhido();
+  if (t === 'auto') return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'claro' : 'escuro';
+  return t === 'claro' ? 'claro' : 'escuro';
+}
+function corTema(v, padrao) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || padrao || '#94A3B8'; }
+window.corTema = corTema;
+function applyTheme(val) {
+  try { localStorage.setItem('maxcfo_tema', val); } catch (e) {}
+  applySettings();
+  // redesenha a tela aberta para os gráficos pegarem as cores novas
+  const ativa = document.querySelector('.view.active');
+  const id = ativa ? ativa.id.replace('view-', '') : 'dashboard';
+  try { if (window.viewMeta && window.viewMeta[id]) window.viewMeta[id].render(); } catch (e) {}
+}
+window.applyTheme = applyTheme;
+window.alternarTema = () => applyTheme(temaEfetivo() === 'claro' ? 'escuro' : 'claro');
+if (window.matchMedia) { try { window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (temaEscolhido() === 'auto') applyTheme('auto'); }); } catch (e) {} }
 
 function saveSettings() {
   state.settings.name = document.getElementById('settingName')?.value || state.settings.name;
@@ -544,12 +563,12 @@ function drawTrendChart() {
   meses.forEach((m, i) => {
     const cx = padL + slot * i + slot / 2;
     const hr = rec[i] / max * gh, hd = desp[i] / max * gh;
-    ctx.fillStyle = '#10B981'; ctx.fillRect(cx - bw - 1, padT + gh - hr, bw, hr);
-    ctx.fillStyle = '#EF4444'; ctx.fillRect(cx + 1, padT + gh - hd, bw, hd);
-    ctx.fillStyle = '#94A3B8'; ctx.fillText(F.nomeMes(m), cx, H - 6);
+    ctx.fillStyle = corTema('--success', '#10B981'); ctx.fillRect(cx - bw - 1, padT + gh - hr, bw, hr);
+    ctx.fillStyle = corTema('--danger', '#EF4444'); ctx.fillRect(cx + 1, padT + gh - hd, bw, hd);
+    ctx.fillStyle = corTema('--text-muted'); ctx.fillText(F.nomeMes(m), cx, H - 6);
   });
   if (!rec.some(Boolean) && !desp.some(Boolean)) {
-    ctx.fillStyle = '#64748B'; ctx.font = '12px Inter, system-ui, sans-serif';
+    ctx.fillStyle = corTema('--text-faint'); ctx.font = '12px Inter, system-ui, sans-serif';
     ctx.fillText('Sem lançamentos nos últimos 6 meses', W / 2, H / 2);
   }
   canvas.title = meses.map((m, i) => `${F.nomeMes(m)}: receitas ${fmt(rec[i])} · despesas ${fmt(desp[i])}`).join('\n');
@@ -596,11 +615,11 @@ function drawPieChart() {
   const total = entries.reduce((s, [, v]) => s + v, 0);
 
   if (!entries.length) {
-    ctx2d.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx2d.fillStyle = corTema('--border');
     ctx2d.beginPath();
     ctx2d.arc(W / 2, H / 2, 75, 0, Math.PI * 2);
     ctx2d.fill();
-    ctx2d.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx2d.fillStyle = corTema('--text-faint');
     ctx2d.font = '13px Inter';
     ctx2d.textAlign = 'center';
     ctx2d.fillText('Sem despesas', W / 2, H / 2 + 4);
@@ -620,7 +639,7 @@ function drawPieChart() {
     ctx2d.closePath();
     ctx2d.fillStyle = colors[i % colors.length];
     ctx2d.fill();
-    ctx2d.strokeStyle = 'rgba(11,18,32,.8)';
+    ctx2d.strokeStyle = corTema('--bg-card');
     ctx2d.lineWidth = 2;
     ctx2d.stroke();
     angle += slice;
@@ -629,13 +648,13 @@ function drawPieChart() {
   // Center hole
   ctx2d.beginPath();
   ctx2d.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
-  ctx2d.fillStyle = '#182236';
+  ctx2d.fillStyle = corTema('--bg-card');
   ctx2d.fill();
-  ctx2d.fillStyle = '#8899B0';
+  ctx2d.fillStyle = corTema('--text-muted');
   ctx2d.font = '600 11px Inter';
   ctx2d.textAlign = 'center';
   ctx2d.fillText('Despesas', cx, cy - 5);
-  ctx2d.fillStyle = '#E8EFF8';
+  ctx2d.fillStyle = corTema('--text');
   ctx2d.font = '700 12px Inter';
   ctx2d.fillText(fmt(total), cx, cy + 12);
 

@@ -65,6 +65,7 @@
   }
   F.num = num;
   function el(id) { return document.getElementById(id); }
+  function cor(v, padrao) { return window.corTema ? window.corTema(v, padrao) : padrao; }
   function r2(v) { return Math.round(v * 100) / 100; }
 
   F.FORMAS = ['Pix', 'Boleto', 'Transferência', 'Cartão de crédito', 'Cartão de débito', 'Dinheiro', 'Débito automático', 'Outro'];
@@ -1354,7 +1355,7 @@
     var pl = 64, pr = 12, pt = 12, pb = 26, w = W - pl - pr, h = H - pt - pb;
     var X = function (i) { return pl + i / Math.max(pts.length - 1, 1) * w; };
     var Y = function (v) { return pt + (max - v) / (max - min) * h; };
-    g.font = '11px Inter, system-ui, sans-serif'; g.fillStyle = '#94A3B8'; g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 1;
+    g.font = '11px Inter, system-ui, sans-serif'; g.fillStyle = cor('--text-muted', '#94A3B8'); g.strokeStyle = cor('--border', 'rgba(255,255,255,.06)'); g.lineWidth = 1;
     for (var k = 0; k <= 4; k++) {
       var val = min + (max - min) * k / 4, y = Y(val);
       g.beginPath(); g.moveTo(pl, y); g.lineTo(W - pr, y); g.stroke();
@@ -1368,12 +1369,12 @@
     pts.forEach(function (p, i) { g.lineTo(X(i), Y(p.saldo)); });
     g.lineTo(X(pts.length - 1), Y(Math.max(min, 0))); g.closePath(); g.fillStyle = grad; g.fill();
     g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(X(i), Y(p.saldo)); else g.moveTo(X(i), Y(p.saldo)); });
-    g.strokeStyle = '#D4AF37'; g.lineWidth = 2; g.stroke();
+    g.strokeStyle = cor('--gold', '#D4AF37'); g.lineWidth = 2; g.stroke();
     // trechos negativos em vermelho
     g.strokeStyle = '#EF4444'; g.lineWidth = 2.5;
     for (var i = 1; i < pts.length; i++) if (pts[i].saldo < 0 || pts[i - 1].saldo < 0) { g.beginPath(); g.moveTo(X(i - 1), Y(pts[i - 1].saldo)); g.lineTo(X(i), Y(pts[i].saldo)); g.stroke(); }
     // datas
-    g.fillStyle = '#94A3B8'; g.textAlign = 'center';
+    g.fillStyle = cor('--text-muted', '#94A3B8'); g.textAlign = 'center';
     var passos = 6;
     for (var j = 0; j <= passos; j++) { var idx = Math.round((pts.length - 1) * j / passos); g.fillText(F.dataBR(pts[idx].data).slice(0, 5), X(idx), H - 8); }
     // dica ao passar o mouse
