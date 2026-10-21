@@ -154,6 +154,7 @@ var initMaxCfoApp = async () => {
   if (window.initAuditModule) window.initAuditModule();
   if (window.initOperacaoModule) window.initOperacaoModule();
   if (window.initGestaoModule) window.initGestaoModule();
+  if (window.initRelatorioModule) window.initRelatorioModule();
   if (window.initLayoutModule) window.initLayoutModule();
 
   updateSettingsPanel();

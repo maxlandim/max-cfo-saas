@@ -116,12 +116,17 @@
           '<td style="font-weight:700" class="' + (k.saldo < 0 ? 'fin-neg' : '') + '">' + moeda(k.saldo) + '</td><td class="fin-pos">' + moeda(k.aReceber30) + '</td><td class="fin-neg">' + moeda(k.aPagar30) + '</td>' +
           '<td>' + (k.vencidosRec.length || k.vencidosPag.length ? '<div class="fin-pos">' + moeda(somar(k.vencidosRec)) + '</div><div class="fin-neg">' + moeda(somar(k.vencidosPag)) + '</div>' : '—') + '</td>' +
           '<td class="' + (k.atual.dre.resultado < 0 ? 'fin-neg' : '') + '">' + moeda(k.atual.dre.resultado) + '</td><td>' + alerta + '</td>' +
-          '<td>' + (l.ativa ? '<span class="fin-sub">aberta</span>' : '<button class="fin-btn gold" onclick="empresas.trocar(\'' + esc(l.emp.id) + '\')">Abrir</button>') + '</td></tr>';
+          '<td style="white-space:nowrap"><button class="fin-btn" title="Relatório mensal em PDF" onclick="rel.abrirEmpresa(\'' + esc(l.emp.id || '') + '\')">📄 Relatório</button> ' + (l.ativa ? '<span class="fin-sub">aberta</span>' : '<button class="fin-btn gold" onclick="empresas.trocar(\'' + esc(l.emp.id) + '\')">Abrir</button>') + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       '<p class="fin-sub" style="margin-top:10px">Os números vêm dos lançamentos de cada empresa. Atrasados: verde a receber, vermelho a pagar. Hoje: ' + F().dataBR(hoje) + '.</p></div>';
   }
 
   window.empresas = {
+    estadoDe: function (id) {
+      var e = (cache || []).find(function (x) { return (x.id || '') === (id || ''); }); if (!e) return null;
+      var ativa = (e.id || '') === (E().ativa || '');
+      return { ativa: ativa, nome: e.nome, estado: ativa ? window.state : JSON.parse(JSON.stringify(e.estado || { transactions: [] })) };
+    },
     abrir: abrir,
     trocar: function (id) { if (E()) { toast('Abrindo empresa…', 'info'); E().trocar(id || ''); } },
     criar: async function () {

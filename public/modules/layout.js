@@ -16,19 +16,19 @@
   // Módulos (categorias) e, dentro de cada um, as funcionalidades
   var SECOES = [
     ['Início', '🏠', [['dashboard', '🏠', 'Início']]],
-    ['Financeiro', '💰', [['receber', '⬇️', 'Contas a receber'], ['pagar', '⬆️', 'Contas a pagar'], ['bancos', '🏦', 'Contas financeiras'], ['fluxo', '📈', 'Fluxo de caixa'], ['contas', '📅', 'Agenda de vencimentos'], ['reconciliation', '🔄', 'Importar extrato'], ['finance', '📒', 'Todos os lançamentos'], ['dre', '📊', 'Resultado (DRE)']]],
+    ['Financeiro', '💰', [['receber', '⬇️', 'Contas a receber'], ['pagar', '⬆️', 'Contas a pagar'], ['bancos', '🏦', 'Contas financeiras'], ['fluxo', '📈', 'Fluxo de caixa'], ['contas', '📅', 'Agenda de vencimentos'], ['reconciliation', '🔄', 'Importar extrato'], ['finance', '📒', 'Todos os lançamentos'], ['dre', '📊', 'Resultado (DRE)'], ['reports', '📄', 'Relatório mensal (PDF)']]],
     ['Vendas', '🛒', [['contatos', '👥', 'Clientes e fornecedores'], ['budget', '📝', 'Orçamentos'], ['os', '🛠️', 'Ordens de serviço'], ['plans', '🔁', 'Mensalidades e contratos'], ['crm', '🤝', 'Funil de vendas'], ['commissions', '💸', 'Comissões'], ['inventory', '📦', 'Estoque']]],
     ['Fiscal', '🧾', [['nfe', '🧾', 'Notas fiscais'], ['tributario', '⚖️', 'Impostos e reforma'], ['tax-audit', '✅', 'Checklist fiscal'], ['accountant', '🧮', 'Enviar ao contador']]],
     ['Pessoas e patrimônio', '🧑‍💼', [['hr', '🧑‍💼', 'Funcionários e folha'], ['assets', '🏢', 'Bens da empresa']]],
-    ['CFO com IA', '🤖', [['chat', '🤖', 'Pergunte ao CFO'], ['simulator', '🔮', 'Simular cenários'], ['reports', '📋', 'Relatórios'], ['companies', '🔍', 'Consultar CNPJ']]],
+    ['CFO com IA', '🤖', [['chat', '🤖', 'Pergunte ao CFO'], ['simulator', '🔮', 'Simular cenários'], ['companies', '🔍', 'Consultar CNPJ']]],
     ['Empresa e ajustes', '⚙️', [['settings', '⚙️', 'Configurações'], ['bpo', '🗂️', 'Todas as empresas'], ['team', '👤', 'Equipe e acessos'], ['audit', '🕘', 'Histórico de alterações']]]
   ];
   var FIXOS = ['dashboard', 'receber', 'pagar', 'bancos', 'fluxo', 'contatos', 'chat', 'settings'];
   var PERFIS = {
-    servicos: { nome: 'Prestação de serviços', desc: 'Consultoria, agência, clínica, escola, profissional liberal', telas: ['reconciliation', 'dre', 'budget', 'plans', 'nfe', 'tributario', 'accountant'] },
-    comercio: { nome: 'Comércio e revenda', desc: 'Loja, distribuidora, e-commerce, revenda', telas: ['reconciliation', 'dre', 'inventory', 'budget', 'nfe', 'commissions', 'tributario', 'accountant'] },
-    tecnico: { nome: 'Serviço técnico ou obra', desc: 'Assistência, manutenção, instalação, reforma', telas: ['reconciliation', 'dre', 'os', 'budget', 'inventory', 'nfe', 'tributario', 'accountant'] },
-    bpo: { nome: 'BPO financeiro ou contabilidade', desc: 'Cuido do financeiro de várias empresas', telas: ['reconciliation', 'dre', 'bpo', 'plans', 'accountant', 'tax-audit', 'nfe', 'tributario', 'finance', 'contas'] }
+    servicos: { nome: 'Prestação de serviços', desc: 'Consultoria, agência, clínica, escola, profissional liberal', telas: ['reconciliation', 'dre', 'reports', 'budget', 'plans', 'nfe', 'tributario', 'accountant'] },
+    comercio: { nome: 'Comércio e revenda', desc: 'Loja, distribuidora, e-commerce, revenda', telas: ['reconciliation', 'dre', 'reports', 'inventory', 'budget', 'nfe', 'commissions', 'tributario', 'accountant'] },
+    tecnico: { nome: 'Serviço técnico ou obra', desc: 'Assistência, manutenção, instalação, reforma', telas: ['reconciliation', 'dre', 'reports', 'os', 'budget', 'inventory', 'nfe', 'tributario', 'accountant'] },
+    bpo: { nome: 'BPO financeiro ou contabilidade', desc: 'Cuido do financeiro de várias empresas', telas: ['reconciliation', 'dre', 'reports', 'bpo', 'plans', 'accountant', 'tax-audit', 'nfe', 'tributario', 'finance', 'contas'] }
   };
   function visiveis() {
     var s = st().settings || {};

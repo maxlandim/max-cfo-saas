@@ -3,7 +3,7 @@ export const PLANOS = {
   basic: { nome: 'MAX CFO AI - Básico', valor: 4990 },
   intermediate: { nome: 'MAX CFO AI - Intermediário', valor: 12990 },
   complete: { nome: 'MAX CFO AI - Completo', valor: 26990 },
-  unlimited: { nome: 'MAX CFO AI - Unlimited', valor: 29990 },
+  unlimited: { nome: 'MAX CFO AI - Ilimitado', valor: 29990 },
 };
 
 // Dias de teste grátis a partir da criação da conta.

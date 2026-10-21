@@ -1,0 +1,72 @@
+'use client';
+
+// Planos do MAX CFO AI, usados na página inicial e na página de preços.
+// Todos os planos têm todas as funcionalidades; o que muda é quantas empresas cabem no login.
+export const PLANOS_VITRINE = [
+  { id: 'basic', nome: 'Básico', preco: '49,90', empresas: '1 empresa', para: 'Para o dono que quer o financeiro da empresa em ordem.' },
+  { id: 'intermediate', nome: 'Intermediário', preco: '129,90', empresas: 'Até 3 empresas', para: 'Para quem tem mais de um CNPJ ou começa a atender clientes.' },
+  { id: 'complete', nome: 'Completo', preco: '269,90', empresas: 'Até 10 empresas', para: 'Para BPO financeiro e escritórios em crescimento.', destaque: true, extra: 'Suporte prioritário no WhatsApp' },
+  { id: 'unlimited', nome: 'Ilimitado', preco: '299,90', empresas: 'Empresas ilimitadas', para: 'Para escritórios e grupos com muitas empresas.', extra: 'Suporte prioritário no WhatsApp' },
+];
+
+export const INCLUSO = [
+  'Contas a receber e a pagar, com parcelas e recorrência',
+  'Contas financeiras: bancos, caixa e cartão',
+  'Fluxo de caixa com previsão de 90 dias',
+  'Resultado do mês (DRE) e centro de custo',
+  'Cobrança por Pix com QR Code e WhatsApp',
+  'Importação do extrato do banco (OFX ou CSV)',
+  'Leitura de boleto e nota com a câmera (IA)',
+  'Relatório mensal em PDF com a sua marca',
+  'Orçamentos, ordens de serviço, contratos e estoque',
+  'Simulador de impostos e da reforma tributária',
+  'Pacote do mês para o contador',
+  'CFO com IA que responde com os seus números',
+];
+
+export function CardsPlanos({ onEscolher, carregando, textoBotao }) {
+  return (
+    <div className="pl-grade">
+      {PLANOS_VITRINE.map((p) => (
+        <div key={p.id} className={'pl-card' + (p.destaque ? ' pl-dest' : '')}>
+          {p.destaque && <div className="pl-selo">Mais escolhido por BPOs</div>}
+          <div className="pl-nome">{p.nome}</div>
+          <div className="pl-preco"><small>R$</small>{p.preco}<span>/mês</span></div>
+          <div className="pl-emp">{p.empresas}</div>
+          <p className="pl-para">{p.para}</p>
+          <ul className="pl-lista">
+            <li>Todas as funcionalidades</li>
+            <li>Dados na nuvem, separados por empresa</li>
+            {p.extra && <li>{p.extra}</li>}
+          </ul>
+          <button type="button" disabled={carregando} onClick={() => onEscolher(p.id)} className={p.destaque ? 'pl-btn pl-btn-ouro' : 'pl-btn'}>
+            {carregando ? 'Abrindo…' : (textoBotao ? textoBotao(p) : 'Começar grátis')}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export const ESTILO_PLANOS = `
+.pl-grade{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;width:100%}
+.pl-card{position:relative;background:#fff;border:1px solid #E3E6EC;border-radius:18px;padding:24px 22px;display:flex;flex-direction:column;text-align:left;box-shadow:0 2px 10px rgba(11,18,32,.04)}
+.pl-dest{border:2px solid #C5A059;box-shadow:0 14px 40px rgba(197,160,89,.18)}
+.pl-selo{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#C5A059;color:#0B1220;font-size:11.5px;font-weight:800;padding:4px 12px;border-radius:99px;white-space:nowrap}
+.pl-nome{font-size:17px;font-weight:800;color:#0B1220}
+.pl-preco{font-size:38px;font-weight:900;color:#0B1220;letter-spacing:-.02em;margin:10px 0 2px;line-height:1}
+.pl-preco small{font-size:16px;font-weight:700;margin-right:3px;vertical-align:top;position:relative;top:6px}
+.pl-preco span{font-size:14px;font-weight:500;color:#5B6474;margin-left:2px}
+.pl-emp{display:inline-block;margin-top:10px;background:#F6F1E4;color:#7A5A12;font-weight:700;font-size:13px;padding:5px 10px;border-radius:8px;align-self:flex-start}
+.pl-para{color:#5B6474;font-size:14px;line-height:1.5;margin:12px 0 0;min-height:42px}
+.pl-lista{list-style:none;padding:0;margin:16px 0 20px;flex:1;font-size:14px;color:#1E2533}
+.pl-lista li{padding:5px 0 5px 24px;position:relative}
+.pl-lista li:before{content:'✓';position:absolute;left:0;color:#0E9F6E;font-weight:900}
+.pl-btn{width:100%;padding:13px;border-radius:10px;border:1.5px solid #0B1220;background:#fff;color:#0B1220;font-weight:800;font-size:15px;cursor:pointer;transition:all .15s}
+.pl-btn:hover{background:#0B1220;color:#fff}
+.pl-btn-ouro{background:#C5A059;border-color:#C5A059;color:#0B1220}
+.pl-btn-ouro:hover{background:#B08D47;border-color:#B08D47;color:#0B1220}
+.pl-btn:disabled{opacity:.6;cursor:wait}
+@media (max-width:1000px){.pl-grade{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.pl-grade{grid-template-columns:1fr}.pl-para{min-height:0}}
+`;
