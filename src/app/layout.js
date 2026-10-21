@@ -2,7 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "./ClientProviders";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 
 export const metadata = {
   title: "MAX CFO AI — Seu CFO Virtual de Inteligência Artificial",
@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${inter.variable}`}>
         <ClientProviders>
           {children}
         </ClientProviders>

@@ -11,6 +11,14 @@ import { useAuth } from '../context/AuthContext';
 const CAMPOS_TEMPORARIOS = ['currentModal', 'isListening', 'voiceRec', 'txFilter', 'txSort', 'notifSeen'];
 const LIMITE_DOC = 900 * 1024; // o Firestore aceita até 1 MB por documento
 
+// Versão dos scripts do painel: muda a cada publicação, então o navegador pode guardá-los em cache sem medo
+const VERSAO = 'v=' + (process.env.NEXT_PUBLIC_BUILD_ID || '9');
+const SCRIPTS = ['/engine.js', ...['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'layout'].map((m) => `/modules/${m}.js`), '/app.js'].map((s) => `${s}?${VERSAO}`);
+const CACHE_ACESSO_MS = 12 * 3600 * 1000; // a verificação da assinatura é refeita em segundo plano
+
+function lerCache(chave) { try { const v = JSON.parse(localStorage.getItem(chave) || 'null'); return v && Date.now() - v.t < CACHE_ACESSO_MS ? v.dados : null; } catch { return null; } }
+function gravarCache(chave, dados) { try { localStorage.setItem(chave, JSON.stringify({ t: Date.now(), dados })); } catch {} }
+
 function limparEstado(estado) {
   const copia = {};
   for (const k of Object.keys(estado || {})) {
@@ -23,24 +31,55 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [acesso, setAcesso] = useState(null); // resposta de /api/subscription
+  const [pronto, setPronto] = useState(false);
   const iniciado = useRef(false);
+  const leituras = useRef(null); // leituras do Firestore iniciadas junto com o login
+
+  // 0) Começa a baixar os scripts do painel enquanto o login e a assinatura são conferidos
+  useEffect(() => {
+    for (const src of SCRIPTS) {
+      if (document.querySelector(`link[href="${src}"]`)) continue;
+      const l = document.createElement('link'); l.rel = 'preload'; l.as = 'script'; l.href = src; document.head.appendChild(l);
+    }
+  }, []);
 
   // 1) Sem login, volta para a tela de entrada
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
-  // 2) Verifica a assinatura no servidor (não dá para burlar pelo navegador)
+  // 2) Verifica a assinatura no servidor. Quem já entrou antes abre na hora com a última resposta,
+  //    e a verificação roda em paralelo: se o acesso tiver acabado, o painel é bloqueado.
   useEffect(() => {
     if (!user) return;
     let vivo = true;
+    const chave = 'maxcfo_acesso_' + user.uid;
+    const anterior = lerCache(chave);
+    if (anterior && anterior.acesso) setAcesso(anterior);
+
+    // Leituras do Firestore já começam aqui, sem esperar a assinatura
+    if (!leituras.current) {
+      let ativa = '';
+      try { ativa = localStorage.getItem('maxcfo_empresa_' + user.uid) || ''; } catch {}
+      const wsId = ativa ? `${user.uid}__${ativa}` : user.uid;
+      leituras.current = {
+        perfil: getDoc(doc(db, 'perfis', user.uid)).catch((e) => { console.warn('Não foi possível ler a lista de empresas:', e); return null; }),
+        wsId,
+        espaco: getDoc(doc(db, 'workspaces', wsId)).catch(() => null),
+      };
+    }
+
     (async () => {
       try {
         const r = await authFetch('/api/subscription');
         const dados = await r.json();
-        if (vivo) setAcesso(r.ok ? dados : { acesso: false, motivo: 'erro', erro: dados.error });
+        if (!vivo) return;
+        if (r.ok) {
+          gravarCache(chave, dados);
+          if (!anterior || !dados.acesso || anterior.motivo !== dados.motivo || anterior.plano !== dados.plano || anterior.diasRestantes !== dados.diasRestantes) setAcesso(dados);
+        } else if (!anterior) setAcesso({ acesso: false, motivo: 'erro', erro: dados.error });
       } catch {
-        if (vivo) setAcesso({ acesso: false, motivo: 'erro', erro: 'Sem conexão. Verifique a internet e recarregue a página.' });
+        if (vivo && !anterior) setAcesso({ acesso: false, motivo: 'erro', erro: 'Sem conexão. Verifique a internet e recarregue a página.' });
       }
     })();
     return () => { vivo = false; };
@@ -89,7 +128,9 @@ export default function DashboardPage() {
     window.loadStateFromFirebase = async (wsId) => {
       if (!wsId) return null;
       try {
-        const snap = await getDoc(doc(db, 'workspaces', wsId));
+        const pre = leituras.current && leituras.current.wsId === wsId ? leituras.current.espaco : null;
+        if (leituras.current) leituras.current.espaco = null; // a leitura antecipada vale só uma vez
+        const snap = (pre && await pre) || await getDoc(doc(db, 'workspaces', wsId));
         if (snap.exists() && snap.data().data) return JSON.parse(snap.data().data);
         // Migração: versões antigas guardavam os dados com o e-mail como identificador (só na empresa principal)
         if (emailLegado && wsId === user.uid) {
@@ -119,14 +160,16 @@ export default function DashboardPage() {
       }
     };
 
-    const loadScript = (src) => new Promise((resolve) => {
+    // Todos os scripts entram de uma vez (já baixados pelo preload) e rodam na ordem
+    const carregarScripts = () => Promise.all(SCRIPTS.map((src) => new Promise((resolve) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
       const script = document.createElement('script');
       script.src = src;
       script.async = false;
       script.onload = resolve;
-      script.onerror = resolve;
+      script.onerror = () => { console.error('Falha ao carregar', src); resolve(); };
       document.body.appendChild(script);
-    });
+    })));
 
     // Empresas do mesmo login (BPO, grupo de empresas). A principal usa o uid; as demais, "<uid>__<id>".
     const LIMITES = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
@@ -180,7 +223,7 @@ export default function DashboardPage() {
 
     (async () => {
       try {
-        const snap = await getDoc(perfilRef);
+        const snap = (leituras.current && await leituras.current.perfil) || await getDoc(perfilRef);
         if (snap.exists()) { empresas.lista = Array.isArray(snap.data().empresas) ? snap.data().empresas : []; empresas.principal = snap.data().principal || ''; }
       } catch (e) { console.warn('Não foi possível ler a lista de empresas:', e); }
       let ativa = '';
@@ -189,27 +232,33 @@ export default function DashboardPage() {
       empresas.ativa = ativa;
       window.workspaceId = empresas.espacoDe(ativa);
 
-      const v = 'v=8';
-      if (!document.querySelector(`script[src="/engine.js?${v}"]`)) await loadScript(`/engine.js?${v}`);
-      const modules = ['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'layout'];
-      for (const mod of modules) {
-        if (!document.querySelector(`script[src="/modules/${mod}.js?${v}"]`)) await loadScript(`/modules/${mod}.js?${v}`);
-      }
-      if (!document.querySelector(`script[src="/app.js?${v}"]`)) await loadScript(`/app.js?${v}`);
-      if (typeof window.initMaxCfoApp === 'function') window.initMaxCfoApp();
+      await carregarScripts();
+      try { if (typeof window.initMaxCfoApp === 'function') await window.initMaxCfoApp(); }
+      catch (e) { console.error('Erro ao iniciar o painel:', e); }
+      setPronto(true);
     })();
 
     return () => window.removeEventListener('pagehide', salvarAgora);
   }, [user, acesso]);
 
+  useEffect(() => {
+    if (!acesso?.acesso || !window.maxcfoEmpresas) return;
+    const LIM = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
+    window.maxcfoEmpresas.limite = acesso.motivo === 'assinatura' ? (LIM[acesso.plano] || 1) : acesso.motivo === 'teste' ? 3 : 9999;
+    window.maxcfoEmpresas.plano = acesso.plano || null; window.maxcfoEmpresas.motivo = acesso.motivo;
+  }, [acesso]);
+
   const bloqueado = acesso && !acesso.acesso;
-  const carregando = loading || !user || !acesso;
+  const carregando = !bloqueado && (loading || !user || !acesso || !pronto);
 
   return (
     <>
       {carregando && (
-        <div style={{ position: 'fixed', inset: 0, background: '#070B14', zIndex: 99998, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C5A059', fontFamily: 'sans-serif' }}>
-          Carregando seu painel…
+        <div style={{ position: 'fixed', inset: 0, background: '#070B14', zIndex: 99998, display: 'flex', flexDirection: 'column', gap: 18, alignItems: 'center', justifyContent: 'center', color: '#8899B0', fontFamily: 'var(--font-inter), sans-serif', fontSize: 14 }}>
+          <style>{'@keyframes maxcfoGira{to{transform:rotate(360deg)}}'}</style>
+          <div style={{ width: 54, height: 54, borderRadius: 14, background: 'linear-gradient(135deg,#C5A059,#8a6d2f)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>⚡</div>
+          <div style={{ width: 26, height: 26, border: '3px solid rgba(197,160,89,.25)', borderTopColor: '#C5A059', borderRadius: '50%', animation: 'maxcfoGira .8s linear infinite' }} />
+          <span>{!user ? 'Entrando…' : !acesso ? 'Conferindo sua conta…' : 'Abrindo seu painel…'}</span>
         </div>
       )}
       {bloqueado && (
