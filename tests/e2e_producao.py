@@ -22,7 +22,7 @@ def rest(url, corpo, token=None, metodo='POST'):
 async def esperar_painel(pg, rotulo):
     t0 = time.time(); ultimo = ''
     for _ in range(240):
-        st = await pg.evaluate("""() => ({ pronto: !!(window.__maxcfoIniciado && document.querySelector('.lay-mod')), overlay: [...document.querySelectorAll('div')].filter(d => getComputedStyle(d).position==='fixed' && +getComputedStyle(d).zIndex>=99998).map(d=>d.innerText.trim().slice(0,120)) })""")
+        st = await pg.evaluate("""() => ({ pronto: !!(window.__maxcfoIniciado && document.querySelector('.lay-mod')), overlay: [...document.querySelectorAll('div')].filter(d => getComputedStyle(d).position==='fixed' && +getComputedStyle(d).zIndex>=99998 && /Entrando|Conferindo|Lendo|Carregando|Abrindo|nuvem/.test(d.innerText)).map(d=>d.innerText.trim().slice(0,120)) })""")
         ultimo = st['overlay']
         if st['pronto'] and not st['overlay']: break
         await pg.wait_for_timeout(500)
@@ -60,6 +60,9 @@ async def main():
             seg, ov = await esperar_painel(pg, 'painel_primeira_vez')
             log(not ov, f'painel abre (1ª vez) em {seg}s', ov)
             await pg.screenshot(path=f'{OUT}/01_painel.png')
+            await pg.wait_for_timeout(3000)
+            r0 = await pg.evaluate("[!!document.getElementById('view-receber'), document.querySelectorAll('.lay-mod').length, document.querySelectorAll('.sidebar-nav .nav-item').length]")
+            log(r0[0] and r0[1] >= 6, 'painel continua montado 3 s depois de abrir (sem redesenho do React)', r0)
             # pula as boas-vindas
             if await pg.is_visible('#layBoasVindas'):
                 await pg.click('#layBoasVindas >> text=Pular'); await pg.wait_for_timeout(400)
