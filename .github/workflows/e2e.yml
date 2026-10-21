@@ -33,7 +33,12 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://localhost:3000/ >/dev/null && break; sleep 1; done
           echo "SITE=http://localhost:3000" >> $GITHUB_ENV
           echo "::warning::site do branch ${{ steps.alvo.outputs.ref }} no ar em localhost:3000"
-      - run: python ia_pdf.py 2>&1 | tee saida_log.txt
+      - uses: actions/cache@v4
+        with: { path: ~/.diag, key: diag-chaves-v1 }
+      - run: bash gemini_diag.sh 2>&1 | tee saida_log.txt
+        working-directory: tests
+        continue-on-error: true
+      - run: python ia_pdf.py 2>&1 | tee -a saida_log.txt
         working-directory: tests
         continue-on-error: true
       - run: python telas.py 2>&1 | tee -a saida_log.txt
