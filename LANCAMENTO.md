@@ -17,6 +17,27 @@ Este guia lista o que falta configurar para o MAX CFO AI cobrar clientes com seg
 | — | Novo módulo **Simulador Tributário e Reforma** no menu do painel |
 | — | Portal do cliente do Stripe: trocar cartão, mudar de plano e cancelar sem falar com você |
 
+## Novidades da versão 6 (todos os módulos funcionais)
+
+| Tela | O que faz |
+|---|---|
+| Contas a Pagar e Receber | Baixa com juros/multa (lançados à parte, no resultado financeiro), desconto e baixa parcial; recibo com valor por extenso; duplicar; editar as próximas parcelas da série; filtros por conta e categoria |
+| Clientes e Fornecedores | Cadastro com CPF/CNPJ (dados da Receita pelo CNPJ), WhatsApp, e-mail e cidade; saldo a receber, a pagar e atrasado de cada um. Criado sozinho a partir dos lançamentos |
+| Fluxo de Caixa | Transferência entre contas (fora do DRE) |
+| CRM | Funil com etapas, valor, próxima ação, origem, motivo de perda, previsão ponderada e conversão; oportunidade ganha vira orçamento |
+| Orçamentos | Itens, desconto, validade e condições; envio pelo WhatsApp, impressão/PDF, aprovação e faturamento em parcelas no contas a receber, com baixa de estoque |
+| Ordens de Serviço | Quadro aberta → em andamento → concluída → faturada, impressão para assinatura, aviso no WhatsApp e faturamento |
+| Comissões | Calculadas sobre os orçamentos faturados de cada vendedor e lançadas no contas a pagar |
+| Estoque | Custo médio, mínimo, entradas que geram contas a pagar, saídas que geram vendas, ajuste de inventário, histórico e duração pelo ritmo real |
+| Contratos Recorrentes | Mensalidades que criam sozinhas as contas a receber do mês e do próximo; reajuste atualiza as cobranças em aberto |
+| RH e Folha | Custo real com férias, 13º, FGTS e INSS patronal pelo regime; "Lançar folha do mês" cria salários, FGTS e INSS no contas a pagar |
+| Imobilizado | Depreciação linear correta e rendimento de aluguel |
+| Checklist Fiscal | RBT12 e limites do MEI/Simples, Fator R, receitas sem nota, imposto do mês, comprovantes, categorias e NFS-e nacional |
+| Histórico de alterações | Quem criou, alterou ou excluiu cada registro |
+| Configurações | Empresa (CNPJ com dados da Receita, regime), Pix, categorias próprias ligadas ao DRE, backup e textos corretos sobre onde ficam os dados |
+
+Erros corrigidos nesta versão: valores com centavos digitados na baixa e no saldo da conta eram lidos 100 vezes maiores; a consulta de CNPJ travava no fim; a janela de nova OS não abria; o histórico perdia a descrição das ações. Saíram: ranking de vendedores inventado, previsão fixa de estoque, "notícias do setor" inventadas na consulta de CNPJ e o texto que dizia que os dados ficavam só no navegador.
+
 ## Novidades da versão 5 (financeiro completo)
 
 | Tela | O que faz |

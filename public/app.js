@@ -152,6 +152,8 @@ var initMaxCfoApp = async () => {
   if (window.initPlansModule) window.initPlansModule();
   if (window.initCommissionsModule) window.initCommissionsModule();
   if (window.initAuditModule) window.initAuditModule();
+  if (window.initOperacaoModule) window.initOperacaoModule();
+  if (window.initGestaoModule) window.initGestaoModule();
 
   updateSettingsPanel();
   renderDashboard();
@@ -261,8 +263,8 @@ var viewMeta = {
     companies: { label: 'Empresas', render: renderCompanyHistory },
     reports:   { label: 'Relatórios & BI', render: renderReportsV5 },
     settings:  { label: 'Configurações', render: updateSettingsPanel },
-    crm:       { label: 'CRM & Vendas', render: renderCRM },
-    inventory: { label: 'Estoque', render: renderInventory },
+    crm:       { label: 'CRM', render: () => { if (window.renderCRM) window.renderCRM(); } },
+    inventory: { label: 'Estoque', render: () => { if (window.renderInventory) window.renderInventory(); } },
     team:      { label: 'Equipe & Workspaces', render: () => { if(window.renderTeam) window.renderTeam(); } },
     hr:        { label: 'RH & Provisões', render: () => { if(window.renderHR) window.renderHR(); } },
     nfe:       { label: 'Emissão Fiscal (NF-e)', render: () => { if(window.renderNFe) window.renderNFe(); } },
@@ -324,24 +326,37 @@ function initSearch() {
   if (!input || !dd) return;
 
   const idx = [
-    { icon:'📊', text:'Dashboard — visão geral executiva', fn: () => switchView('dashboard') },
-    { icon:'🤖', text:'CFO IA — chat e análises por voz', fn: () => switchView('chat') },
-    { icon:'💰', text:'Financeiro — lançamentos e CRUD', fn: () => switchView('finance') },
-    { icon:'💰', text:'Nova Receita', fn: () => { switchView('finance'); setTimeout(() => openModal('receita'), 100); } },
-    { icon:'💸', text:'Nova Despesa', fn: () => { switchView('finance'); setTimeout(() => openModal('despesa'), 100); } },
-    { icon:'🔮', text:'Simulador de Cenários', fn: () => switchView('simulator') },
-    { icon:'🏢', text:'Análise de Empresa por CNPJ', fn: () => switchView('companies') },
-    { icon:'📋', text:'Relatórios — DRE, Diagnóstico, Tributário', fn: () => switchView('reports') },
-    { icon:'📈', text:'Relatório DRE Completo', fn: () => { switchView('reports'); setTimeout(() => generateReport('dre'), 100); } },
-    { icon:'🩺', text:'Diagnóstico Financeiro', fn: () => { switchView('reports'); setTimeout(() => generateReport('diagnostico'), 100); } },
-    { icon:'⚖️', text:'Simulador Tributário e Reforma', fn: () => switchView('tributario') },
-    { icon:'📋', text:'Planejamento Tributário', fn: () => { switchView('reports'); setTimeout(() => generateReport('tributario'), 100); } },
-    { icon:'🔥', text:'Burn Rate e Runway de Caixa', fn: () => sendToChat('burn rate e runway') },
-    { icon:'💼', text:'Consultoria de Investimentos', fn: () => sendToChat('onde investir meu excedente') },
-    { icon:'✂️', text:'Estratégia de Redução de Custos', fn: () => sendToChat('reduzir custos') },
-    { icon:'⚙️', text:'Configurações — perfil e dados', fn: () => switchView('settings') },
-    { icon:'⬇️', text:'Exportar dados CSV', fn: () => exportCSV() },
+    { icon:'📊', text:'Visão geral', fn: () => switchView('dashboard') },
+    { icon:'📅', text:'Contas a pagar e receber', fn: () => switchView('contas') },
+    { icon:'➕', text:'Nova conta a receber', fn: () => window.fin && window.fin.novo('RECEITA', { status: 'pendente' }) },
+    { icon:'➖', text:'Nova conta a pagar', fn: () => window.fin && window.fin.novo('DESPESA', { status: 'pendente' }) },
+    { icon:'👥', text:'Clientes e fornecedores', fn: () => switchView('contatos') },
+    { icon:'🌊', text:'Fluxo de caixa e contas bancárias', fn: () => switchView('fluxo') },
+    { icon:'🔁', text:'Transferência entre contas', fn: () => { switchView('fluxo'); setTimeout(() => window.fin.transferir(), 100); } },
+    { icon:'📊', text:'DRE gerencial', fn: () => switchView('dre') },
+    { icon:'🔄', text:'Conciliação bancária (extrato OFX/CSV)', fn: () => switchView('reconciliation') },
+    { icon:'📷', text:'Ler boleto ou nota com IA', fn: () => window.fin && window.fin.abrirLeitura() },
+    { icon:'💰', text:'Lançamentos', fn: () => switchView('finance') },
+    { icon:'🤝', text:'CRM — oportunidades', fn: () => switchView('crm') },
+    { icon:'📝', text:'Orçamentos', fn: () => switchView('budget') },
+    { icon:'🛠️', text:'Ordens de serviço', fn: () => switchView('os') },
+    { icon:'🔁', text:'Contratos recorrentes (mensalidades)', fn: () => switchView('plans') },
+    { icon:'📦', text:'Estoque', fn: () => switchView('inventory') },
+    { icon:'💸', text:'Comissões', fn: () => switchView('commissions') },
+    { icon:'🧑‍💼', text:'RH e folha', fn: () => switchView('hr') },
+    { icon:'🧾', text:'Notas fiscais', fn: () => switchView('nfe') },
+    { icon:'✅', text:'Checklist fiscal', fn: () => switchView('tax-audit') },
+    { icon:'🧮', text:'Portal do contador', fn: () => switchView('accountant') },
+    { icon:'🏢', text:'Painel multiempresas', fn: () => switchView('bpo') },
+    { icon:'⚖️', text:'Simulador tributário e reforma', fn: () => switchView('tributario') },
+    { icon:'🔮', text:'Simulador de cenários', fn: () => switchView('simulator') },
+    { icon:'🔍', text:'Consulta de CNPJ', fn: () => switchView('companies') },
+    { icon:'🤖', text:'CFO IA', fn: () => switchView('chat') },
+    { icon:'📋', text:'Relatórios', fn: () => switchView('reports') },
+    { icon:'⚙️', text:'Configurações, Pix e categorias', fn: () => switchView('settings') },
+    { icon:'⬇️', text:'Exportar lançamentos (Excel)', fn: () => exportCSV() },
   ];
+
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
@@ -833,6 +848,19 @@ async function submitTransaction(e) {
       const oldTx = { ...state.transactions[idx] };
       state.transactions[idx] = { ...state.transactions[idx], ...lista[0] };
       if (state.transactions[idx].status !== 'pago') state.transactions[idx].pagoEm = '';
+      // Aplicar às próximas parcelas em aberto da mesma série
+      const serie = document.getElementById('txSerie');
+      const atual = state.transactions[idx];
+      if (serie && serie.checked && atual.grupo) {
+        let n = 0;
+        state.transactions.forEach(t => {
+          if (t.grupo === atual.grupo && t.id !== atual.id && t.status !== 'pago' && (t.vencimento || '') > (oldTx.vencimento || '')) {
+            Object.assign(t, { desc: atual.desc, amount: atual.amount, category: atual.category, contato: atual.contato, contaId: atual.contaId, centroCusto: atual.centroCusto, forma: atual.forma, atualizadoEm: Date.now() });
+            n++;
+          }
+        });
+        if (n) showToast(`Alteração aplicada a mais ${n} parcela(s).`, 'info');
+      }
       if (window.logAudit) window.logAudit('update', 'transaction', editId, `Lançamento "${desc}" atualizado`, oldTx, state.transactions[idx]);
       showToast('✅ Lançamento atualizado', 'success');
     }
@@ -844,7 +872,7 @@ async function submitTransaction(e) {
       ? `✅ ${lista.length} lançamentos criados (${lista[0].parcela ? 'parcelas' : 'meses'})`
       : `✅ ${type === 'RECEITA' ? (aberto ? 'Conta a receber' : 'Receita') : (aberto ? 'Conta a pagar' : 'Despesa')} de ${fmt(amount)} salva`, 'success');
   }
-  if (window.fin) window.fin.aprender(lista[0]);
+  if (window.fin) { window.fin.aprender(lista[0]); if (lista[0].contato) window.fin.registrarContato(lista[0].contato, lista[0].type); }
 
   persist();
   closeModal('txModal');
@@ -965,19 +993,18 @@ function onSliderChange() {
   recEl.style.background  = `linear-gradient(to right, var(--success) ${rp}%, var(--border) ${rp}%)`;
   despEl.style.background = `linear-gradient(to right, var(--danger) ${dp}%, var(--border) ${dp}%)`;
 
-  const ctx = getCtx();
+  const ctx = window.fin_baseSimulacao ? window.fin_baseSimulacao() : getCtx();
   const sim = engine.simulateScenario(ctx, rec, desp);
 
   const rc = document.getElementById('simResultCards');
   if (rc) {
     const items = [
-      { l: 'Receita Atual', v: fmt(ctx.receitas), c: 'var(--text)' },
-      { l: 'Receita Projetada', v: fmt(sim.nr), c: 'var(--success)' },
-      { l: 'Despesa Atual', v: fmt(ctx.despesas), c: 'var(--text)' },
-      { l: 'Despesa Projetada', v: fmt(sim.nd), c: 'var(--danger)' },
-      { l: 'Margem Atual', v: fmtPct(sim.curr_m), c: 'var(--text)' },
-      { l: 'Margem Projetada', v: fmtPct(sim.nm), c: sim.nm > 15 ? 'var(--success)' : sim.nm > 5 ? 'var(--warning)' : 'var(--danger)' },
-      { l: 'Score Projetado', v: sim.projScore + '/100', c: sim.projScore >= 70 ? 'var(--success)' : sim.projScore >= 50 ? 'var(--warning)' : 'var(--danger)' },
+      { l: 'Receita média/mês (3 meses)', v: fmt(ctx.receitas), c: 'var(--text)' },
+      { l: 'Receita no cenário', v: fmt(sim.nr), c: 'var(--success)' },
+      { l: 'Despesa média/mês', v: fmt(ctx.despesas), c: 'var(--text)' },
+      { l: 'Despesa no cenário', v: fmt(sim.nd), c: 'var(--danger)' },
+      { l: 'Margem atual', v: fmtPct(sim.curr_m), c: 'var(--text)' },
+      { l: 'Margem no cenário', v: fmtPct(sim.nm), c: sim.nm > 15 ? 'var(--success)' : sim.nm > 5 ? 'var(--warning)' : 'var(--danger)' },
     ];
     rc.innerHTML = items.map(i => `
       <div class="sim-result-item">
@@ -986,7 +1013,7 @@ function onSliderChange() {
       </div>`).join('') + `
       <div class="sim-highlight" style="background:${sim.diff >= 0 ? 'rgba(16,185,129,.1)' : 'rgba(239,68,68,.1)'};border:1px solid ${sim.diff >= 0 ? 'var(--success)' : 'var(--danger)'}">
         <span style="color:${sim.diff >= 0 ? 'var(--success)' : 'var(--danger)'}">
-          Resultado Projetado: ${fmt(sim.ns)} &nbsp;|&nbsp; ${sim.diff >= 0 ? '+' : ''}${fmt(sim.diff)}
+          Resultado mensal no cenário: ${fmt(sim.ns)} &nbsp;|&nbsp; ${sim.diff >= 0 ? '+' : ''}${fmt(sim.diff)} por mês
         </span>
       </div>`;
   }
@@ -1114,11 +1141,11 @@ async function consultarEmpresa(forceName = "") {
   }
 
   setHtml('companyScoreCard', `
-    <div class="card-title">Score de Saúde</div>
+    <div class="card-title">Indicador cadastral</div>
     <div class="score-display">
       <div style="font-size:20px">${result.emoji}</div>
       <div class="score-big" style="color:${color}">${sc}</div>
-      <div class="score-label" style="color:${color}">Risco ${result.riskLevel}</div>
+      <div class="score-label" style="color:${color}">Cadastro ${result.riskLevel === 'Baixo' ? 'sólido' : result.riskLevel === 'Moderado' ? 'com pontos de atenção' : 'frágil'}</div>
       <div class="score-bar-track">
         <div class="score-bar-fill" style="width:${sc}%;background:${color}"></div>
       </div>
@@ -1127,22 +1154,22 @@ async function consultarEmpresa(forceName = "") {
     ${breakdownHtml}`);
 
   setHtml('companyCFOCard', `
-    <div class="card-title gold-text">📋 Parecer Executivo do CFO MAX</div>
+    <div class="card-title gold-text">📋 Resumo dos dados públicos</div>
     <div class="cfo-speech" style="padding:12px 0">
       <div class="cfo-speech-icon">🤖</div>
-      <p style="font-size:14px;line-height:1.7;color:var(--text)">${result.parecer.replace(/\n/g, '<br><br>')}</p>
+      <p style="font-size:14px;line-height:1.7;color:var(--text)">${escHtml(result.parecer).replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br><br>')}</p>
     </div>`);
 
   show('companyResultArea');
 
   // Save history
-  state.companies.unshift({ cnpj, name: resultName, score: sc, risk: result.riskLevel, date: new Date().toISOString() });
+  state.companies.unshift({ cnpj: rawDigits, name: resultName, score: sc, risk: result.riskLevel, date: new Date().toISOString() });
   state.companies = state.companies.slice(0, 20);
   persist();
   renderCompanyHistory();
 
   if (btn) { btn.textContent = 'Analisar →'; btn.disabled = false; }
-  showToast(`✅ Análise concluída — Score: ${sc}/100`, 'success');
+  showToast(`✅ Consulta concluída — indicador cadastral ${sc}/100`, 'success');
 }
 
 function renderCompanyHistory() {
@@ -1770,117 +1797,6 @@ window.syncOpenFinance = function() {
 // CRM e estoque começam vazios (os dados vêm da nuvem)
 if (!Array.isArray(state.crm)) state.crm = [];
 if (!Array.isArray(state.inventory)) state.inventory = [];
-
-// CRM Rendering
-function renderCRM() {
-    const board = document.getElementById('crm-board');
-    if (!board) return;
-    
-    const cols = {
-        'Leads': [],
-        'Negociacao': [],
-        'Fechado': []
-    };
-    
-    state.crm.forEach(lead => {
-        if(cols[lead.status]) cols[lead.status].push(lead);
-    });
-    
-    let html = '';
-    const colLabels = { 'Leads': '📥 Leads', 'Negociacao': '🤝 Negociação', 'Fechado': '✅ Fechado' };
-    
-    for (const [status, leads] of Object.entries(cols)) {
-        html += `<div class="kanban-col" style="flex:1;min-width:300px;background:var(--bg-card);border-radius:12px;padding:16px;">`;
-        html += `<h3 style="color:var(--text-muted);margin-bottom:16px;">${colLabels[status]} (${leads.length})</h3>`;
-        leads.forEach(lead => {
-            const riskColor = lead.risk === 'Alto' ? 'var(--danger)' : (lead.risk === 'Moderado' ? 'var(--gold)' : 'var(--success)');
-            html += `<div class="kanban-card" style="background:var(--bg-body);padding:16px;border-radius:8px;margin-bottom:10px;border:1px solid var(--border-color); cursor:pointer;" onclick="moveLead('${lead.id}')">
-                <strong>${lead.name}</strong><br>
-                <small>R$ ${lead.value.toLocaleString('pt-BR')}</small>
-                <div style="font-size:12px;color:${riskColor};margin-top:8px;">💳 Risco: ${lead.risk}</div>
-            </div>`;
-        });
-        html += `</div>`;
-    }
-    board.innerHTML = html;
-};
-
-window.moveLead = function(id) {
-    const lead = state.crm.find(l => l.id === id);
-    if (!lead) return;
-    if (lead.status === 'Leads') lead.status = 'Negociacao';
-    else if (lead.status === 'Negociacao') lead.status = 'Fechado';
-    else lead.status = 'Leads'; // loop back
-    persist();
-    renderCRM();
-};
-
-window.submitLead = function(e) {
-    e.preventDefault();
-    const name = document.getElementById('crmName').value;
-    const value = document.getElementById('crmValue').value;
-    const risk = document.getElementById('crmRisk').value;
-    
-    state.crm.push({
-        id: Date.now().toString(),
-        name,
-        value: parseFloat(value),
-        risk,
-        status: 'Leads'
-    });
-    persist();
-    closeModal('crmModal');
-    renderCRM();
-    document.getElementById('crmForm').reset();
-    showToast('Lead adicionado com sucesso!', 'success');
-};
-
-// Inventory Rendering
-function renderInventory() {
-    const tbody = document.getElementById('inventory-table-body');
-    if (!tbody) return;
-    
-    let html = '';
-    state.inventory.forEach(item => {
-        let statusHtml = '<span style="color:var(--success)">Normal</span>';
-        let prev = 'N/A';
-        if (item.qty < 10 && item.qty > 0) {
-            statusHtml = '<span style="color:var(--danger)">⚠️ Crítico</span>';
-            prev = 'Em 3 dias';
-        } else if (item.qty === 0) {
-            statusHtml = '<span style="color:var(--danger)">❌ Esgotado</span>';
-            prev = 'Imediato';
-        }
-        
-        html += `<tr>
-            <td>${item.sku}</td>
-            <td>${item.name}</td>
-            <td>${item.qty} un</td>
-            <td>${statusHtml}</td>
-            <td>${prev}</td>
-        </tr>`;
-    });
-    tbody.innerHTML = html;
-};
-
-window.submitProduct = function(e) {
-    e.preventDefault();
-    const name = document.getElementById('invName').value;
-    const qty = document.getElementById('invQty').value;
-    const sku = 'PRD-' + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    
-    state.inventory.push({
-        id: Date.now().toString(),
-        sku,
-        name,
-        qty: parseInt(qty)
-    });
-    persist();
-    closeModal('invModal');
-    renderInventory();
-    document.getElementById('invForm').reset();
-    showToast('Produto adicionado!', 'success');
-};
 
 // Advanced Reports (DRE)
 function renderReportsV5() {
