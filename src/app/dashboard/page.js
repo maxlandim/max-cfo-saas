@@ -189,9 +189,9 @@ export default function DashboardPage() {
       empresas.ativa = ativa;
       window.workspaceId = empresas.espacoDe(ativa);
 
-      const v = 'v=6';
+      const v = 'v=7';
       if (!document.querySelector(`script[src="/engine.js?${v}"]`)) await loadScript(`/engine.js?${v}`);
-      const modules = ['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team'];
+      const modules = ['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'layout'];
       for (const mod of modules) {
         if (!document.querySelector(`script[src="/modules/${mod}.js?${v}"]`)) await loadScript(`/modules/${mod}.js?${v}`);
       }
@@ -245,7 +245,7 @@ export default function DashboardPage() {
         </div>
       )}
       {acesso?.acesso && (acesso.motivo === 'teste' || acesso.motivo === 'configuracao_pendente') && (
-        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, background: '#131d30', border: '1px solid rgba(197,160,89,.45)', color: '#E8EFF8', borderRadius: 999, padding: '8px 8px 8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', maxWidth: 'calc(100% - 32px)' }}>
+        <div className="maxcfo-banner" style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, background: '#131d30', border: '1px solid rgba(197,160,89,.45)', color: '#E8EFF8', borderRadius: 999, padding: '8px 8px 8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', maxWidth: 'calc(100% - 32px)' }}>
           <span>
             {acesso.motivo === 'teste'
               ? `Teste grátis: ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia restante' : 'dias restantes'}`

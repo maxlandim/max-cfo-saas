@@ -393,6 +393,7 @@
       '.fin-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);cursor:pointer}' +
       '@media (max-width:700px){.fin-pix{grid-template-columns:1fr}.fin-pix .qr{justify-self:center}.fin-hide-sm{display:none}}' +
       '.nav-item.fin-escondido{display:none}' +
+      '.modal-overlay .modal-box{max-height:calc(100vh - 32px);overflow-y:auto;display:flex;flex-direction:column}.modal-overlay .modal-box>.modal-foot{position:sticky;bottom:0;background:inherit;z-index:2}' +
       '@media (max-width:700px){.topbar-date-time,.topbar-divider,.breadcrumb-root,.breadcrumb-sep{display:none!important}.topbar-right{gap:6px}.breadcrumb-current{max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}}';
     var s = document.createElement('style'); s.id = 'fin-estilos'; s.textContent = css; document.head.appendChild(s);
   }
