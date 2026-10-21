@@ -17,16 +17,22 @@ jobs:
         with: { node-version: '24' }
       - run: pip install playwright==1.47.0 && python -m playwright install --with-deps chromium
       # Se tests/alvo.txt tiver o nome de um branch, testa esse código rodando localmente (antes de publicar)
+      - id: alvo
+        run: echo "ref=$(cat tests/alvo.txt 2>/dev/null | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        if: steps.alvo.outputs.ref != ''
+        with: { ref: '${{ steps.alvo.outputs.ref }}', path: app }
       - name: Sobe o site do branch alvo
+        if: steps.alvo.outputs.ref != ''
         continue-on-error: true
+        working-directory: app
         run: |
-          ALVO=$(cat tests/alvo.txt 2>/dev/null | tr -d '[:space:]')
-          if [ -n "$ALVO" ]; then
-            git clone -q --depth 1 -b "$ALVO" https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git /tmp/app
-            cd /tmp/app && npm ci --no-audit --no-fund && npm run build > /tmp/build.log 2>&1 || (tail -80 /tmp/build.log; cp /tmp/build.log /tmp/build_falhou.log; exit 1)
-            (npm start -- -p 3000 > /tmp/start.log 2>&1 &) ; sleep 8
-            echo "SITE=http://localhost:3000" >> $GITHUB_ENV
-          fi
+          npm ci --no-audit --no-fund > /tmp/npm.log 2>&1 || { tail -5 /tmp/npm.log | while read l; do echo "::warning::npm: $l"; done; exit 1; }
+          npm run build > /tmp/build.log 2>&1 || { tail -15 /tmp/build.log | while read l; do echo "::warning::build: $l"; done; exit 1; }
+          nohup npm start -- -p 3000 > /tmp/start.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/ >/dev/null && break; sleep 1; done
+          echo "SITE=http://localhost:3000" >> $GITHUB_ENV
+          echo "::warning::site do branch ${{ steps.alvo.outputs.ref }} no ar em localhost:3000"
       - run: python ia_pdf.py 2>&1 | tee saida_log.txt
         working-directory: tests
         continue-on-error: true
