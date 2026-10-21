@@ -90,6 +90,13 @@ async def main():
                     if 'aberto' not in (await pg.get_attribute(sel, 'class') or ''):
                         log(False, f'  menu fechou o módulo ao abrir {nome}')
                         await pg.click(f'{sel} .lay-mod-h'); await pg.wait_for_timeout(300)
+            # tema claro/escuro
+            await pg.click('#temaBtn'); await pg.wait_for_timeout(400)
+            t1 = await pg.evaluate("[document.documentElement.dataset.tema, getComputedStyle(document.body).backgroundColor]")
+            await pg.screenshot(path=f'{OUT}/tema_claro.png')
+            await pg.click('#temaBtn'); await pg.wait_for_timeout(400)
+            t2 = await pg.evaluate("document.documentElement.dataset.tema")
+            log(t1[0] == 'claro' and t1[1] == 'rgb(243, 245, 249)' and t2 == 'escuro', 'botão de tema alterna claro e escuro', [t1, t2])
             # abas no topo
             await pg.click('.lay-mod[data-mod="Financeiro"] .lay-mod-h'); await pg.wait_for_timeout(300)
             await pg.click('#nav-receber'); await pg.wait_for_timeout(400)
