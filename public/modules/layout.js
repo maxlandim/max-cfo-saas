@@ -13,33 +13,44 @@
   function moeda(v) { return F().moeda(v); }
   function salvar() { if (window.persist) window.persist(); }
 
-  // Todas as telas, com nome simples, agrupadas como o dono do negócio pensa
+  // Módulos (categorias) e, dentro de cada um, as funcionalidades
   var SECOES = [
-    ['Início', [['dashboard', '🏠', 'Início']]],
-    ['Dinheiro', [['contas', '📅', 'Contas a pagar e receber'], ['fluxo', '🏦', 'Caixa e bancos'], ['reconciliation', '🔄', 'Importar extrato do banco'], ['finance', '📒', 'Todos os lançamentos'], ['dre', '📊', 'Resultado do mês (DRE)']]],
-    ['Vendas', [['contatos', '👥', 'Clientes e fornecedores'], ['budget', '📝', 'Orçamentos'], ['os', '🛠️', 'Ordens de serviço'], ['plans', '🔁', 'Mensalidades e contratos'], ['nfe', '🧾', 'Notas fiscais'], ['inventory', '📦', 'Estoque'], ['crm', '🤝', 'Funil de vendas'], ['commissions', '💸', 'Comissões']]],
-    ['Ajuda do CFO', [['chat', '🤖', 'Pergunte ao CFO'], ['tributario', '⚖️', 'Impostos e reforma tributária'], ['tax-audit', '✅', 'Checklist fiscal'], ['simulator', '🔮', 'Simular cenários'], ['reports', '📋', 'Relatórios'], ['companies', '🔍', 'Consultar CNPJ']]],
-    ['Empresa', [['accountant', '🧮', 'Enviar ao contador'], ['hr', '🧑‍💼', 'Funcionários e folha'], ['assets', '🏢', 'Bens da empresa'], ['bpo', '🗂️', 'Todas as empresas'], ['team', '👤', 'Equipe'], ['audit', '🕘', 'Histórico de alterações'], ['settings', '⚙️', 'Configurações']]]
+    ['Início', '🏠', [['dashboard', '🏠', 'Início']]],
+    ['Financeiro', '💰', [['receber', '⬇️', 'Contas a receber'], ['pagar', '⬆️', 'Contas a pagar'], ['bancos', '🏦', 'Contas financeiras'], ['fluxo', '📈', 'Fluxo de caixa'], ['contas', '📅', 'Agenda de vencimentos'], ['reconciliation', '🔄', 'Importar extrato'], ['finance', '📒', 'Todos os lançamentos'], ['dre', '📊', 'Resultado (DRE)']]],
+    ['Vendas', '🛒', [['contatos', '👥', 'Clientes e fornecedores'], ['budget', '📝', 'Orçamentos'], ['os', '🛠️', 'Ordens de serviço'], ['plans', '🔁', 'Mensalidades e contratos'], ['crm', '🤝', 'Funil de vendas'], ['commissions', '💸', 'Comissões'], ['inventory', '📦', 'Estoque']]],
+    ['Fiscal', '🧾', [['nfe', '🧾', 'Notas fiscais'], ['tributario', '⚖️', 'Impostos e reforma'], ['tax-audit', '✅', 'Checklist fiscal'], ['accountant', '🧮', 'Enviar ao contador']]],
+    ['Pessoas e patrimônio', '🧑‍💼', [['hr', '🧑‍💼', 'Funcionários e folha'], ['assets', '🏢', 'Bens da empresa']]],
+    ['CFO com IA', '🤖', [['chat', '🤖', 'Pergunte ao CFO'], ['simulator', '🔮', 'Simular cenários'], ['reports', '📋', 'Relatórios'], ['companies', '🔍', 'Consultar CNPJ']]],
+    ['Empresa e ajustes', '⚙️', [['settings', '⚙️', 'Configurações'], ['bpo', '🗂️', 'Todas as empresas'], ['team', '👤', 'Equipe e acessos'], ['audit', '🕘', 'Histórico de alterações']]]
   ];
-  var FIXOS = ['dashboard', 'contas', 'fluxo', 'contatos', 'chat', 'settings'];
+  var FIXOS = ['dashboard', 'receber', 'pagar', 'bancos', 'fluxo', 'contatos', 'chat', 'settings'];
   var PERFIS = {
     servicos: { nome: 'Prestação de serviços', desc: 'Consultoria, agência, clínica, escola, profissional liberal', telas: ['reconciliation', 'dre', 'budget', 'plans', 'nfe', 'tributario', 'accountant'] },
     comercio: { nome: 'Comércio e revenda', desc: 'Loja, distribuidora, e-commerce, revenda', telas: ['reconciliation', 'dre', 'inventory', 'budget', 'nfe', 'commissions', 'tributario', 'accountant'] },
     tecnico: { nome: 'Serviço técnico ou obra', desc: 'Assistência, manutenção, instalação, reforma', telas: ['reconciliation', 'dre', 'os', 'budget', 'inventory', 'nfe', 'tributario', 'accountant'] },
-    bpo: { nome: 'BPO financeiro ou contabilidade', desc: 'Cuido do financeiro de várias empresas', telas: ['reconciliation', 'dre', 'bpo', 'plans', 'accountant', 'tax-audit', 'nfe', 'tributario', 'finance'] }
+    bpo: { nome: 'BPO financeiro ou contabilidade', desc: 'Cuido do financeiro de várias empresas', telas: ['reconciliation', 'dre', 'bpo', 'plans', 'accountant', 'tax-audit', 'nfe', 'tributario', 'finance', 'contas'] }
   };
   function visiveis() {
     var s = st().settings || {};
     if (Array.isArray(s.menuTelas)) return FIXOS.concat(s.menuTelas);
     return FIXOS.concat((PERFIS[s.perfil] || PERFIS.servicos).telas);
   }
-  function rotulo(id) { var r = null; SECOES.forEach(function (s) { s[1].forEach(function (i) { if (i[0] === id) r = i[2]; }); }); return r; }
+  function rotulo(id) { var r = null; SECOES.forEach(function (s) { s[2].forEach(function (i) { if (i[0] === id) r = i[2]; }); }); return r; }
+  function moduloDe(id) { var m = null; SECOES.forEach(function (s) { s[2].forEach(function (i) { if (i[0] === id) m = s; }); }); return m; }
+  var aberto = null, verMais = {};
 
   function estilos() {
     if (el('lay-estilos')) return;
     var css = '' +
-      '.lay-sec{display:flex;align-items:center;justify-content:space-between;cursor:pointer}.lay-sec .ch{transition:transform .2s;font-size:10px}.lay-sec.fechada .ch{transform:rotate(-90deg)}' +
-      '.lay-mais{margin-top:10px;border-top:1px solid var(--border);padding-top:4px}.lay-mais .nav-item{font-size:12.5px;padding:8px 12px}' +
+      '.lay-mod{margin:2px 0}.lay-mod-h{width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--text);font:inherit;font-size:14px;font-weight:600;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;text-align:left}.lay-mod-h:hover{background:var(--bg-hover)}' +
+      '.lay-mod-h .nav-label{flex:1}.lay-mod-h .ch{font-size:11px;color:var(--text-faint);transition:transform .2s}.lay-mod.aberto .lay-mod-h .ch{transform:rotate(90deg)}.lay-mod.tem-ativa .lay-mod-h{color:var(--gold)}' +
+      '.lay-mod-itens{display:none;margin:0 0 6px 22px;padding-left:8px;border-left:1px solid var(--border)}.lay-mod.aberto .lay-mod-itens{display:block}' +
+      '.lay-mod-itens .nav-item{font-size:13px;padding:7px 10px}.lay-mod-itens .nav-icon{font-size:13px}' +
+      '.lay-vermais{background:none;border:0;color:var(--text-faint);font-size:12px;padding:6px 10px;cursor:pointer}.lay-vermais:hover{color:var(--gold)}' +
+      '.lay-subnav{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none;height:48px;box-sizing:border-box;padding:0 26px;border-bottom:1px solid var(--border);background:var(--bg-surf)}.lay-subnav::-webkit-scrollbar{display:none}' +
+      'body.com-subnav .view{height:calc(100vh - var(--topbar-h) - 48px)}' +
+      '.lay-subnav-mod{font-size:12px;color:var(--text-faint);white-space:nowrap;margin-right:4px}' +
+      '.lay-subnav button{white-space:nowrap;background:var(--bg-surf);border:1px solid var(--border);color:var(--text-muted);border-radius:99px;padding:6px 13px;font-size:13px;cursor:pointer}.lay-subnav button:hover{color:var(--text);border-color:var(--gold-border)}.lay-subnav button.on{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);font-weight:700}' +
       '.lay-btn-menu{background:none;border:1px dashed var(--border);color:var(--text-faint);border-radius:var(--radius-sm);padding:8px;margin:10px 4px 0;cursor:pointer;font-size:12px}.lay-btn-menu:hover{color:var(--gold);border-color:var(--gold-border)}' +
       '.lay-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}.lay-hero h1{font-size:26px;letter-spacing:-.02em}.lay-hero p{color:var(--text-muted);margin-top:4px}' +
       '.lay-acoes{display:flex;gap:8px;flex-wrap:wrap}.lay-acoes button{padding:11px 16px;font-size:14px}' +
@@ -56,41 +67,52 @@
       '@media (max-width:700px){.lay-bottom{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:8000;background:var(--bg-surf);border-top:1px solid var(--border);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}' +
       '.lay-bottom button{flex:1;background:none;border:0;color:var(--text-muted);font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;cursor:pointer}.lay-bottom button span{font-size:19px}.lay-bottom button.on{color:var(--gold)}' +
       '.lay-bottom .mais{background:var(--gold);color:#0B1220;border-radius:14px;margin:0 4px;font-weight:800}.views-container{padding-bottom:84px!important}.maxcfo-banner{bottom:78px!important}' +
-      '.lay-hero h1{font-size:22px}.lay-acoes{width:100%}.lay-acoes button{flex:1}.lay-card{padding:14px}.lay-card .v{font-size:20px}.lay-opcoes,.lay-novo{grid-template-columns:1fr}.topbar-action-btn{display:none}}';
+      '.lay-subnav{padding:0 14px}.lay-subnav-mod{display:none}.lay-hero h1{font-size:22px}.lay-acoes{width:100%}.lay-acoes button{flex:1}.lay-card{padding:14px}.lay-card .v{font-size:20px}.lay-opcoes,.lay-novo{grid-template-columns:1fr}.topbar-action-btn{display:none}}';
     var s = document.createElement('style'); s.id = 'lay-estilos'; s.textContent = css; document.head.appendChild(s);
   }
 
-  // ═════════════ MENU ═════════════
+  // ═════════════ MENU (módulos que abrem as funcionalidades) ═════════════
   function montarMenu() {
     var nav = document.querySelector('.sidebar-nav'); if (!nav) return;
-    var vm = window.viewMeta || {}, vis = visiveis(), fechadas = (st().settings || {}).menuFechado || {};
-    var item = function (i) { return '<a class="nav-item" data-view="' + i[0] + '" id="nav-' + i[0] + '"><span class="nav-icon">' + i[1] + '</span><span class="nav-label">' + i[2] + '</span></a>'; };
-    var html = '', resto = [];
+    var vm = window.viewMeta || {}, vis = visiveis();
+    var ativa = document.querySelector('.view.active'), idAtiva = ativa ? ativa.id.replace('view-', '') : 'dashboard';
+    if (aberto === null) { var ma = moduloDe(idAtiva); aberto = ma && ma[2].length > 1 ? ma[0] : 'Financeiro'; }
+    var item = function (i, sub) { return '<a class="nav-item' + (sub ? ' lay-sub' : '') + '" data-view="' + i[0] + '" id="nav-' + i[0] + '"><span class="nav-icon">' + i[1] + '</span><span class="nav-label">' + i[2] + '</span></a>'; };
+    var html = '';
     SECOES.forEach(function (sec) {
-      var itens = sec[1].filter(function (i) { return vm[i[0]] && vis.indexOf(i[0]) > -1; });
-      sec[1].forEach(function (i) { if (vm[i[0]] && vis.indexOf(i[0]) === -1) resto.push(i); });
-      if (!itens.length) return;
-      if (sec[0] === 'Início') { html += itens.map(item).join(''); return; }
-      var f = !!fechadas[sec[0]];
-      html += '<div class="nav-section-label lay-sec' + (f ? ' fechada' : '') + '" data-sec="' + sec[0] + '"><span>' + sec[0] + '</span><span class="ch">▼</span></div><div class="lay-grupo"' + (f ? ' style="display:none"' : '') + '>' + itens.map(item).join('') + '</div>';
+      var todos = sec[2].filter(function (i) { return vm[i[0]]; }); if (!todos.length) return;
+      if (todos.length === 1 && sec[0] === 'Início') { html += item(todos[0]); return; }
+      var on = todos.filter(function (i) { return vis.indexOf(i[0]) > -1; }), off = todos.filter(function (i) { return vis.indexOf(i[0]) === -1; });
+      if (!on.length) { on = off; off = []; }
+      var abre = aberto === sec[0];
+      html += '<div class="lay-mod' + (abre ? ' aberto' : '') + '" data-mod="' + esc(sec[0]) + '"><button class="lay-mod-h" aria-expanded="' + abre + '"><span class="nav-icon">' + sec[1] + '</span><span class="nav-label">' + sec[0] + '</span><span class="ch">▸</span></button>' +
+        '<div class="lay-mod-itens">' + on.map(function (i) { return item(i, true); }).join('') +
+        (off.length ? (verMais[sec[0]] ? off.map(function (i) { return item(i, true); }).join('') + '<button class="lay-vermais" data-mais="' + esc(sec[0]) + '">Mostrar menos</button>' : '<button class="lay-vermais" data-mais="' + esc(sec[0]) + '">+ ' + off.length + ' outra' + (off.length > 1 ? 's' : '') + '</button>') : '') + '</div></div>';
     });
-    if (resto.length) {
-      var fm = fechadas['Mais'] !== false;
-      html += '<div class="lay-mais"><div class="nav-section-label lay-sec' + (fm ? ' fechada' : '') + '" data-sec="Mais"><span>Mais ferramentas (' + resto.length + ')</span><span class="ch">▼</span></div><div class="lay-grupo"' + (fm ? ' style="display:none"' : '') + '>' + resto.map(item).join('') + '</div></div>';
-    }
     html += '<button class="lay-btn-menu" onclick="layout.personalizar()">Personalizar menu</button>';
     nav.innerHTML = html;
     nav.querySelectorAll('.nav-item').forEach(function (a) { a.addEventListener('click', function () { window.switchView(a.dataset.view); }); });
-    nav.querySelectorAll('.lay-sec').forEach(function (h) {
-      h.addEventListener('click', function () {
-        var g = h.nextElementSibling, fechar = g.style.display !== 'none';
-        g.style.display = fechar ? 'none' : ''; h.classList.toggle('fechada', fechar);
-        st().settings.menuFechado = st().settings.menuFechado || {}; st().settings.menuFechado[h.dataset.sec] = fechar; salvar();
-      });
+    nav.querySelectorAll('.lay-mod-h').forEach(function (h) {
+      h.addEventListener('click', function () { var m = h.parentNode.dataset.mod; aberto = aberto === m ? '' : m; montarMenu(); });
     });
-    var ativa = document.querySelector('.view.active'); if (ativa) { var a = el('nav-' + ativa.id.replace('view-', '')); if (a) a.classList.add('active'); }
-    // nomes simples também no título de cada tela
-    SECOES.forEach(function (s) { s[1].forEach(function (i) { if (vm[i[0]]) vm[i[0]].label = i[2]; }); });
+    nav.querySelectorAll('.lay-vermais').forEach(function (b) { b.addEventListener('click', function () { verMais[b.dataset.mais] = !verMais[b.dataset.mais]; montarMenu(); }); });
+    var a = el('nav-' + idAtiva); if (a) a.classList.add('active');
+    nav.querySelectorAll('.lay-mod').forEach(function (m) { if (m.querySelector('.nav-item.active')) m.classList.add('tem-ativa'); });
+    SECOES.forEach(function (s) { s[2].forEach(function (i) { if (vm[i[0]]) vm[i[0]].label = i[2]; }); });
+  }
+
+  // Abas da funcionalidade no topo da tela (as outras do mesmo módulo)
+  function subnav(id) {
+    var box = el('laySubnav');
+    if (!box) { var vc = el('viewsContainer'); if (!vc) return; box = document.createElement('div'); box.id = 'laySubnav'; box.className = 'lay-subnav'; box.setAttribute('role', 'tablist'); vc.insertBefore(box, vc.firstChild); }
+    var m = moduloDe(id), vm = window.viewMeta || {}, vis = visiveis();
+    var esconder = function () { box.style.display = 'none'; document.body.classList.remove('com-subnav'); };
+    if (!m || m[2].length < 2) return esconder();
+    var itens = m[2].filter(function (i) { return vm[i[0]] && (vis.indexOf(i[0]) > -1 || i[0] === id); });
+    if (itens.length < 2) return esconder();
+    box.style.display = ''; document.body.classList.add('com-subnav');
+    box.innerHTML = '<span class="lay-subnav-mod">' + m[1] + ' ' + m[0] + '</span>' + itens.map(function (i) { return '<button role="tab" aria-selected="' + (i[0] === id) + '" class="' + (i[0] === id ? 'on' : '') + '" onclick="switchView(\'' + i[0] + '\')">' + i[2] + '</button>'; }).join('');
+    var on = box.querySelector('.on'); if (on && on.scrollIntoView && box.scrollWidth > box.clientWidth) box.scrollLeft = on.offsetLeft - 40;
   }
 
   // ═════════════ BOAS-VINDAS E PERSONALIZAÇÃO ═════════════
@@ -114,7 +136,7 @@
     var s = st().settings || {}, txs = st().transactions || [];
     return [
       { feito: !!(s.company && s.cnpj), t: 'Cadastre sua empresa (CNPJ e regime)', a: "switchView('settings')" },
-      { feito: (st().contas || []).some(function (c) { return c.dataSaldo; }), t: 'Informe o saldo atual da sua conta no banco', a: "fin.editarConta((state.contas[0]||{}).id)" },
+      { feito: (st().contas || []).some(function (c) { return c.dataSaldo; }), t: 'Informe o saldo atual da sua conta no banco', a: "switchView('bancos');fin.editarConta((state.contas[0]||{}).id)" },
       { feito: txs.some(function (t) { return t.type === 'RECEITA'; }), t: 'Lance algo que você tem a receber', a: "fin.novo('RECEITA',{status:'pendente'})" },
       { feito: txs.some(function (t) { return t.type === 'DESPESA'; }), t: 'Lance uma conta a pagar (ou leia um boleto com a câmera)', a: "fin.novo('DESPESA',{status:'pendente'})" },
       { feito: !!(s.pix && s.pix.chave), t: 'Cadastre sua chave Pix para cobrar clientes', a: "switchView('settings')" },
@@ -142,7 +164,7 @@
       (mostrarPassos ? '<div class="lay-passos"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><b>Primeiros passos · ' + feitos + ' de ' + passos.length + '</b><button class="fin-btn" onclick="layout.ocultarPassos()">Ocultar</button></div><div class="lay-barra"><div style="width:' + Math.round(feitos / passos.length * 100) + '%"></div></div>' +
         passos.map(function (p, i) { return '<div class="lay-passo' + (p.feito ? ' feito' : '') + '"><div class="n">' + (p.feito ? '✓' : i + 1) + '</div><div class="t">' + p.t + '</div>' + (p.feito ? '' : '<button class="fin-btn gold" onclick="' + p.a + '">Fazer agora</button>') + '</div>'; }).join('') + '</div>' : '') +
       '<div class="lay-cards">' +
-      '<div class="lay-card" onclick="switchView(\'fluxo\')"><div class="l">🏦 Quanto tenho hoje</div><div class="v" style="color:var(--gold)">' + moeda(k.saldo) + '</div><div class="s">' + (k.negativoEm ? '<span class="fin-neg">fica negativo em ' + F().dataBR(k.negativoEm) + '</span>' : 'saldo das contas bancárias') + '</div></div>' +
+      '<div class="lay-card" onclick="switchView(\'bancos\')"><div class="l">🏦 Quanto tenho hoje</div><div class="v" style="color:var(--gold)">' + moeda(k.saldo) + '</div><div class="s">' + (k.negativoEm ? '<span class="fin-neg">fica negativo em ' + F().dataBR(k.negativoEm) + '</span>' : 'saldo das contas bancárias') + '</div></div>' +
       '<div class="lay-card" onclick="fin.verContas(\'\',\'receber\')"><div class="l">⬇️ Vou receber (30 dias)</div><div class="v fin-pos">' + moeda(k.aReceber30) + '</div><div class="s">' + (vencRec ? '<span class="fin-neg">' + moeda(vencRec) + ' atrasado</span>' : 'nada atrasado') + '</div></div>' +
       '<div class="lay-card" onclick="fin.verContas(\'\',\'pagar\')"><div class="l">⬆️ Vou pagar (30 dias)</div><div class="v fin-neg">' + moeda(k.aPagar30) + '</div><div class="s">' + (vencPag ? '<span class="fin-neg">' + moeda(vencPag) + ' vencido</span>' : 'nada vencido') + '</div></div>' +
       '<div class="lay-card" onclick="switchView(\'dre\')"><div class="l">📊 Resultado de ' + F().nomeMes(k.mes) + '</div><div class="v ' + (resultado < 0 ? 'fin-neg' : 'fin-pos') + '">' + moeda(resultado) + '</div><div class="s">entrou ' + moeda(k.atual.receitas) + ' · saiu ' + moeda(k.atual.despesas) + '</div></div>' +
@@ -189,7 +211,7 @@
   function barraCelular() {
     if (el('layBottom')) return;
     var b = document.createElement('nav'); b.id = 'layBottom'; b.className = 'lay-bottom'; b.setAttribute('aria-label', 'Atalhos');
-    b.innerHTML = '<button data-v="dashboard"><span>🏠</span>Início</button><button data-v="contas"><span>📅</span>Contas</button><button class="mais" data-a="novo"><span>＋</span>Novo</button><button data-v="fluxo"><span>🏦</span>Caixa</button><button data-a="menu"><span>☰</span>Menu</button>';
+    b.innerHTML = '<button data-v="dashboard"><span>🏠</span>Início</button><button data-v="receber"><span>⬇️</span>Receber</button><button class="mais" data-a="novo"><span>＋</span>Novo</button><button data-v="pagar"><span>⬆️</span>Pagar</button><button data-a="menu"><span>☰</span>Menu</button>';
     b.addEventListener('click', function (e) {
       var x = e.target.closest('button'); if (!x) return;
       if (x.dataset.v) window.switchView(x.dataset.v);
@@ -220,9 +242,9 @@
     personalizar: function () {
       var vis = visiveis(), vm = window.viewMeta || {};
       F().modal('layMenu', 'Personalizar menu',
-        '<p class="fin-sub" style="margin-bottom:12px">Marque o que você usa. O resto continua em "Mais ferramentas".</p>' +
+        '<p class="fin-sub" style="margin-bottom:12px">Marque o que você usa. O que ficar desmarcado continua dentro do módulo, em "+ outras".</p>' +
         '<div class="form-label" style="margin-bottom:6px">Começar do modelo</div><div class="fin-tabs" style="margin-bottom:14px">' + Object.keys(PERFIS).map(function (k) { return '<button class="fin-tab" onclick="layout.aplicarPerfil(\'' + k + '\')">' + PERFIS[k].nome + '</button>'; }).join('') + '</div>' +
-        '<div style="columns:2 220px;column-gap:20px">' + SECOES.slice(1).map(function (sec) { return '<div style="margin-bottom:10px;break-inside:avoid"><div class="form-label">' + sec[0] + '</div>' + sec[1].filter(function (i) { return vm[i[0]]; }).map(function (i) { var fixo = FIXOS.indexOf(i[0]) > -1; return '<label class="fin-check" style="padding:4px 0"><input type="checkbox" data-t="' + i[0] + '"' + (vis.indexOf(i[0]) > -1 ? ' checked' : '') + (fixo ? ' disabled' : '') + '> ' + i[1] + ' ' + i[2] + (fixo ? ' <span class="fin-sub">(sempre)</span>' : '') + '</label>'; }).join('') + '</div>'; }).join('') + '</div>',
+        '<div style="columns:2 220px;column-gap:20px">' + SECOES.slice(1).map(function (sec) { return '<div style="margin-bottom:10px;break-inside:avoid"><div class="form-label">' + sec[1] + ' ' + sec[0] + '</div>' + sec[2].filter(function (i) { return vm[i[0]]; }).map(function (i) { var fixo = FIXOS.indexOf(i[0]) > -1; return '<label class="fin-check" style="padding:4px 0"><input type="checkbox" data-t="' + i[0] + '"' + (vis.indexOf(i[0]) > -1 ? ' checked' : '') + (fixo ? ' disabled' : '') + '> ' + i[1] + ' ' + i[2] + (fixo ? ' <span class="fin-sub">(sempre)</span>' : '') + '</label>'; }).join('') + '</div>'; }).join('') + '</div>',
         '<button class="btn-ghost" onclick="fin.fechar(\'layMenu\')">Cancelar</button><button class="btn-primary" onclick="layout.salvarMenu()">Salvar</button>', true);
     },
     aplicarPerfil: function (k) { var t = PERFIS[k].telas; document.querySelectorAll('#layMenu input[data-t]').forEach(function (c) { if (!c.disabled) c.checked = t.indexOf(c.dataset.t) > -1; }); st().settings.perfil = k; },
@@ -231,7 +253,8 @@
       salvar(); F().fechar('layMenu'); montarMenu(); window.showToast('Menu atualizado.');
     },
     novo: novo,
-    montarMenu: montarMenu
+    montarMenu: montarMenu,
+    secoes: SECOES
   };
 
   window.initLayoutModule = function () {
@@ -244,7 +267,9 @@
     if (trocar && !trocar.__lay) {
       window.switchView = function (id) {
         if (window.viewMeta && window.viewMeta[id] && !el('nav-' + id)) { /* tela fora do menu continua acessível */ }
-        trocar(id); marcarBarra(id);
+        trocar(id); marcarBarra(id); subnav(id);
+        var m = moduloDe(id); if (m && m[2].length > 1 && aberto !== m[0]) { aberto = m[0]; montarMenu(); }
+        else { var nav = document.querySelector('.sidebar-nav'); if (nav) nav.querySelectorAll('.lay-mod').forEach(function (x) { x.classList.toggle('tem-ativa', !!x.querySelector('.nav-item.active')); }); }
         if (window.innerWidth <= 900) { var sb = el('sidebar'), ov = el('sidebarOverlay'); if (sb) sb.classList.remove('open'); if (ov) ov.style.display = 'none'; }
       };
       window.switchView.__lay = true;

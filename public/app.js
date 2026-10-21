@@ -329,6 +329,10 @@ function initSearch() {
   const idx = [
     { icon:'📊', text:'Visão geral', fn: () => switchView('dashboard') },
     { icon:'📅', text:'Contas a pagar e receber', fn: () => switchView('contas') },
+    { icon:'⬇️', text:'Contas a receber', fn: () => switchView('receber') },
+    { icon:'⬆️', text:'Contas a pagar', fn: () => switchView('pagar') },
+    { icon:'🏦', text:'Contas financeiras (bancos, caixa, cartão)', fn: () => switchView('bancos') },
+    { icon:'🎯', text:'Centros de custo', fn: () => switchView('settings') },
     { icon:'➕', text:'Nova conta a receber', fn: () => window.fin && window.fin.novo('RECEITA', { status: 'pendente' }) },
     { icon:'➖', text:'Nova conta a pagar', fn: () => window.fin && window.fin.novo('DESPESA', { status: 'pendente' }) },
     { icon:'👥', text:'Clientes e fornecedores', fn: () => switchView('contatos') },
