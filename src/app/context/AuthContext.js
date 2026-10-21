@@ -1,38 +1,36 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
 import { useRouter } from 'next/navigation';
 
-const AuthContext = createContext({});
+const AuthContext = createContext({ user: null, loading: true, logout: async () => {} });
 
+// O Firebase só é baixado no navegador, depois que a página já apareceu.
+// Assim a página inicial, preços e login abrem na hora, sem esperar o SDK.
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Escuta mudanças de login/logout
-    let unsubscribe;
-    if (auth) {
-      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setLoading(false);
-      });
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    let unsubscribe = null, vivo = true;
+    Promise.all([import('../../lib/firebase'), import('firebase/auth')])
+      .then(([fb, fa]) => {
+        if (!vivo) return;
+        if (!fb.auth) { setLoading(false); return; }
+        unsubscribe = fa.onAuthStateChanged(fb.auth, (currentUser) => {
+          setUser(currentUser);
+          setLoading(false);
+        });
+      })
+      .catch((e) => { console.error('Erro ao carregar o login:', e); if (vivo) setLoading(false); });
+    return () => { vivo = false; if (unsubscribe) unsubscribe(); };
   }, []);
 
   const logout = async () => {
-    await firebaseSignOut(auth);
-    // Remove o cache antigo do MVP se houver
-    localStorage.removeItem('maxcfo_user');
+    const [fb, fa] = await Promise.all([import('../../lib/firebase'), import('firebase/auth')]);
+    await fa.signOut(fb.auth);
+    try { localStorage.removeItem('maxcfo_user'); } catch {}
     router.push('/login');
   };
 

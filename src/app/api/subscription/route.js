@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { statusDoUsuario, gravarAssinatura } from '../../../lib/assinatura';
 
 export const dynamic = 'force-dynamic';
 
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' }) : null;
+// O Stripe só é carregado na confirmação do pagamento, para a verificação de acesso (GET) responder mais rápido
+let stripe = null;
+async function pegarStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  if (!stripe) { const { default: Stripe } = await import('stripe'); stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' }); }
+  return stripe;
+}
 
 // GET: diz se o usuário logado pode usar o painel (assinatura ativa, teste grátis ou admin).
 export async function GET(req) {
@@ -25,6 +30,7 @@ export async function GET(req) {
 
 // POST { sessionId }: confirma o pagamento logo após o checkout, sem esperar o webhook.
 export async function POST(req) {
+  const stripe = await pegarStripe();
   if (!adminConfigurado || !stripe) return NextResponse.json({ error: 'Pagamentos ainda não configurados.' }, { status: 503 });
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 });
