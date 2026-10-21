@@ -27,7 +27,7 @@ jobs:
         continue-on-error: true
         working-directory: app
         run: |
-          npm ci --no-audit --no-fund > /tmp/npm.log 2>&1 || { tail -5 /tmp/npm.log | while read l; do echo "::warning::npm: $l"; done; exit 1; }
+          npm install --no-audit --no-fund > /tmp/npm.log 2>&1 || { tail -5 /tmp/npm.log | while read l; do echo "::warning::npm: $l"; done; exit 1; }
           npm run build > /tmp/build.log 2>&1 || { tail -15 /tmp/build.log | while read l; do echo "::warning::build: $l"; done; exit 1; }
           nohup npm start -- -p 3000 > /tmp/start.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:3000/ >/dev/null && break; sleep 1; done
