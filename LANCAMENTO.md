@@ -61,6 +61,8 @@ Importante: publique as regras depois que a nova versão estiver no ar. Elas blo
 
 ## 4. Stripe (dashboard.stripe.com)
 
+> **Já feito no modo de teste (21/10/2026):** o webhook `we_1UT2Y5LruppRXkK4VmbxF2Ba` (URL `https://max-cfo-saas.vercel.app/api/webhook`, com os 6 eventos abaixo) e o portal do cliente (cancelamento no fim do período, troca de cartão, histórico de faturas, links para termos e privacidade). Falta só copiar o "Signing secret" do webhook para a Vercel. Ao passar para produção, repita os itens 2 e 3 com o modo de teste desligado.
+
 1. Ative a conta com os dados do CNPJ e a conta bancária para receber.
 2. Desenvolvedores → Webhooks → Adicionar endpoint:
    - URL: `https://SEU-SITE/api/webhook`
