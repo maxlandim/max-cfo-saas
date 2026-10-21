@@ -48,9 +48,15 @@ async def main():
             t0 = time.time()
             await pg.goto(SITE + '/login', wait_until='domcontentloaded')
             rel['tempos']['login_abre'] = round(time.time() - t0, 1)
+            await pg.wait_for_load_state('networkidle'); rel['tempos']['login_pronto'] = round(time.time() - t0, 1)
             await pg.fill('input[type=email]', email); await pg.fill('input[type=password]', senha)
             await pg.click('button[type=submit]')
-            await pg.wait_for_url('**/dashboard**', timeout=60000)
+            try:
+                await pg.wait_for_url('**/dashboard**', timeout=40000)
+            except Exception:
+                await pg.screenshot(path=f'{OUT}/00_login_travou.png')
+                log(False, 'login não foi para o painel', (await pg.inner_text('body'))[:400])
+                raise
             seg, ov = await esperar_painel(pg, 'painel_primeira_vez')
             log(not ov, f'painel abre (1ª vez) em {seg}s', ov)
             await pg.screenshot(path=f'{OUT}/01_painel.png')
