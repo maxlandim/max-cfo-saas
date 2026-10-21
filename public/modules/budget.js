@@ -4,15 +4,8 @@
 
 window.initBudgetModule = function() {
     if (!window.state) window.state = {};
-    let budgets = JSON.parse(localStorage.getItem('maxcfo_budgets') || 'null');
-    if (!budgets) {
-        budgets = [
-            { id: "1", num: "ORC-001", cliente: "TechCorp", total: 4500, status: "Aprovado", data: new Date().toISOString() },
-            { id: "2", num: "ORC-002", cliente: "Varejista XYZ", total: 12000, status: "Rascunho", data: new Date(Date.now() - 86400000).toISOString() }
-        ];
-        localStorage.setItem('maxcfo_budgets', JSON.stringify(budgets));
-    }
-    window.state.budgets = budgets;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.budgets = Array.isArray(window.state.budgets) ? window.state.budgets : [];
 };
 
 window.renderBudget = function() {
@@ -93,7 +86,7 @@ window.advanceBudget = function(id) {
     let idx = flux.indexOf(b.status);
     if (idx < flux.length - 1) {
         b.status = flux[idx + 1];
-        localStorage.setItem('maxcfo_budgets', JSON.stringify(window.state.budgets));
+        if (window.persist) window.persist();
         
         if (b.status === 'Faturado') {
             if (window.showToast) window.showToast('Orçamento Faturado! Emita a NF-e no módulo Fiscal.', 'success');
@@ -108,7 +101,7 @@ window.advanceBudget = function(id) {
 window.deleteBudget = function(id) {
     if(!confirm('Excluir este orçamento?')) return;
     window.state.budgets = window.state.budgets.filter(x => x.id !== id);
-    localStorage.setItem('maxcfo_budgets', JSON.stringify(window.state.budgets));
+    if (window.persist) window.persist();
     if (window.showToast) window.showToast('Orçamento excluído.', 'success');
     renderBudget();
 };
@@ -129,7 +122,7 @@ window.submitBudgetForm = function(e) {
         data: new Date().toISOString()
     });
     
-    localStorage.setItem('maxcfo_budgets', JSON.stringify(window.state.budgets));
+    if (window.persist) window.persist();
     closeModal('budgetModal');
     if (window.showToast) window.showToast('Orçamento criado!', 'success');
     renderBudget();

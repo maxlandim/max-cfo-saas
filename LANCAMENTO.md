@@ -17,6 +17,25 @@ Este guia lista o que falta configurar para o MAX CFO AI cobrar clientes com seg
 | — | Novo módulo **Simulador Tributário e Reforma** no menu do painel |
 | — | Portal do cliente do Stripe: trocar cartão, mudar de plano e cancelar sem falar com você |
 
+## Novidades da versão 5 (financeiro completo)
+
+| Tela | O que faz |
+|---|---|
+| Contas a Pagar e Receber | Vencimentos, parcelas e contas recorrentes, baixa (individual ou em lote), estorno, filtros e busca |
+| Cobrança por Pix | QR Code e Pix copia e cola com a chave cadastrada e o valor da conta, mais a mensagem pronta para o WhatsApp do cliente |
+| Fluxo de Caixa e Bancos | Contas bancárias com saldo real, projeção dia a dia de 30 a 180 dias, aviso da data em que o caixa ficaria negativo, tabela semanal e exportação |
+| DRE Gerencial | Mês a mês, por competência ou caixa, aberto por categoria, com exportação CSV |
+| Conciliação | Importa OFX/CSV (inclusive OFX em latin-1 e CSV com ";" e vírgula decimal), reconhece o que já foi lançado, dá baixa nas contas em aberto e sugere categorias |
+| Leitura com IA | Foto ou PDF de boleto, nota ou recibo vira lançamento para conferir (rota `/api/ler-documento`, usa a mesma chave do Gemini) |
+| Notas Fiscais | Registro da nota emitida no Emissor Nacional, com busca do tomador pelo CNPJ, conta a receber automática e faturamento de 12 meses |
+| Portal do Contador | Pacote do mês em CSV (lançamentos, DRE, notas e comprovantes) e mensagem pronta para o contador |
+| Multiempresas | Várias empresas no mesmo login, com dados separados, e o Painel Multiempresas para BPO. Limite por plano: Básico 1, Intermediário 3, Completo 10, Unlimited sem limite; no teste grátis, 3 |
+| Painel, relatórios e CFO IA | Todos os números passam a vir dos lançamentos (antes havia gráfico simulado e percentuais fixos). Perguntas livres vão para a IA com o contexto real da empresa |
+
+Também foram removidos os dados de exemplo (clientes, notas "autorizadas", links de pagamento e funcionários fictícios), a emissão de NF-e simulada, o Open Finance simulado e o score de crédito inventado para CPF. As telas sem integração real (antecipação, links de pagamento e termofinança) saíram do menu.
+
+**Atenção:** as regras do Firebase mudaram nesta versão (para permitir várias empresas no mesmo login). Cole de novo `firestore.rules` e `storage.rules` no console depois de publicar.
+
 ## 1. Enviar o código para o GitHub
 
 O repositório `maxlandim/max-cfo-saas` está **público**. Antes de tudo, deixe-o privado: GitHub → repositório → Settings → General → Danger Zone → Change visibility → Private.
@@ -46,7 +65,7 @@ A Vercel cria uma prévia do branch automaticamente. Teste nela antes de juntar 
 | `ADMIN_EMAILS` | Seu e-mail (acesso total sem assinatura). Vários separados por vírgula |
 | `STRIPE_SECRET_KEY` | Stripe → Desenvolvedores → Chaves de API → Chave secreta (`sk_test_…` para testar, `sk_live_…` em produção) |
 | `STRIPE_WEBHOOK_SECRET` | Passo 4 abaixo (`whsec_…`) |
-| `GEMINI_API_KEY` | aistudio.google.com → Get API key |
+| `GEMINI_API_KEY` | aistudio.google.com → Get API key (CFO IA e leitura de boletos e notas) |
 
 Enquanto `FIREBASE_SERVICE_ACCOUNT` não estiver cadastrada, o painel abre para todos com o aviso "Modo de configuração". Cadastre antes de divulgar.
 
@@ -80,7 +99,13 @@ Os planos (R$ 49,90, R$ 129,90, R$ 269,90 e R$ 299,90) ficam em `src/lib/plans.j
 - [ ] Assinar com o cartão de teste `4242 4242 4242 4242` (qualquer validade futura e CVC) → página de sucesso → painel sem o aviso de teste.
 - [ ] No Stripe, cancelar a assinatura de teste → no Firebase, `subscriptions/{id}` fica com status `canceled`.
 - [ ] Menu → Simulador Tributário → buscar um CNPJ → os dados da empresa preenchem o simulador.
-- [ ] CFO IA Chat responde perguntas.
+- [ ] CFO IA Chat responde perguntas livres usando os números da empresa.
+- [ ] Contas a Pagar e Receber → "+ A receber" parcelado em 3x → aparecem 3 parcelas com vencimentos mensais.
+- [ ] Cobrar por Pix → cadastrar a chave → ler o QR Code com o app do banco (deve mostrar o valor e o seu nome).
+- [ ] Fluxo de Caixa → informar o saldo do extrato na conta → o saldo bate com o banco.
+- [ ] Conciliação → importar o OFX do banco → baixas e lançamentos novos corretos.
+- [ ] Ler boleto com IA → foto de um boleto → valor e vencimento preenchidos.
+- [ ] Trocar de empresa no seletor do menu → dados separados; Painel Multiempresas mostra todas.
 - [ ] Páginas `/termos` e `/privacidade` abrem pelo rodapé.
 
 Para conferir que ninguém consegue liberar o acesso sozinho: com uma conta de teste vencida (ou `TRIAL_DAYS=0`), o painel deve mostrar "Seu teste grátis terminou".

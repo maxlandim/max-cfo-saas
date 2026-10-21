@@ -4,14 +4,8 @@
 
 window.initCheckoutModule = function() {
     if (!window.state) window.state = {};
-    let checkouts = JSON.parse(localStorage.getItem('maxcfo_checkouts') || 'null');
-    if (!checkouts) {
-        checkouts = [
-            { id: "1", titulo: "Consultoria Premium Anual", valor: 25000, metodos: "Pix / Cartão 12x", status: "Ativo", link: "https://pay.maxcfo.ai/c/x8y9z0" }
-        ];
-        localStorage.setItem('maxcfo_checkouts', JSON.stringify(checkouts));
-    }
-    window.state.checkouts = checkouts;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.checkouts = Array.isArray(window.state.checkouts) ? window.state.checkouts : [];
 };
 
 window.renderCheckout = function() {
@@ -68,7 +62,7 @@ window.renderCheckout = function() {
 window.deleteCheckout = function(id) {
     if(!confirm('Excluir este link?')) return;
     window.state.checkouts = window.state.checkouts.filter(x => x.id !== id);
-    localStorage.setItem('maxcfo_checkouts', JSON.stringify(window.state.checkouts));
+    if (window.persist) window.persist();
     renderCheckout();
 };
 
@@ -83,7 +77,7 @@ window.submitCheckoutForm = function(e) {
         status: 'Ativo',
         link: `https://pay.maxcfo.ai/c/${hash}`
     });
-    localStorage.setItem('maxcfo_checkouts', JSON.stringify(window.state.checkouts));
+    if (window.persist) window.persist();
     closeModal('checkoutModal');
     if (window.showToast) window.showToast('Link de pagamento criado e pronto para copiar!', 'success');
     renderCheckout();

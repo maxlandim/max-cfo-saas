@@ -11,11 +11,11 @@ export default function LandingPage() {
   };
 
   const faqs = [
-    { q: "O MAX CFO precisa conectar na minha conta bancária?", a: "Não. A plataforma funciona por upload de extratos (OFX/CSV), garantindo 100% de privacidade e segurança dos seus dados." },
-    { q: "Qual a diferença entre o MAX e uma planilha comum?", a: "O MAX possui um motor de IA neural que não só organiza os números, mas fornece diagnósticos em texto livre, analisa riscos de empresas parceiras pelo CNPJ e gera conselhos executivos." },
-    { q: "Posso cancelar minha assinatura a qualquer momento?", a: "Sim, sem multas ou fidelidade. O cancelamento é imediato e você mantém o acesso até o final do período já pago." },
-    { q: "O sistema emite notas fiscais?", a: "O foco do MAX CFO é a inteligência gerencial e análise financeira (DRE, Caixa, Forecast). A emissão de notas deve continuar sendo feita pelo seu sistema emissor ou contador." },
-    { q: "Como funciona a Análise de Empresas (CNPJ)?", a: "Integramos com os dados abertos da Receita Federal. Você digita o CNPJ, e nossa IA cruza o capital social, tempo de abertura, situação e quadro de sócios para gerar um Score de Risco." }
+    { q: "O MAX CFO precisa conectar na minha conta bancária?", a: "Não. Você importa o extrato do banco (OFX ou CSV) quando quiser. O sistema reconhece o que já foi lançado, dá baixa nas contas em aberto e sugere a categoria do resto." },
+    { q: "Qual a diferença para o Conta Azul ou o Omie?", a: "O MAX CFO junta o financeiro completo (contas, fluxo de caixa, DRE, conciliação e cobrança por Pix) com um CFO de IA que lê boletos e explica os números, o simulador da reforma tributária e o painel multiempresas para BPO, a partir de R$ 49,90 por mês." },
+    { q: "Posso cancelar minha assinatura a qualquer momento?", a: "Sim, sem multas ou fidelidade. Você mantém o acesso até o final do período já pago." },
+    { q: "O sistema emite notas fiscais?", a: "Ainda não diretamente. Você emite a NFS-e no Emissor Nacional (o padrão nacional é obrigatório para ME e EPP do Simples a partir de 01/11/2026) e registra a nota no MAX CFO, que cria a conta a receber e soma o faturamento de 12 meses. A emissão integrada está em desenvolvimento." },
+    { q: "Como funciona a cobrança por Pix?", a: "Você cadastra a sua chave Pix uma vez. Em cada conta a receber, o MAX CFO gera o QR Code e o Pix copia e cola com o valor certo e monta a mensagem de cobrança para enviar pelo WhatsApp. O dinheiro cai direto na sua conta, sem taxa nossa." }
   ];
 
   return (
@@ -45,14 +45,14 @@ export default function LandingPage() {
           Deixe a <span style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Inteligência Artificial</span> cuidar da saúde financeira da sua empresa.
         </h1>
         <p style={{ fontSize: '20px', color: '#a1a1aa', maxWidth: '700px', margin: '0 auto 40px', lineHeight: '1.6' }}>
-          Um CFO virtual que analisa seus números, gera DREs automáticos, avalia riscos de fornecedores por CNPJ e te dá conselhos executivos 24 horas por dia.
+          Contas a pagar e receber, fluxo de caixa de 90 dias, DRE real, cobrança por Pix no WhatsApp e um CFO com IA que lê seus boletos e explica seus números. Para PMEs e para quem faz BPO financeiro de várias empresas.
         </p>
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
           <Link href="/register" style={{ background: 'linear-gradient(135deg, #6366f1, #3b82f6)', color: '#fff', padding: '16px 36px', borderRadius: '12px', textDecoration: 'none', fontWeight: '600', fontSize: '16px', border: 'none', cursor: 'pointer', boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.4)', transition: 'transform 0.2s' }}>
             Testar Grátis por 7 dias
           </Link>
-          <a href="#demo" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '16px 36px', borderRadius: '12px', textDecoration: 'none', fontWeight: '600', fontSize: '16px', transition: 'background 0.2s' }}>
-            Ver Demonstração
+          <a href="/pricing" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '16px 36px', borderRadius: '12px', textDecoration: 'none', fontWeight: '600', fontSize: '16px', transition: 'background 0.2s' }}>
+            Ver planos
           </a>
         </div>
       </section>
@@ -92,12 +92,15 @@ export default function LandingPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
             {[
-              { icon: '🤖', title: 'Chat com IA CFO', desc: 'Pergunte "Como corto gastos?" ou "Gere meu DRE" e receba respostas executivas baseadas nos seus números.' },
-              { icon: '🏢', title: 'Radar de CNPJ', desc: 'Analise parceiros e fornecedores digitando o CNPJ. A IA gera um score de risco cruzando dados da Receita.' },
-              { icon: '🔄', title: 'Conciliação OFX', desc: 'Arraste o extrato do seu banco e veja a IA categorizar centenas de transações em 1 segundo.' },
-              { icon: '🔮', title: 'Simulador de Cenários', desc: 'Brinque com variáveis (e se a receita cair 10%?) e veja o impacto instantâneo no seu runway.' },
-              { icon: '📄', title: 'Relatórios PDF', desc: 'Exporte DREs, Diagnósticos e Forecasts lindamente formatados para apresentar a sócios ou investidores.' },
-              { icon: '📊', title: 'Módulo Oráculo', desc: 'Análises macroeconômicas que cruzam o seu setor (CNAE) com notícias e tendências globais.' }
+              { icon: '📅', title: 'Contas a pagar e receber', desc: 'Vencimentos, parcelas, contas recorrentes e baixa em um clique. Os atrasados aparecem antes de virar problema.' },
+              { icon: '💠', title: 'Cobrança por Pix e WhatsApp', desc: 'QR Code e Pix copia e cola gerados com a sua chave, sem tarifa por boleto. A mensagem de cobrança já sai pronta no WhatsApp do cliente.' },
+              { icon: '🌊', title: 'Fluxo de caixa de 90 dias', desc: 'Saldo real das contas e projeção dia a dia. O sistema avisa a data em que o caixa ficaria negativo.' },
+              { icon: '📊', title: 'DRE gerencial de verdade', desc: 'Mês a mês, por competência ou por caixa, calculado dos seus lançamentos. Margens, ponto de equilíbrio e runway sem chute.' },
+              { icon: '🔄', title: 'Conciliação que aprende', desc: 'Importe o extrato OFX ou CSV: o que já foi lançado é reconhecido, as contas em aberto recebem baixa e as categorias são sugeridas.' },
+              { icon: '📷', title: 'Boleto e nota lidos por IA', desc: 'Tire foto do boleto, da nota ou do recibo. A IA preenche valor, vencimento e fornecedor; você só confere.' },
+              { icon: '🏢', title: 'Multiempresas para BPO', desc: 'Cuide de vários CNPJs no mesmo login, com dados separados e um painel com o caixa e os vencidos de todos os clientes.' },
+              { icon: '⚖️', title: 'Simulador tributário e da reforma', desc: 'Simples, Presumido e Real com Fator R, e a transição da CBS e do IBS de 2026 a 2033.' },
+              { icon: '🤖', title: 'CFO IA com os seus números', desc: 'Pergunte "como está meu caixa?" ou "onde cortar custos?" e receba a resposta a partir dos dados reais da empresa.' }
             ].map((f, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '32px', borderRadius: '24px', transition: 'transform 0.3s, background 0.3s', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}>
                 <div style={{ fontSize: '32px', marginBottom: '20px', background: 'rgba(255,255,255,0.05)', width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '16px' }}>{f.icon}</div>
@@ -123,7 +126,7 @@ export default function LandingPage() {
           <p style={{ color: '#a1a1aa', marginBottom: '32px', fontSize: '14px' }}>7 dias grátis, sem cartão. <Link href="/pricing" style={{ color: '#a1a1aa' }}>Ver todos os planos</Link></p>
           
           <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, margin: '0 0 40px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {['Chat Inteligente Ilimitado', 'Análise de CNPJs (Radar)', 'Conciliação Automática OFX', 'Simulador Tributário e Reforma 2026–2033', 'Simulador de Cenários', 'Exportação de DREs em PDF', 'Sem fidelidade, cancele quando quiser'].map((item, i) => (
+            {['Contas a pagar e receber com parcelas', 'Fluxo de caixa de 90 dias e DRE', 'Cobrança por Pix e WhatsApp', 'Conciliação de extrato OFX/CSV', 'Leitura de boletos com IA e CFO IA', 'Simulador Tributário e Reforma 2026–2033', 'Sem fidelidade, cancele quando quiser'].map((item, i) => (
               <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px' }}>
                 <span style={{ color: '#10b981' }}>✓</span> {item}
               </li>

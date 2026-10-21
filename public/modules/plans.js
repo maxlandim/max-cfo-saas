@@ -4,16 +4,8 @@
 
 window.initPlansModule = function() {
     if (!window.state) window.state = {};
-    let assinaturas = JSON.parse(localStorage.getItem('maxcfo_assinaturas') || 'null');
-    if (!assinaturas) {
-        assinaturas = [
-            { id: "1", cliente: "Tech Startup LLC", plano: "Pro Mensal", valor: 199, status: "Ativa", mrrmes: "2026-05" },
-            { id: "2", cliente: "Agência Criativa", plano: "Enterprise", valor: 899, status: "Ativa", mrrmes: "2026-05" },
-            { id: "3", cliente: "Consultoria XYZ", plano: "Pro Mensal", valor: 199, status: "Cancelada (Churn)", mrrmes: "2026-04" }
-        ];
-        localStorage.setItem('maxcfo_assinaturas', JSON.stringify(assinaturas));
-    }
-    window.state.assinaturas = assinaturas;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.assinaturas = Array.isArray(window.state.assinaturas) ? window.state.assinaturas : [];
 };
 
 window.renderPlans = function() {
@@ -107,7 +99,7 @@ window.cancelSubscription = function(id) {
     const sub = window.state.assinaturas.find(x => x.id === id);
     if(sub) {
         sub.status = 'Cancelada (Churn)';
-        localStorage.setItem('maxcfo_assinaturas', JSON.stringify(window.state.assinaturas));
+        if (window.persist) window.persist();
         if (window.showToast) window.showToast('Assinatura cancelada (Churn computado).', 'warning');
         renderPlans();
     }
@@ -123,7 +115,7 @@ window.submitPlanForm = function(e) {
         status: 'Ativa',
         mrrmes: new Date().toISOString().substring(0, 7)
     });
-    localStorage.setItem('maxcfo_assinaturas', JSON.stringify(window.state.assinaturas));
+    if (window.persist) window.persist();
     closeModal('planModal');
     if (window.showToast) window.showToast('Assinatura adicionada (MRR +)!', 'success');
     renderPlans();

@@ -26,15 +26,17 @@ const API = {
   }
 };
 
+// Cópia local por empresa (o id do espaço entra na chave para uma conta não ver dados de outra no mesmo navegador)
 var DB = {
+  chave(k) { return 'maxcfo_' + (window.workspaceId ? window.workspaceId + '_' : '') + k; },
   get(k, def = null) {
-    try { const v = localStorage.getItem('maxcfo_' + k); return v ? JSON.parse(v) : def; }
+    try { const v = localStorage.getItem(this.chave(k)); return v ? JSON.parse(v) : def; }
     catch { return def; }
   },
-  set(k, v) { 
-    try { 
-      localStorage.setItem('maxcfo_' + k, JSON.stringify(v)); 
-    } catch {} 
+  set(k, v) {
+    try {
+      localStorage.setItem(this.chave(k), JSON.stringify(v));
+    } catch {}
   },
   size() {
     let t = 0;
@@ -103,7 +105,7 @@ function fmtDate(iso) {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
 }
-function fmtPct(v) { return v.toFixed(1) + '%'; }
+function fmtPct(v) { return (isFinite(v) ? v : 0).toFixed(1).replace('.', ',') + '%'; }
 function fmtNum(v) { return v.toLocaleString('pt-BR'); }
 function timeNow() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
 function escHtml(s = '') {
@@ -133,7 +135,9 @@ var initMaxCfoApp = async () => {
   initChat();
   initKeyboard();
   initNotifications();
-  
+  if (window.initFinanceiroModule) window.initFinanceiroModule();
+  if (window.initEmpresasModule) window.initEmpresasModule();
+
   // Initialize new modules
   if (window.initTeamModule) window.initTeamModule();
   if (window.initHRModule) window.initHRModule();
@@ -151,7 +155,7 @@ var initMaxCfoApp = async () => {
 
   updateSettingsPanel();
   renderDashboard();
-  showToast('⚡ MAX CFO AI v4.0 iniciado', 'success');
+  
 };
 
 // Fora do painel Next.js (arquivo aberto direto), inicia sozinho
@@ -181,8 +185,15 @@ function applySettings() {
   const initial = (s.name || 'M')[0].toUpperCase();
   const a = document.getElementById('userAvatarSidebar');
   if (a) a.textContent = initial;
+  const nomeConta = (window.maxcfoUser && (window.maxcfoUser.name || window.maxcfoUser.email)) || '';
+  const nome = (s.name && s.name !== 'CFO Master') ? s.name : (nomeConta || 'Minha empresa');
   const n = document.getElementById('sidebarUserName');
-  if (n) n.textContent = s.name || 'CFO Master';
+  if (n) n.textContent = nome;
+  if (a) a.textContent = (nome || 'M')[0].toUpperCase();
+  const plano = document.querySelector('.user-plan');
+  if (plano) plano.textContent = window.maxcfoPlanoTexto || '';
+  document.querySelectorAll('.sidebar-version').forEach(e => e.textContent = 'MAX CFO AI v5');
+  document.querySelectorAll('.brand-tagline').forEach(e => e.textContent = 'Gestão financeira com IA');
 }
 
 function applyTheme(val) {
@@ -218,7 +229,8 @@ function updateSettingsPanel() {
 
 function setValue(id, val) {
   const el = document.getElementById(id);
-  if (el && val !== undefined) el.value = val;
+  if (!el || val === undefined) return;
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) el.value = val; else el.textContent = val;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -369,11 +381,8 @@ function initNotifications() {
 function buildNotifs() {
   const ctx = getCtx();
   const msgs = [];
-  if (ctx.txCount === 0) msgs.push({ icon: '📌', text: 'Nenhum lançamento registrado. Adicione transações para análise completa.', type: 'info' });
-  if (ctx.saldo < 0) msgs.push({ icon: '🔴', text: `Resultado negativo de ${fmt(ctx.saldo)}. Ação recomendada.`, type: 'error' });
-  const margem = ctx.receitas > 0 ? ctx.saldo / ctx.receitas * 100 : 0;
-  if (margem > 0 && margem < 10) msgs.push({ icon: '⚠️', text: `Margem abaixo de 10% (${margem.toFixed(1)}%). Revise precificação.`, type: 'warn' });
-  if (ctx.receitas > 0 && margem > 20) msgs.push({ icon: '✅', text: `Margem de ${margem.toFixed(1)}% — bom momento para investir excedente.`, type: 'success' });
+  if (ctx.txCount === 0) msgs.push({ icon: '📌', text: 'Nenhum lançamento registrado. Cadastre contas ou importe o extrato do banco.', type: 'info' });
+  if (window.fin) window.fin.alertas().forEach(a => msgs.push({ icon: '', text: a.t, type: a.cls === 'red' ? 'error' : a.cls === 'gold' ? 'warn' : 'info' }));
   msgs.push({ icon: '💡', text: 'Use Ctrl+K para buscar qualquer funcionalidade.', type: 'info' });
   msgs.push({ icon: '🤖', text: 'Converse com o CFO IA para análises detalhadas.', type: 'info' });
   return msgs;
@@ -385,7 +394,7 @@ function openNotifModal() {
   if (list) {
     list.innerHTML = msgs.map(m => `
       <div class="alert-row ${m.type === 'error' ? 'red' : m.type === 'warn' ? 'gold' : m.type === 'success' ? 'green' : 'blue'}" style="margin:4px 24px">
-        <span>${m.icon}</span><span>${m.text}</span>
+        ${m.icon ? `<span>${m.icon}</span>` : ''}<span>${escHtml(m.text)}</span>
       </div>`).join('');
   }
   const m = document.getElementById('notifModal');
@@ -402,76 +411,89 @@ function openNotifModal() {
 // DASHBOARD
 // ════════════════════════════════════════════
 function renderDashboard() {
-  const ctx = getCtx();
-  const { receitas, despesas, saldo, txCount } = ctx;
-  const margem = receitas > 0 ? saldo / receitas * 100 : 0;
-  const score  = engine.calcScore(ctx);
+  const F = window.fin;
+  if (!F) return;
+  F.garantirModelo();
+  const k = F.indicadores();
+  const d = k.atual.dre;
+  const receitas = k.atual.receitas, despesas = k.atual.despesas;
+  const margem = d.bruta > 0 ? d.resultado / d.bruta * 100 : 0;
+  const score = engine.calcScore(getCtx());
+  const varPct = (a, b) => b > 0 ? ((a - b) / b * 100) : null;
+  const vr = varPct(receitas, k.anterior.receitas), vd = varPct(despesas, k.anterior.despesas);
+  const lbl = (id, t) => { const e = document.getElementById(id); const l = e && e.closest('.kpi-card') && e.closest('.kpi-card').querySelector('.kpi-label'); if (l) l.textContent = t; };
 
-  // Runway calc
-  const caixa = saldo > 0 ? saldo * 5 : receitas * 1.5;
-  const runway = despesas > 0 ? (caixa / despesas).toFixed(1) : '>12';
+  setText('kpi-receita', fmt(receitas)); lbl('kpi-receita', 'Receitas do mês');
+  setText('kpi-despesa', fmt(despesas)); lbl('kpi-despesa', 'Despesas do mês');
+  setText('kpi-saldo', fmt(k.saldo)); lbl('kpi-saldo', 'Saldo em caixa');
+  setText('kpi-margem', fmtPct(margem)); lbl('kpi-margem', 'Margem do mês');
+  setText('kpi-runway', k.runway === null ? '—' : (k.runway >= 24 ? '24+ meses' : k.runway.toFixed(1).replace('.', ',') + ' meses')); lbl('kpi-runway', 'Runway (caixa ÷ gasto médio)');
+  setHtml('kpi-rec-trend', vr === null ? '—' : `<span class="${vr >= 0 ? 'positive' : 'negative'}">${vr >= 0 ? '↑' : '↓'} ${Math.abs(vr).toFixed(0)}% vs mês ant.</span>`);
+  setHtml('kpi-desp-trend', vd === null ? '—' : `<span class="${vd <= 0 ? 'positive' : 'negative'}">${vd >= 0 ? '↑' : '↓'} ${Math.abs(vd).toFixed(0)}%</span>`);
+  setHtml('kpi-saldo-trend', `<span class="${k.negativoEm ? 'negative' : 'positive'}" title="Saldo previsto em 30 dias">30d: ${fmt(F.projecao(30, true)[30].saldo)}</span>`);
+  setHtml('kpi-margem-trend', `<span class="${margem >= 15 ? 'positive' : margem >= 5 ? '' : 'negative'}">${d.bruta ? fmt(d.resultado) : '—'}</span>`);
+  setHtml('kpi-runway-trend', k.runway === null ? '—' : `<span class="${k.runway >= 6 ? 'positive' : 'negative'}">${k.runway >= 6 ? 'Seguro' : k.runway >= 3 ? 'Atenção' : 'Curto'}</span>`);
 
-  // KPIs
-  setText('kpi-receita', fmt(receitas));
-  setText('kpi-despesa', fmt(despesas));
-  setText('kpi-saldo', fmt(saldo));
-  setText('kpi-margem', fmtPct(margem));
-  setText('kpi-runway', runway + ' meses');
-  setHtml('kpi-saldo-trend', `<span class="${saldo >= 0 ? 'positive' : 'negative'}">${saldo >= 0 ? '↑ Positivo' : '↓ Negativo'}</span>`);
-  setHtml('kpi-margem-trend', `<span class="${margem >= 15 ? 'positive' : margem >= 5 ? '' : 'negative'}">${margem.toFixed(1)}%</span>`);
-  setHtml('kpi-runway-trend', `<span class="${runway >= 6 ? 'positive' : 'negative'}">${runway >= 6 ? 'Seguro' : 'Alerta'}</span>`);
-  setText('kpi-rec-trend', `${txCount} tx`);
-
-  // Gauge
+  // Saúde financeira
   const gFill = document.getElementById('gaugeFill');
-  if (gFill) {
-    const total = 251.2;
-    gFill.style.strokeDashoffset = total - (total * score / 100);
-  }
-  setText('gaugeScore', score);
-  setText('gaugeStatus', score >= 80 ? 'Excelente' : score >= 60 ? 'Bom' : score >= 40 ? 'Regular' : 'Crítico');
+  if (gFill) { const total = 251.2; gFill.style.strokeDashoffset = total - (total * score / 100); }
+  setText('gaugeScore', state.transactions.length ? score : '—');
+  setText('gaugeStatus', !state.transactions.length ? 'Sem dados' : score >= 80 ? 'Excelente' : score >= 60 ? 'Bom' : score >= 40 ? 'Regular' : 'Crítico');
 
-  // Trend Chart
-  drawTrendChart(receitas, despesas);
+  drawTrendChart();
 
-  // DRE Mini
-  const ded  = receitas * 0.0925;
-  const lb   = (receitas - ded) - despesas * 0.6;
-  const ebtd = lb - despesas * 0.4;
-  const ll   = ebtd > 0 ? ebtd * 0.85 : ebtd;
+  // DRE do mês (real)
+  const titDre = document.getElementById('dreMini')?.closest('.card')?.querySelector('.card-title');
+  if (titDre) titDre.textContent = 'DRE de ' + F.nomeMes(k.mes);
   setHtml('dreMini', `
-    <div class="dre-row"><span class="dre-lbl">Receita Bruta</span><span class="dre-val" style="color:var(--success)">${fmt(receitas)}</span></div>
-    <div class="dre-row"><span class="dre-lbl">(-) Deduções</span><span class="dre-val" style="color:var(--danger)">-${fmt(ded)}</span></div>
-    <div class="dre-row"><span class="dre-lbl">Lucro Bruto</span><span class="dre-val">${fmt(lb)}</span></div>
-    <div class="dre-row sep bold"><span class="dre-lbl">EBITDA</span><span class="dre-val" style="color:var(--gold)">${fmt(ebtd)}</span></div>
-    <div class="dre-row bold"><span class="dre-lbl">Lucro Líquido</span><span class="dre-val" style="color:${ll >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmt(ll)}</span></div>`);
+    <div class="dre-row"><span class="dre-lbl">Receita bruta</span><span class="dre-val" style="color:var(--success)">${fmt(d.bruta)}</span></div>
+    <div class="dre-row"><span class="dre-lbl">(−) Impostos e custos</span><span class="dre-val" style="color:var(--danger)">-${fmt(d.deducoes + d.custos)}</span></div>
+    <div class="dre-row"><span class="dre-lbl">Lucro bruto</span><span class="dre-val">${fmt(d.lucroBruto)}</span></div>
+    <div class="dre-row sep bold"><span class="dre-lbl">Resultado operacional</span><span class="dre-val" style="color:var(--gold)">${fmt(d.operacional)}</span></div>
+    <div class="dre-row bold"><span class="dre-lbl">Resultado do mês</span><span class="dre-val" style="color:${d.resultado >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmt(d.resultado)}</span></div>`);
 
-  // Alerts
-  const alerts = [];
-  if (saldo < 0) alerts.push({ cls: 'red', t: '🔴 Resultado negativo — revise despesas urgentemente' });
-  if (margem < 10 && margem > 0) alerts.push({ cls: 'gold', t: `⚠️ Margem de ${margem.toFixed(1)}% abaixo do ideal (≥15%)` });
-  if (receitas === 0) alerts.push({ cls: 'gold', t: '📌 Registre suas receitas para análise completa' });
-  if (saldo > 0 && margem > 20) alerts.push({ cls: 'green', t: '💡 Margem saudável — considere investir o excedente' });
-  if (txCount === 0) alerts.push({ cls: 'blue', t: '📊 Adicione lançamentos para análises do CFO' });
-  if (alerts.length === 0) alerts.push({ cls: 'green', t: '✅ Situação financeira estável. Continue monitorando!' });
+  // Alertas
+  const alerts = F.alertas();
+  if (d.bruta > 0 && margem < 10 && margem >= 0) alerts.push({ cls: 'gold', t: `⚠️ Margem do mês de ${margem.toFixed(1)}%, abaixo do ideal (15% ou mais).`, go: 'dre' });
+  if (d.bruta > 0 && d.resultado < 0) alerts.push({ cls: 'red', t: `📉 O mês está com resultado negativo de ${fmt(d.resultado)}.`, go: 'dre' });
+  if (!state.transactions.length) alerts.push({ cls: 'blue', t: '📊 Comece cadastrando contas a pagar e a receber ou importando o extrato do banco.', go: 'contas' });
+  if (!alerts.length) alerts.push({ cls: 'green', t: '✅ Nada vencido e caixa positivo nos próximos 90 dias.' });
   const alertEl = document.getElementById('alertsList');
-  if (alertEl) alertEl.innerHTML = alerts.map(a => `<div class="alert-row ${a.cls}">${a.t}</div>`).join('');
+  if (alertEl) alertEl.innerHTML = alerts.map(a => `<div class="alert-row ${a.cls}"${a.go ? ` style="cursor:pointer" onclick="switchView('${a.go}')"` : ''}>${escHtml(a.t)}</div>`).join('');
   const ac = document.getElementById('alertCount');
-  if (ac) { ac.textContent = alerts.length; ac.style.background = alerts.some(a => a.cls === 'red') ? 'var(--danger)' : 'var(--warning)'; }
+  const reais = alerts.filter(a => a.cls !== 'green');
+  if (ac) { ac.textContent = reais.length; ac.style.background = alerts.some(a => a.cls === 'red') ? 'var(--danger)' : 'var(--warning)'; }
+  const dot = document.getElementById('notifDot');
+  if (dot && !state.notifSeen) dot.style.display = reais.length ? 'block' : 'none';
 
-  // Recent TX
-  const recent = [...state.transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  // Próximos vencimentos (ou últimos lançamentos, se não houver)
   const rtEl = document.getElementById('recentTxList');
   if (!rtEl) return;
+  const tit = rtEl.closest('.card')?.querySelector('.card-title');
+  const link = rtEl.closest('.card')?.querySelector('.btn-link');
+  if (k.proximos.length) {
+    if (tit) tit.textContent = 'Vencimentos dos próximos 7 dias';
+    if (link) link.setAttribute('onclick', "switchView('contas')");
+    rtEl.innerHTML = k.proximos.map(t => {
+      const s = F.rotuloSituacao(t);
+      return `<div class="tx-row" style="cursor:pointer" onclick="switchView('contas')">
+        <div class="tx-info"><span class="tx-desc-text">${escHtml(t.desc)}</span><span class="tx-meta-text">${F.dataBR(t.vencimento)} • <span class="fin-sit ${s.cls}">${s.txt}</span>${t.contato ? ' • ' + escHtml(t.contato) : ''}</span></div>
+        <span class="${t.type === 'RECEITA' ? 'tx-amount-pos' : 'tx-amount-neg'}">${t.type === 'RECEITA' ? '+' : '-'}${fmt(t.amount)}</span></div>`;
+    }).join('');
+    return;
+  }
+  if (tit) tit.textContent = 'Últimos lançamentos';
+  if (link) link.setAttribute('onclick', "switchView('finance')");
+  const recent = [...state.transactions].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
   if (!recent.length) {
-    rtEl.innerHTML = `<div class="empty-block">Nenhum lançamento. <a class="link-go" onclick="openModal('receita')">Adicionar agora →</a></div>`;
+    rtEl.innerHTML = `<div class="empty-block">Nenhum lançamento. <a class="link-go" onclick="switchView('contas')">Cadastrar contas →</a></div>`;
     return;
   }
   rtEl.innerHTML = recent.map(t => `
     <div class="tx-row">
       <div class="tx-info">
         <span class="tx-desc-text">${escHtml(t.desc)}</span>
-        <span class="tx-meta-text">${fmtDate(t.date)} • ${t.category}</span>
+        <span class="tx-meta-text">${fmtDate(t.date)} • ${escHtml(t.category)}</span>
       </div>
       <span class="${t.type === 'RECEITA' ? 'tx-amount-pos' : 'tx-amount-neg'}">
         ${t.type === 'RECEITA' ? '+' : '-'}${fmt(t.amount)}
@@ -479,105 +501,45 @@ function renderDashboard() {
     </div>`).join('');
 }
 
-function drawTrendChart(receitasAtual, despesasAtual) {
+// Receitas x despesas dos últimos 6 meses (competência), com os valores reais
+function drawTrendChart() {
   const canvas = document.getElementById('trendChart');
-  if (!canvas) return;
+  const F = window.fin;
+  if (!canvas || !F) return;
+  const meses = F.mesesAte(F.mesAtual(), 6);
+  const pm = F.porMes(meses, 'competencia');
+  const rec = meses.map(m => pm[m].receitas), desp = meses.map(m => pm[m].despesas);
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth || 300, H = canvas.clientHeight || 160;
+  canvas.width = W * dpr; canvas.height = H * dpr;
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
+  ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, W, H);
-  
-  // Gerar um mock de 6 meses baseado no atual para dar visualização
-  const pnts = 6;
-  const recData = [];
-  const despData = [];
-  let baseR = receitasAtual > 0 ? receitasAtual : 50000;
-  let baseD = despesasAtual > 0 ? despesasAtual : 35000;
-
-  for (let i = 0; i < pnts - 1; i++) {
-    // Variância randômica baseada na semente para parecer histórico
-    const varR = 0.8 + (Math.sin(i * 123) * 0.4);
-    const varD = 0.8 + (Math.cos(i * 321) * 0.4);
-    recData.push(baseR * varR);
-    despData.push(baseD * varD);
+  const max = Math.max(...rec, ...desp, 1);
+  const padL = 8, padR = 8, padT = 10, padB = 22;
+  const gw = W - padL - padR, gh = H - padT - padB;
+  const slot = gw / meses.length, bw = Math.max(4, Math.min(16, slot / 3));
+  ctx.font = '10px Inter, system-ui, sans-serif'; ctx.textAlign = 'center';
+  meses.forEach((m, i) => {
+    const cx = padL + slot * i + slot / 2;
+    const hr = rec[i] / max * gh, hd = desp[i] / max * gh;
+    ctx.fillStyle = '#10B981'; ctx.fillRect(cx - bw - 1, padT + gh - hr, bw, hr);
+    ctx.fillStyle = '#EF4444'; ctx.fillRect(cx + 1, padT + gh - hd, bw, hd);
+    ctx.fillStyle = '#94A3B8'; ctx.fillText(F.nomeMes(m), cx, H - 6);
+  });
+  if (!rec.some(Boolean) && !desp.some(Boolean)) {
+    ctx.fillStyle = '#64748B'; ctx.font = '12px Inter, system-ui, sans-serif';
+    ctx.fillText('Sem lançamentos nos últimos 6 meses', W / 2, H / 2);
   }
-  // Último mês = real atual
-  recData.push(receitasAtual || baseR);
-  despData.push(despesasAtual || baseD);
-
-  const maxVal = Math.max(...recData, ...despData, 1000);
-  const padX = 20, padY = 30;
-  const graphW = W - padX * 2;
-  const graphH = H - padY - 10;
-
-  const getX = (i) => padX + (i / (pnts - 1)) * graphW;
-  const getY = (val) => graphH + 10 - ((val / maxVal) * graphH);
-
-  const drawArea = (data, color, gradientStart) => {
-    ctx.beginPath();
-    ctx.moveTo(getX(0), getY(data[0]));
-    for (let i = 1; i < pnts; i++) {
-      // smooth curve using bezier
-      const xc = (getX(i-1) + getX(i)) / 2;
-      const y1 = getY(data[i-1]);
-      const y2 = getY(data[i]);
-      ctx.bezierCurveTo(xc, y1, xc, y2, getX(i), y2);
-    }
-    
-    // Fill area
-    ctx.lineTo(getX(pnts-1), H);
-    ctx.lineTo(getX(0), H);
-    ctx.closePath();
-    
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, gradientStart);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Line
-    ctx.beginPath();
-    ctx.moveTo(getX(0), getY(data[0]));
-    for (let i = 1; i < pnts; i++) {
-      const xc = (getX(i-1) + getX(i)) / 2;
-      const y1 = getY(data[i-1]);
-      const y2 = getY(data[i]);
-      ctx.bezierCurveTo(xc, y1, xc, y2, getX(i), y2);
-    }
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    
-    // Points
-    for (let i = 0; i < pnts; i++) {
-      ctx.beginPath();
-      ctx.arc(getX(i), getY(data[i]), 4, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.strokeStyle = '#0F172A';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-  };
-
-  // Draw months axis
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.font = '600 10px Inter';
-  ctx.textAlign = 'center';
-  const months = ['M-5', 'M-4', 'M-3', 'M-2', 'M-1', 'Atual'];
-  for (let i = 0; i < pnts; i++) {
-    ctx.fillText(months[i], getX(i), H - 5);
-  }
-
-  drawArea(recData, '#10B981', 'rgba(16,185,129,0.3)');
-  drawArea(despData, '#EF4444', 'rgba(239,68,68,0.3)');
+  canvas.title = meses.map((m, i) => `${F.nomeMes(m)}: receitas ${fmt(rec[i])} · despesas ${fmt(desp[i])}`).join('\n');
 }
 
 // ════════════════════════════════════════════
 // FINANCE
 // ════════════════════════════════════════════
 var CATEGORIES = {
-  RECEITA: ['Consultoria', 'Vendas de Produto', 'Serviços Prestados', 'Licenciamento', 'Royalties', 'Dividendos', 'Aluguéis Recebidos', 'Investimentos', 'Outros'],
-  DESPESA: ['Salários e Pró-labore', 'Aluguel e Condomínio', 'Fornecedores', 'Marketing e Publicidade', 'TI e Software', 'Impostos e Taxas', 'Transporte e Logística', 'Energia e Utilidades', 'Equipamentos', 'Outros']
+  RECEITA: ['Serviços Prestados', 'Vendas de Produto', 'Consultoria', 'Licenciamento', 'Royalties', 'Dividendos', 'Aluguéis Recebidos', 'Investimentos', 'Outros'],
+  DESPESA: ['Fornecedores', 'Salários e Pró-labore', 'Aluguel e Condomínio', 'Impostos e Taxas', 'Marketing e Publicidade', 'TI e Software', 'Transporte e Logística', 'Energia e Utilidades', 'Equipamentos', 'Outros']
 };
 
 function renderFinance() {
@@ -694,7 +656,7 @@ function renderTxTable() {
   // Search
   if (state.txFilter.search) {
     const q = state.txFilter.search.toLowerCase();
-    txs = txs.filter(t => t.desc.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || (t.notes || '').toLowerCase().includes(q));
+    txs = txs.filter(t => [t.desc, t.category, t.notes, t.contato, t.centroCusto].join(' ').toLowerCase().includes(q));
   }
 
   // Sort
@@ -723,11 +685,11 @@ function renderTxTable() {
     <tr id="row-${t.id}" class="row-new">
       <td>${fmtDate(t.date)}</td>
       <td>
-        <div style="font-weight:600">${escHtml(t.desc)}</div>
+        <div style="font-weight:600">${escHtml(t.desc)}${t.parcela ? ` <span style="font-size:11px;color:var(--text-faint)">(${escHtml(t.parcela)})</span>` : ''}</div>${t.contato ? `<div style="font-size:11px;color:var(--text-muted)">${escHtml(t.contato)}</div>` : ''}
         ${t.notes ? `<div style="font-size:11px;color:var(--text-faint)">${escHtml(t.notes)}</div>` : ''}
       </td>
-      <td>${t.category}</td>
-      <td><span class="type-pill ${t.type.toLowerCase()}">${t.type}</span></td>
+      <td>${escHtml(t.category)}</td>
+      <td><span class="type-pill ${t.type.toLowerCase()}">${t.type === 'RECEITA' ? 'Receita' : 'Despesa'}</span>${window.fin ? `<div style="margin-top:4px"><span class="fin-sit ${window.fin.rotuloSituacao(t).cls}">${window.fin.rotuloSituacao(t).txt}</span></div>` : ''}</td>
       <td style="font-weight:800;color:${t.type === 'RECEITA' ? 'var(--success)' : 'var(--danger)'}">
         ${t.type === 'RECEITA' ? '+' : '-'}${fmt(t.amount)}
       </td>
@@ -771,45 +733,49 @@ function sortTx(field) {
 // ════════════════════════════════════════════
 // TRANSACTION CRUD
 // ════════════════════════════════════════════
-function openModal(type, editId = '') {
+function openModal(type, editId = '', opcoes = {}) {
   const isRec = type === 'receita' || type === 'RECEITA';
   const isEdit = !!editId;
+  const tx = isEdit ? state.transactions.find(t => t.id === editId) : null;
+  if (isEdit && !tx) return;
+  const tipo = tx ? tx.type : (isRec ? 'RECEITA' : 'DESPESA');
 
-  // Populate category select
+  // Categorias do tipo (mantém a do lançamento, mesmo que seja personalizada)
   const catEl = document.getElementById('txCategory');
   if (catEl) {
-    const cats = isRec ? CATEGORIES.RECEITA : CATEGORIES.DESPESA;
-    catEl.innerHTML = cats.map(c => `<option>${c}</option>`).join('');
+    const cats = [...(CATEGORIES[tipo] || [])];
+    if (tx && tx.category && !cats.includes(tx.category)) cats.unshift(tx.category);
+    catEl.innerHTML = cats.map(c => `<option>${escHtml(c)}</option>`).join('');
   }
-
+  const aberto = opcoes.status === 'pendente';
+  setValue('txType', tipo);
   if (!isEdit) {
-    // New transaction
-    setValue('txModalTitle', isRec ? '+ Nova Receita' : '+ Nova Despesa');
-    setValue('txModalSubtitle', isRec ? 'Registrar entrada financeira' : 'Registrar saída financeira');
-    setValue('txType', isRec ? 'RECEITA' : 'DESPESA');
-    setValue('txDate', new Date().toISOString().split('T')[0]);
+    setValue('txModalTitle', tipo === 'RECEITA' ? (aberto ? '+ Conta a receber' : '+ Nova receita') : (aberto ? '+ Conta a pagar' : '+ Nova despesa'));
+    setValue('txModalSubtitle', tipo === 'RECEITA' ? 'Entrada de dinheiro' : 'Saída de dinheiro');
     setValue('txDesc', '');
     setValue('txAmount', '');
     setValue('txNotes', '');
     setValue('txEditId', '');
-    setValue('txSubmitBtn', 'Salvar Lançamento');
-    document.getElementById('txSubmitBtn').style.background = isRec ? 'var(--gold)' : 'var(--danger)';
+    setValue('txAttachmentUrl', '');
+    setValue('txSubmitBtn', 'Salvar');
   } else {
-    // Edit existing
-    const tx = state.transactions.find(t => t.id === editId);
-    if (!tx) return;
-    setValue('txModalTitle', 'Editar Lançamento');
-    setValue('txModalSubtitle', 'Modificar dados do lançamento');
-    setValue('txType', tx.type);
+    setValue('txModalTitle', 'Editar lançamento');
+    setValue('txModalSubtitle', tx.parcela ? `Parcela ${tx.parcela}` : 'Altere os dados do lançamento');
     setValue('txDate', tx.date);
     setValue('txDesc', tx.desc);
     setValue('txAmount', tx.amount);
     setValue('txNotes', tx.notes || '');
     setValue('txEditId', tx.id);
+    setValue('txAttachmentUrl', tx.attachmentUrl || '');
     setValue('txCategory', tx.category);
-    setValue('txSubmitBtn', 'Salvar Alterações');
-    document.getElementById('txSubmitBtn').style.background = tx.type === 'RECEITA' ? 'var(--gold)' : 'var(--danger)';
+    setValue('txSubmitBtn', 'Salvar alterações');
   }
+  const fileInput = document.getElementById('txAttachment');
+  if (fileInput) fileInput.value = '';
+  if (window.fin) { window.fin.anexoPendente = opcoes.manterAnexo ? window.fin.anexoPendente : null; window.fin.preencherFormulario(tx, opcoes); }
+  else if (!isEdit) setValue('txDate', new Date().toISOString().split('T')[0]);
+  const btn = document.getElementById('txSubmitBtn');
+  if (btn) btn.style.background = tipo === 'RECEITA' ? 'var(--gold)' : 'var(--danger)';
 
   openModalEl('txModal');
   setTimeout(() => document.getElementById('txDesc')?.focus(), 300);
@@ -824,53 +790,65 @@ function editTx(id) {
 async function submitTransaction(e) {
   e.preventDefault();
   const desc     = document.getElementById('txDesc')?.value.trim();
-  const amount   = parseFloat(document.getElementById('txAmount')?.value);
+  const amount   = Math.round(parseFloat(document.getElementById('txAmount')?.value) * 100) / 100;
   const date     = document.getElementById('txDate')?.value;
-  const category = document.getElementById('txCategory')?.value;
+  const category = document.getElementById('txCategory')?.value || 'Outros';
   const notes    = document.getElementById('txNotes')?.value.trim();
   const type     = document.getElementById('txType')?.value;
   const editId   = document.getElementById('txEditId')?.value;
   let attachmentUrl = document.getElementById('txAttachmentUrl')?.value || '';
 
-  const fileInput = document.getElementById('txAttachment');
-  if (fileInput && fileInput.files.length > 0 && window.uploadFileToFirebase && window.workspaceId) {
-    const btn = document.getElementById('txSubmitBtn');
-    if (btn) btn.innerText = 'Enviando anexo...';
-    try {
-      const url = await window.uploadFileToFirebase(window.workspaceId, fileInput.files[0]);
-      if (url) attachmentUrl = url;
-    } catch (e) {
-      console.error(e);
-      showToast('Erro ao enviar anexo', 'error');
-    }
-    if (btn) btn.innerText = 'Salvar Lançamento';
-  }
-
   if (!desc) return showToast('Informe uma descrição', 'error');
   if (isNaN(amount) || amount <= 0) return showToast('Valor inválido', 'error');
-  if (!date) return showToast('Selecione uma data', 'error');
+  if (!date) return showToast('Informe a data de competência', 'error');
+
+  const btn = document.getElementById('txSubmitBtn');
+  const fileInput = document.getElementById('txAttachment');
+  const arquivo = (fileInput && fileInput.files.length > 0) ? fileInput.files[0] : (window.fin && window.fin.anexoPendente);
+  if (arquivo && window.uploadFileToFirebase && window.workspaceId) {
+    if (btn) { btn.disabled = true; btn.innerText = 'Enviando anexo...'; }
+    try {
+      const url = await window.uploadFileToFirebase(window.workspaceId, arquivo);
+      if (url) attachmentUrl = url;
+    } catch (err) {
+      console.error(err);
+      showToast('Não foi possível enviar o anexo. O lançamento será salvo sem ele.', 'error');
+    }
+    if (btn) { btn.disabled = false; btn.innerText = 'Salvar'; }
+  }
+  if (window.fin) window.fin.anexoPendente = null;
+
+  const base = { id: editId || genId(), desc, amount, date, category, notes, type, attachmentUrl, editando: !!editId };
+  const lista = window.fin ? window.fin.lerFormulario(base) : [base];
+  lista.forEach(t => { delete t.editando; t.atualizadoEm = Date.now(); });
+  if (editId) {
+    // Na edição, só conta como movimento novo de caixa se mudou algo que afeta o saldo
+    const antigo = state.transactions.find(t => t.id === editId);
+    if (antigo && antigo.status === lista[0].status && antigo.pagoEm === lista[0].pagoEm && antigo.amount === lista[0].amount && antigo.contaId === lista[0].contaId) lista[0].atualizadoEm = antigo.atualizadoEm || 0;
+  }
 
   if (editId) {
-    // Edit
     const idx = state.transactions.findIndex(t => t.id === editId);
     if (idx !== -1) {
       const oldTx = { ...state.transactions[idx] };
-      state.transactions[idx] = { ...state.transactions[idx], desc, amount, date, category, notes, type, attachmentUrl };
-      if (window.logAudit) window.logAudit('update', 'transaction', editId, `Transação "${desc}" atualizada`, oldTx, state.transactions[idx]);
+      state.transactions[idx] = { ...state.transactions[idx], ...lista[0] };
+      if (state.transactions[idx].status !== 'pago') state.transactions[idx].pagoEm = '';
+      if (window.logAudit) window.logAudit('update', 'transaction', editId, `Lançamento "${desc}" atualizado`, oldTx, state.transactions[idx]);
       showToast('✅ Lançamento atualizado', 'success');
     }
   } else {
-    // Create
-    const tx = { id: genId(), desc, amount, date, category, notes, type, attachmentUrl };
-    state.transactions.push(tx);
-    if (window.logAudit) window.logAudit('create', 'transaction', tx.id, `Transação "${desc}" criada`, null, tx);
-    showToast(`✅ ${type === 'RECEITA' ? 'Receita' : 'Despesa'} de ${fmt(amount)} registrada!`, 'success');
+    lista.forEach(tx => state.transactions.push(tx));
+    if (window.logAudit) window.logAudit('create', 'transaction', lista[0].id, `Lançamento "${desc}" criado${lista.length > 1 ? ` (${lista.length}x)` : ''}`, null, lista[0]);
+    const aberto = lista[0].status !== 'pago';
+    showToast(lista.length > 1
+      ? `✅ ${lista.length} lançamentos criados (${lista[0].parcela ? 'parcelas' : 'meses'})`
+      : `✅ ${type === 'RECEITA' ? (aberto ? 'Conta a receber' : 'Receita') : (aberto ? 'Conta a pagar' : 'Despesa')} de ${fmt(amount)} salva`, 'success');
   }
+  if (window.fin) window.fin.aprender(lista[0]);
 
   persist();
   closeModal('txModal');
-  renderDashboard();
-  renderFinance();
+  if (window.fin) window.fin.atualizarTudo(); else { renderDashboard(); renderFinance(); }
 }
 
 function deleteTx(id) {
@@ -882,8 +860,7 @@ function deleteTx(id) {
     setTimeout(() => {
       state.transactions = state.transactions.filter(t => t.id !== id);
       persist();
-      renderDashboard();
-      renderFinance();
+      if (window.fin) window.fin.atualizarTudo(); else { renderDashboard(); renderFinance(); }
       showToast('🗑️ Lançamento removido', 'warn');
     }, 300);
   }
@@ -899,17 +876,21 @@ function quickAdd() {
 // ════════════════════════════════════════════
 function exportCSV() {
   if (!state.transactions.length) return showToast('Nenhum dado para exportar', 'warn');
-  const header = 'Data,Descrição,Categoria,Tipo,Valor,Observação';
-  const rows = state.transactions.map(t =>
-    `"${t.date}","${t.desc.replace(/"/g,'""')}","${t.category}","${t.type}","${t.amount.toFixed(2)}","${(t.notes||'').replace(/"/g,'""')}"`
-  );
-  const csv = [header, ...rows].join('\n');
-  downloadText(csv, 'max-cfo-lancamentos.csv', 'text/csv');
-  showToast('⬇️ CSV exportado com sucesso!', 'success');
+  const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const br = v => Number(v || 0).toFixed(2).replace('.', ',');
+  const conta = id => (window.fin && window.fin.contaPorId(id) || {}).nome || '';
+  const header = ['Competência', 'Vencimento', 'Pagamento', 'Situação', 'Tipo', 'Descrição', 'Cliente/Fornecedor', 'Categoria', 'Centro de custo', 'Conta', 'Forma', 'Parcela', 'Valor', 'Observação'].join(';');
+  const rows = [...state.transactions].sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(t => [
+    t.date, t.vencimento || '', t.pagoEm || '', t.status === 'pago' ? 'Pago' : 'Em aberto', t.type === 'RECEITA' ? 'Receita' : 'Despesa',
+    q(t.desc), q(t.contato), q(t.category), q(t.centroCusto), q(conta(t.contaId)), q(t.forma), t.parcela || '', br(t.amount), q(t.notes)
+  ].join(';'));
+  downloadText('﻿' + [header, ...rows].join('\n'), 'max-cfo-lancamentos.csv', 'text/csv;charset=utf-8');
+  showToast('⬇️ Planilha exportada (abre no Excel)', 'success');
 }
 
 function exportAllData() {
-  const data = { transactions: state.transactions, companies: state.companies, settings: state.settings, exportedAt: new Date().toISOString() };
+  const data = Object.assign({}, JSON.parse(JSON.stringify(state)), { exportedAt: new Date().toISOString() });
+  ['currentModal', 'isListening', 'voiceRec', 'txFilter', 'txSort', 'notifSeen', 'chatHistory'].forEach(k => delete data[k]);
   downloadText(JSON.stringify(data, null, 2), 'max-cfo-backup.json', 'application/json');
   showToast('⬇️ Backup exportado!', 'success');
 }
@@ -925,9 +906,10 @@ function handleImport(e) {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (data.transactions) state.transactions = data.transactions;
-      if (data.companies) state.companies = data.companies;
+      if (!Array.isArray(data.transactions)) throw new Error('formato');
+      Object.keys(data).forEach(k => { if (k !== 'exportedAt' && k !== 'settings') state[k] = data[k]; });
       if (data.settings) state.settings = { ...state.settings, ...data.settings };
+      if (window.fin) window.fin.garantirModelo();
       persist();
       applySettings();
       renderDashboard();
@@ -1046,7 +1028,7 @@ async function consultarEmpresa(forceName = "") {
   if (!val) return showToast("Informe um CPF, CNPJ ou Nome", "error");
 
   const btn = document.getElementById("analyzeBtn");
-  if (btn) { btn.textContent = "? Analisando..."; btn.disabled = true; }
+  if (btn) { btn.textContent = "⏳ Analisando..."; btn.disabled = true; }
 
   const rawDigits = val.replace(/\D/g, "");
   const isCnpj = rawDigits.length === 14;
@@ -1074,7 +1056,10 @@ async function consultarEmpresa(forceName = "") {
       throw new Error("Fallback to mock");
     }
   } catch (err) {
-    result = engine.analyzeCreditRisk(rawDigits, name, documentType);
+    // Sem dado público não há análise: nada de score ou restrição inventados
+    if (btn) { btn.textContent = "Analisar →"; btn.disabled = false; }
+    showToast(isCnpj ? 'Não foi possível consultar esse CNPJ agora. Confira o número e tente de novo.' : 'A análise usa os dados públicos da Receita Federal e funciona só com CNPJ (14 dígitos).', 'error');
+    return;
   }
 
   const sc = result.score;
@@ -1319,7 +1304,7 @@ async function sendChat() {
                const res = await fetch('/api/chat', { 
                    method: 'POST', 
                    headers, 
-                   body: JSON.stringify({message: msg, context: { receitas: ctx.receitas, despesas: ctx.despesas, saldo: ctx.saldo, txCount: ctx.txCount }}) 
+                   body: JSON.stringify({message: msg, context: Object.assign({ receitas: ctx.receitas, despesas: ctx.despesas, saldo: ctx.saldo, txCount: ctx.txCount, empresa: state.settings.company || '', setor: state.settings.sector || '' }, window.fin ? window.fin.contextoIA() : {}), historico: (state.chatHistory || []).slice(-8)}) 
                });
                removeTyping(tid);
                const data = await res.json().catch(() => ({}));
@@ -1774,84 +1759,17 @@ window.renderReports = function() {
 
 // ====== NEW V4.0 FEATURES ======
 
+// Open Finance (integração com bancos) ainda não existe: leva para a importação do extrato
 window.syncOpenFinance = function() {
-  showToast("Iniciando sincroniza��o Open Finance...", "info");
-  setTimeout(() => {
-    // Mock open finance transactions
-    const mockTxs = [
-      { date: new Date().toISOString().split("T")[0], amount: -150.00, desc: "Pgto Fornecedor (OpenFinance)", type: "DESPESA" },
-      { date: new Date().toISOString().split("T")[0], amount: 2500.00, desc: "Recebimento Cliente (OpenFinance)", type: "RECEITA" }
-    ];
-    matchBankTransactions(mockTxs);
-    showToast("Open Finance importado! Resolva as pend�ncias abaixo.", "success");
-  }, 1500);
+  switchView('reconciliation');
+  showToast('Importe o extrato OFX ou CSV do banco para conciliar.', 'info');
 };
-
-window.emitirNFe = function() {
-  document.getElementById("nfeModal").style.display = "flex";
-  document.getElementById("nfeSpinner").style.display = "none";
-  document.getElementById("nfeStatusText").innerText = "Selecione o cliente para gerar a Nota Fiscal de Servi�o";
-};
-
-window.gerarNFe = function() {
-  const cliente = document.getElementById("nfeCliente").value;
-  const valor = document.getElementById("nfeValor").value;
-  if (!valor) {
-    showToast("Informe o valor da nota", "error");
-    return;
-  }
-  
-  document.getElementById("nfeSpinner").style.display = "block";
-  document.getElementById("nfeStatusText").innerText = "Comunicando com a Prefeitura...";
-  
-  setTimeout(() => {
-    document.getElementById("nfeSpinner").style.display = "none";
-    document.getElementById("nfeStatusText").innerHTML = `<span style="color:var(--success)">? NF-e emitida com sucesso para ${cliente}!</span>`;
-    showToast("NF-e Gerada com Sucesso!", "success");
-    
-    // Add transaction
-    state.transactions.push({
-      id: Date.now().toString(),
-      type: "RECEITA",
-      date: new Date().toISOString().split("T")[0],
-      desc: `NF-e ${cliente}`,
-      category: "Vendas",
-      amount: parseFloat(valor)
-    });
-    persist();
-    renderDashboard();
-    renderFinance();
-    
-    setTimeout(() => {
-      closeModal("nfeModal");
-      document.getElementById("nfeValor").value = "";
-    }, 2000);
-  }, 2500);
-};
-
-
-// Proactive AI Mock
-setTimeout(() => {
-  if(window.showToast) {
-    window.showToast("CFO IA: Risco de ruptura no Estoque! (PRD-002)", "info");
-  }
-}, 8000);
 
 // ====== NEW V5.0 LOGIC ======
 
-// Init state if empty
-if (!state.crm) {
-    state.crm = [
-        { id: "1", name: "Empresa XYZ", value: 5000, risk: "Baixo", status: "Leads" },
-        { id: "2", name: "TechCorp S.A", value: 12000, risk: "Moderado", status: "Negociacao" }
-    ];
-}
-if (!state.inventory) {
-    state.inventory = [
-        { id: "1", sku: "PRD-001", name: "Consultoria Premium", qty: 999 },
-        { id: "2", sku: "PRD-002", name: "Licença de Software", qty: 5 }
-    ];
-}
+// CRM e estoque começam vazios (os dados vêm da nuvem)
+if (!Array.isArray(state.crm)) state.crm = [];
+if (!Array.isArray(state.inventory)) state.inventory = [];
 
 // CRM Rendering
 function renderCRM() {
@@ -1972,56 +1890,7 @@ function renderReportsV5() {
 };
 
 window.generateDRE = function() {
-    const c = document.getElementById('dre-container');
-    if (!c) return;
-    
-    // Calculate basics from state.transactions
-    let rec = 0, desp = 0;
-    state.transactions.forEach(t => {
-        if(t.type === 'RECEITA') rec += t.amount;
-        if(t.type === 'DESPESA') desp += t.amount;
-    });
-    
-    const lucroBruto = rec * 0.8; // Simulação de Custo de Serviço de 20%
-    const lucroLiquido = rec - desp;
-    const margem = rec > 0 ? ((lucroLiquido / rec) * 100).toFixed(1) : 0;
-    
-    let html = `
-    <h2 style="margin-bottom:20px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">Demonstrativo de Resultados (DRE)</h2>
-    <table style="width:100%; border-collapse: collapse; font-size:14px;">
-        <tr style="border-bottom:1px solid var(--border-color);">
-            <td style="padding:10px;"><strong>(+) Receita Bruta Operacional</strong></td>
-            <td style="padding:10px; text-align:right;">R$ ${rec.toLocaleString('pt-BR')}</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color); color:var(--danger);">
-            <td style="padding:10px;">(-) Deduções e Impostos (Estimado 10%)</td>
-            <td style="padding:10px; text-align:right;">- R$ ${(rec * 0.1).toLocaleString('pt-BR')}</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color); color:var(--danger);">
-            <td style="padding:10px;">(-) Custos dos Serviços Prestados (Estimado 10%)</td>
-            <td style="padding:10px; text-align:right;">- R$ ${(rec * 0.1).toLocaleString('pt-BR')}</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color); background:var(--bg-body);">
-            <td style="padding:10px;"><strong>(=) Lucro Bruto</strong></td>
-            <td style="padding:10px; text-align:right;"><strong>R$ ${lucroBruto.toLocaleString('pt-BR')}</strong></td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color); color:var(--danger);">
-            <td style="padding:10px;">(-) Despesas Operacionais Fixas/Variáveis</td>
-            <td style="padding:10px; text-align:right;">- R$ ${desp.toLocaleString('pt-BR')}</td>
-        </tr>
-        <tr style="background:var(--primary); color:#fff; font-weight:bold; border-radius:8px;">
-            <td style="padding:15px; border-top-left-radius:8px; border-bottom-left-radius:8px;">(=) Lucro Líquido do Exercício</td>
-            <td style="padding:15px; text-align:right; border-top-right-radius:8px; border-bottom-right-radius:8px;">R$ ${lucroLiquido.toLocaleString('pt-BR')}</td>
-        </tr>
-    </table>
-    
-    <div style="margin-top:30px; text-align:center;">
-        <h3 style="color:var(--text-muted);">Margem Líquida: <span style="color:var(--success); font-size:24px;">${margem}%</span></h3>
-        <p style="color:var(--text-muted); font-size:12px; margin-top:5px;">CFO IA: ${lucroLiquido > 0 ? "A empresa está gerando caixa! Bom trabalho." : "Atenção: A empresa operou no vermelho."}</p>
-    </div>
-    `;
-    
-    c.innerHTML = html;
+    switchView('dre');
 };
 
 window.initMaxCfoApp = initMaxCfoApp;

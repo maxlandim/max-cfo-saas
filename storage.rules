@@ -2,9 +2,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     // Anexos dos lançamentos: só o dono acessa, até 10 MB por arquivo.
+    // O espaço é o uid (empresa principal) ou "<uid>__<empresa>" (demais empresas do mesmo login).
     match /workspaces/{wsId}/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == wsId;
-      allow write: if request.auth != null && request.auth.uid == wsId
+      allow read: if request.auth != null
+        && (request.auth.uid == wsId || wsId.matches(request.auth.uid + '__[a-z0-9]{4,24}'));
+      allow write: if request.auth != null
+        && (request.auth.uid == wsId || wsId.matches(request.auth.uid + '__[a-z0-9]{4,24}'))
         && request.resource.size < 10 * 1024 * 1024;
     }
     match /{allPaths=**} {

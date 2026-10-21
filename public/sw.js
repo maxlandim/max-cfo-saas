@@ -1,6 +1,6 @@
 // Service worker do MAX CFO AI.
 // Internet primeiro (sempre a versão mais nova); a cópia salva só entra quando o aparelho está offline.
-const CACHE_NAME = 'max-cfo-ai-v4';
+const CACHE_NAME = 'max-cfo-ai-v5';
 
 self.addEventListener('install', () => self.skipWaiting());
 

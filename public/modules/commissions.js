@@ -4,15 +4,8 @@
 
 window.initCommissionsModule = function() {
     if (!window.state) window.state = {};
-    let comms = JSON.parse(localStorage.getItem('maxcfo_comissions') || 'null');
-    if (!comms) {
-        comms = [
-            { id: "1", vendedor: "Roberto Vendas", vendaBruta: 50000, taxa: 5, valorComissao: 2500, status: "A Pagar", competencia: "2026-05" },
-            { id: "2", vendedor: "Luciana Costa", vendaBruta: 85000, taxa: 6, valorComissao: 5100, status: "Pago", competencia: "2026-04" }
-        ];
-        localStorage.setItem('maxcfo_comissions', JSON.stringify(comms));
-    }
-    window.state.commissions = comms;
+    // Os dados vêm da nuvem (Firestore). Sem exemplos inventados.
+    window.state.commissions = Array.isArray(window.state.commissions) ? window.state.commissions : [];
 };
 
 window.renderCommissions = function() {
@@ -91,7 +84,7 @@ window.payCommission = function(id) {
     if (!c) return;
     
     c.status = 'Pago';
-    localStorage.setItem('maxcfo_comissions', JSON.stringify(window.state.commissions));
+    if (window.persist) window.persist();
     
     // Auto despesa
     if (window.state.transactions) {
@@ -103,7 +96,7 @@ window.payCommission = function(id) {
             category: 'Folha de Pagamento', // or Comissoes
             amount: c.valorComissao
         });
-        localStorage.setItem('maxcfo_transactions', JSON.stringify(window.state.transactions));
+        if (window.persist) window.persist();
     }
     
     if (window.showToast) window.showToast('Comissão paga e lançada como despesa!', 'success');
@@ -125,7 +118,7 @@ window.submitCommForm = function(e) {
         status: 'A Pagar',
         competencia: new Date().toISOString().substring(0, 7)
     });
-    localStorage.setItem('maxcfo_comissions', JSON.stringify(window.state.commissions));
+    if (window.persist) window.persist();
     closeModal('commModal');
     if (window.showToast) window.showToast('Comissão registrada!', 'success');
     renderCommissions();
