@@ -226,7 +226,7 @@
       }).join('');
     };
     var tamanho = (function () { try { return Math.round(JSON.stringify(st()).length / 1024); } catch (e) { return 0; } })();
-    v.innerHTML = cab('Configurações', 'Dados da empresa, Pix, categorias e backup') +
+    v.innerHTML = cab('Configurações', 'Dados da empresa, Pix, categorias, centros de custo e backup') +
       '<div class="grid-2col">' +
       '<div class="card"><h3 class="card-title" style="margin-bottom:12px">🏢 Empresa</h3><div class="form-grid">' +
       '<div class="form-field"><label class="form-label" for="cfCnpj">CNPJ</label><input class="form-input" id="cfCnpj" maxlength="18" value="' + esc(F().docFmt(s.cnpj || '')) + '" placeholder="Busca os dados na Receita"></div>' +
@@ -249,6 +249,9 @@
       '<button class="btn-secondary" style="margin-top:10px" onclick="cfg.addCat()">+ Adicionar</button>' +
       '<details style="margin-top:14px"><summary style="cursor:pointer;color:var(--gold)">Ver categorias de despesa (' + (window.CATEGORIES.DESPESA || []).length + ')</summary>' + catLista('DESPESA') + '</details>' +
       '<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--gold)">Ver categorias de receita (' + (window.CATEGORIES.RECEITA || []).length + ')</summary>' + catLista('RECEITA') + '</details></div>' +
+      '<div class="card"><h3 class="card-title" style="margin-bottom:8px">🎯 Centros de custo</h3><p class="fin-sub" style="margin-bottom:10px">Separe receitas e despesas por loja, projeto, filial ou área. Depois filtre Contas a receber, Contas a pagar e o DRE por centro.</p>' +
+      '<div style="display:flex;gap:8px;align-items:end"><div class="form-field" style="flex:1"><label class="form-label" for="cfCentroNome">Novo centro de custo</label><input class="form-input" id="cfCentroNome" maxlength="60" placeholder="Ex.: Loja Centro, Projeto X, Administrativo" onkeydown="if(event.key===\'Enter\')cfg.addCentro()"></div><button class="btn-secondary" onclick="cfg.addCentro()">+ Adicionar</button></div>' +
+      '<div id="cfCentros" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">' + (F().centros().length ? F().centros().map(function (c) { var n = st().transactions.filter(function (t) { return t.centroCusto === c; }).length; return '<span class="fin-sit" style="display:inline-flex;gap:6px;align-items:center;padding:5px 10px">' + esc(c) + ' <span class="fin-sub">' + n + '</span>' + (n ? '' : '<a style="cursor:pointer" title="Remover" onclick="cfg.removerCentro(this.dataset.c)" data-c="' + esc(c) + '">✕</a>') + '</span>'; }).join('') : '<span class="fin-sub">Nenhum centro de custo ainda.</span>') + '</div></div>' +
       '<div class="card"><h3 class="card-title" style="margin-bottom:12px">🗄️ Dados e backup</h3><div class="data-info">' +
       '<div class="data-info-row"><span>Lançamentos</span><strong>' + st().transactions.length + '</strong></div><div class="data-info-row"><span>Clientes e fornecedores</span><strong>' + Object.keys(st().contatos || {}).length + '</strong></div>' +
       '<div class="data-info-row"><span>Espaço usado na nuvem</span><strong>' + tamanho + ' KB de ~900 KB</strong></div></div>' +
@@ -283,6 +286,8 @@
       if (erro) return toast(erro, 'error');
       toast('Categoria criada.'); window.renderConfiguracoes();
     },
+    addCentro: function () { var n = F().addCentro(el('cfCentroNome').value); if (!n) return toast('Digite o nome do centro de custo.', 'error'); toast('Centro de custo criado.'); window.renderConfiguracoes(); },
+    removerCentro: function (nome) { st().centrosCusto = (st().centrosCusto || []).filter(function (c) { return c !== nome; }); if (window.persist) window.persist(); toast('Centro de custo removido.', 'warn'); window.renderConfiguracoes(); },
     removerCat: function (nome, tipo) { if (F().removerCategoria(nome, tipo)) { toast('Categoria removida.', 'warn'); window.renderConfiguracoes(); } },
     salvarEmpresa: function () {
       var s = st().settings;

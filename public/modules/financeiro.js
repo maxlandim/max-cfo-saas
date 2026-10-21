@@ -221,10 +221,11 @@
   };
 
   // Totais por mês e grupo do DRE. regime: 'competencia' (data) ou 'caixa' (pagoEm, só pagos)
-  F.porMes = function (meses, regime) {
+  F.porMes = function (meses, regime, centro) {
     var res = {};
     meses.forEach(function (m) { res[m] = { receitas: 0, despesas: 0, grupos: {}, cats: {} }; });
     st().transactions.forEach(function (t) {
+      if (centro && (t.centroCusto || '') !== (centro === '__sem' ? '' : centro)) return;
       var ref = regime === 'caixa' ? (F.estaPago(t) ? (t.pagoEm || t.date) : null) : t.date;
       if (!ref) return;
       var m = F.mes(ref);
@@ -389,10 +390,12 @@
       '.fin-dre tr.tot td{font-weight:800;background:rgba(255,255,255,.025)}.fin-dre tr.tot td:first-child{background:#141c2f}.fin-dre tr.res td{font-weight:900;color:var(--gold)}.fin-dre tr.cat td{color:var(--text-muted);font-size:12px}.fin-dre tr.cat td:first-child{padding-left:26px}' +
       '.fin-pix{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}.fin-pix .qr{background:#fff;border-radius:12px;padding:8px;line-height:0}' +
       '.fin-pix textarea{width:100%;min-height:92px;font-family:monospace;font-size:11px;resize:vertical}' +
+      '@media (max-width:700px){.fin-filtros select{flex:1 1 calc(50% - 8px);min-width:0}}' +
       '.fin-extra{display:contents}.fin-linha{grid-column:1/-1;border-top:1px dashed var(--border);margin:4px 0 0;padding-top:8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint)}' +
       '.fin-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);cursor:pointer}' +
       '@media (max-width:700px){.fin-pix{grid-template-columns:1fr}.fin-pix .qr{justify-self:center}.fin-hide-sm{display:none}}' +
       '.nav-item.fin-escondido{display:none}' +
+      '#txModal .modal-box{max-width:720px}#txForm .fin-linha:first-child{border-top:0;margin-top:0;padding-top:0}' +
       '.modal-overlay .modal-box{max-height:calc(100vh - 32px);overflow-y:auto;display:flex;flex-direction:column}.modal-overlay .modal-box>.modal-foot{position:sticky;bottom:0;background:inherit;z-index:2}' +
       '@media (max-width:700px){.topbar-date-time,.topbar-divider,.breadcrumb-root,.breadcrumb-sep{display:none!important}.topbar-right{gap:6px}.breadcrumb-current{max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}}';
     var s = document.createElement('style'); s.id = 'fin-estilos'; s.textContent = css; document.head.appendChild(s);
@@ -441,6 +444,10 @@
     secao('fluxo', 'Fluxo de caixa');
     secao('dre', 'DRE gerencial');
     secao('contatos', 'Clientes e fornecedores');
+    secao('receber', 'Contas a receber'); secao('pagar', 'Contas a pagar'); secao('bancos', 'Contas financeiras');
+    window.viewMeta.receber = { label: 'Contas a receber', render: function () { F.renderTipo('RECEITA'); } };
+    window.viewMeta.pagar = { label: 'Contas a pagar', render: function () { F.renderTipo('DESPESA'); } };
+    window.viewMeta.bancos = { label: 'Contas financeiras', render: F.renderBancos };
     window.viewMeta.contatos = { label: 'Clientes e Fornecedores', render: function () { F.renderContatos(); } };
     window.viewMeta = window.viewMeta || {};
     window.viewMeta.contas = { label: 'Contas a Pagar e Receber', render: F.renderContas };
@@ -464,28 +471,52 @@
   };
 
   // ════════════════ FORMULÁRIO DE LANÇAMENTO (campos extras) ════════════════
+  // Formulário de lançamento em blocos: Dados · Datas · Classificação · Pagamento
   F.ampliarFormulario = function () {
     var grid = document.querySelector('#txForm .form-grid');
     if (!grid || el('txStatus')) return;
-    var lblData = document.querySelector('label[for="txDate"]'); if (lblData) lblData.textContent = 'Competência *';
-    var html = '' +
-      '<div class="form-field"><label class="form-label" for="txStatus">Situação</label><select class="form-input" id="txStatus"><option value="pago">Pago / recebido</option><option value="pendente">Em aberto (a pagar ou receber)</option></select></div>' +
-      '<div class="form-field"><label class="form-label" for="txVenc">Vencimento</label><input type="date" class="form-input" id="txVenc"></div>' +
-      '<div class="form-field" id="txPagoEmBox"><label class="form-label" for="txPagoEm">Data do pagamento</label><input type="date" class="form-input" id="txPagoEm"></div>' +
-      '<div class="form-field"><label class="form-label" for="txConta">Conta bancária</label><select class="form-input" id="txConta"></select></div>' +
-      '<div class="form-field"><label class="form-label" for="txContato" id="txContatoLbl">Cliente / fornecedor</label><input type="text" class="form-input" id="txContato" list="finListaContatos" maxlength="80" autocomplete="off" placeholder="Opcional"><datalist id="finListaContatos"></datalist></div>' +
-      '<div class="form-field"><label class="form-label" for="txForma">Forma de pagamento</label><select class="form-input" id="txForma"><option value="">—</option>' + F.FORMAS.map(function (f) { return '<option>' + f + '</option>'; }).join('') + '</select></div>' +
-      '<div class="form-field"><label class="form-label" for="txCentro">Centro de custo</label><input type="text" class="form-input" id="txCentro" list="finListaCentros" maxlength="60" autocomplete="off" placeholder="Opcional, ex.: Loja 1"><datalist id="finListaCentros"></datalist></div>' +
-      '<div class="form-field" id="txRepetirBox"><label class="form-label" for="txRepetir">Repetir</label><select class="form-input" id="txRepetir"><option value="">Não repete</option><option value="parcelado">Parcelar o valor</option><option value="mensal">Repetir todo mês</option></select></div>' +
-      '<div class="form-field span-2" id="txSerieBox" style="display:none"><label class="fin-check"><input type="checkbox" id="txSerie"> <span id="txSerieTxt">Aplicar também às próximas parcelas em aberto</span></label></div>' +
-      '<div class="form-field" id="txVezesBox" style="display:none"><label class="form-label" for="txVezes" id="txVezesLbl">Quantas vezes</label><input type="number" class="form-input" id="txVezes" min="2" max="120" value="2"><span class="fin-sub" id="txVezesInfo"></span></div>';
-    var notas = el('txNotes'); var ref = notas ? notas.closest('.form-field') : null;
-    var wrap = document.createElement('div'); wrap.className = 'fin-extra'; wrap.innerHTML = html;
-    if (ref) grid.insertBefore(wrap, ref); else grid.appendChild(wrap);
+    var campo = function (id) { var e = el(id); return e ? e.closest('.form-field') : null; };
+    var fDesc = campo('txDesc'), fValor = campo('txAmount'), fData = campo('txDate'), fCat = campo('txCategory'), fAnexo = campo('txAttachment'), fNotas = campo('txNotes');
+    var novo = function (html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; };
+    var titulo = function (t) { return novo('<div class="fin-linha">' + t + '</div>'); };
+    // observação vira um campo de texto maior
+    if (fNotas) fNotas.remove();
+    var fObs = novo('<div class="form-field span-2"><label class="form-label" for="txNotes">Observação</label><textarea class="form-input" id="txNotes" rows="2" maxlength="500" placeholder="Ex.: número da nota, combinado com o cliente, detalhes do pagamento"></textarea></div>');
+    var lbl = function (f, t) { var l = f && f.querySelector('label'); if (l) l.textContent = t; };
+    lbl(fDesc, 'Descrição *'); lbl(fValor, 'Valor (R$) *'); lbl(fData, 'Competência'); lbl(fCat, 'Categoria');
+    if (fData) fData.insertAdjacentHTML('beforeend', '<span class="fin-sub">Mês em que entra no resultado (DRE). Segue o vencimento.</span>');
+    if (fCat) {
+      var sel = fCat.querySelector('select'); var w = document.createElement('div'); w.style.cssText = 'display:flex;gap:6px';
+      sel.parentNode.insertBefore(w, sel); w.appendChild(sel); sel.style.flex = '1';
+      w.insertAdjacentHTML('beforeend', '<button type="button" class="fin-btn gold" title="Nova categoria" onclick="fin.novaCategoriaForm()">+</button>');
+    }
+    var partes = [
+      titulo('Dados'), fDesc, fValor,
+      novo('<div class="form-field"><label class="form-label" for="txContato" id="txContatoLbl">Cliente / fornecedor</label><input type="text" class="form-input" id="txContato" list="finListaContatos" maxlength="80" autocomplete="off" placeholder="Opcional"><datalist id="finListaContatos"></datalist></div>'),
+      novo('<div class="form-field"><label class="form-label" for="txStatus">Situação</label><select class="form-input" id="txStatus"><option value="pendente">Em aberto</option><option value="pago">Já pago / recebido</option></select></div>'),
+      titulo('Datas'),
+      novo('<div class="form-field"><label class="form-label" for="txVenc">Vencimento</label><input type="date" class="form-input" id="txVenc"></div>'),
+      novo('<div class="form-field" id="txPagoEmBox"><label class="form-label" for="txPagoEm" id="txPagoEmLbl">Data do pagamento</label><input type="date" class="form-input" id="txPagoEm"></div>'),
+      fData,
+      titulo('Classificação'), fCat,
+      novo('<div class="form-field"><label class="form-label" for="txCentro">Centro de custo</label><div style="display:flex;gap:6px"><select class="form-input" id="txCentro" style="flex:1"></select><button type="button" class="fin-btn gold" title="Novo centro de custo" onclick="fin.novoCentroForm()">+</button></div><span class="fin-sub">Separa os números por loja, projeto, filial ou área.</span></div>'),
+      fObs,
+      titulo('Pagamento'),
+      novo('<div class="form-field"><label class="form-label" for="txConta">Conta financeira</label><select class="form-input" id="txConta"></select></div>'),
+      novo('<div class="form-field"><label class="form-label" for="txForma">Forma de pagamento</label><select class="form-input" id="txForma"><option value="">—</option>' + F.FORMAS.map(function (f) { return '<option>' + f + '</option>'; }).join('') + '</select></div>'),
+      novo('<div class="form-field" id="txRepetirBox"><label class="form-label" for="txRepetir">Repetir</label><select class="form-input" id="txRepetir"><option value="">Não repete</option><option value="parcelado">Parcelar o valor</option><option value="mensal">Repetir todo mês</option></select></div>'),
+      novo('<div class="form-field" id="txVezesBox" style="display:none"><label class="form-label" for="txVezes" id="txVezesLbl">Quantas vezes</label><input type="number" class="form-input" id="txVezes" min="2" max="120" value="2"><span class="fin-sub" id="txVezesInfo"></span></div>'),
+      novo('<div class="form-field span-2" id="txSerieBox" style="display:none"><label class="fin-check"><input type="checkbox" id="txSerie"> <span id="txSerieTxt">Aplicar também às próximas parcelas em aberto</span></label></div>'),
+      fAnexo
+    ];
+    grid.innerHTML = '';
+    partes.forEach(function (p) { if (p) grid.appendChild(p); });
+    if (fAnexo) lbl(fAnexo, 'Anexo (nota, boleto ou comprovante)');
 
     var atualizar = function () {
-      var pago = el('txStatus').value === 'pago';
+      var pago = el('txStatus').value === 'pago', rec = el('txType').value === 'RECEITA';
       el('txPagoEmBox').style.display = pago ? '' : 'none';
+      el('txPagoEmLbl').textContent = rec ? 'Data do recebimento' : 'Data do pagamento';
       var rep = el('txRepetir').value;
       el('txVezesBox').style.display = rep ? '' : 'none';
       el('txVezesLbl').textContent = rep === 'parcelado' ? 'Número de parcelas' : 'Repetir por quantos meses';
@@ -493,8 +524,10 @@
       el('txVezesInfo').textContent = rep === 'parcelado' && v > 0 ? n + 'x de ' + moeda(r2(v / n)) + ' (último ajusta centavos)' : rep === 'mensal' && v > 0 ? n + ' lançamentos de ' + moeda(v) : '';
     };
     ['txStatus', 'txRepetir', 'txVezes', 'txAmount'].forEach(function (id) { el(id).addEventListener('input', atualizar); el(id).addEventListener('change', atualizar); });
-    el('txDate').addEventListener('change', function () { if (!el('txEditId').value && el('txVenc').dataset.mexeu !== '1') el('txVenc').value = el('txDate').value; });
-    el('txVenc').addEventListener('change', function () { el('txVenc').dataset.mexeu = '1'; });
+    // A competência acompanha o vencimento até a pessoa mudar; no "já pago", o vencimento acompanha o pagamento
+    el('txVenc').addEventListener('change', function () { el('txVenc').dataset.mexeu = '1'; if (el('txDate').dataset.mexeu !== '1') el('txDate').value = el('txVenc').value; });
+    el('txPagoEm').addEventListener('change', function () { if (el('txVenc').dataset.mexeu !== '1' && !el('txEditId').value) { el('txVenc').value = el('txPagoEm').value; if (el('txDate').dataset.mexeu !== '1') el('txDate').value = el('txPagoEm').value; } });
+    el('txDate').addEventListener('change', function () { el('txDate').dataset.mexeu = '1'; });
     var sugerir = function () {
       var tipo = el('txType').value, texto = el('txContato').value || el('txDesc').value;
       if (el('txEditId').value) return;
@@ -502,13 +535,47 @@
       if (cat && el('txCategory').dataset.mexeu !== '1') {
         var sel = el('txCategory');
         if (![].some.call(sel.options, function (o) { return o.value === cat; })) sel.add(new Option(cat, cat));
-        sel.value = cat; sel.classList.add('fin-sugerida'); toast('Categoria sugerida: ' + cat, 'info');
+        sel.value = cat; toast('Categoria sugerida: ' + cat, 'info');
       }
+      // centro de custo usado da última vez com o mesmo cliente/fornecedor
+      var ct = el('txContato').value.trim();
+      if (ct && !el('txCentro').value) { var ult = st().transactions.slice().reverse().find(function (t) { return t.contato === ct && t.centroCusto; }); if (ult) F.selecionarCentro(ult.centroCusto); }
     };
     el('txDesc').addEventListener('blur', sugerir);
     el('txContato').addEventListener('blur', sugerir);
     el('txCategory').addEventListener('change', function () { el('txCategory').dataset.mexeu = '1'; });
     F._atualizarForm = atualizar;
+  };
+  // Centros de custo: lista própria da empresa
+  F.centros = function () {
+    var lista = (st().centrosCusto || []).slice();
+    st().transactions.forEach(function (t) { if (t.centroCusto && lista.indexOf(t.centroCusto) === -1) lista.push(t.centroCusto); });
+    return lista.sort(function (a, b) { return a.localeCompare(b, 'pt-BR'); });
+  };
+  F.preencherCentros = function (valor) {
+    var sel = el('txCentro'); if (!sel) return;
+    sel.innerHTML = '<option value="">Nenhum</option>' + F.centros().map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
+    F.selecionarCentro(valor || '');
+  };
+  F.selecionarCentro = function (v) {
+    var sel = el('txCentro'); if (!sel) return;
+    if (v && ![].some.call(sel.options, function (o) { return o.value === v; })) sel.add(new Option(v, v));
+    sel.value = v || '';
+  };
+  F.addCentro = function (nome) {
+    nome = String(nome || '').trim().slice(0, 60); if (!nome) return null;
+    st().centrosCusto = st().centrosCusto || [];
+    if (st().centrosCusto.indexOf(nome) === -1) st().centrosCusto.push(nome);
+    salvar(); return nome;
+  };
+  F.novoCentroForm = function () { var n = F.addCentro(prompt('Nome do centro de custo (ex.: Loja Centro, Projeto X, Administrativo):', '')); if (n) { F.preencherCentros(n); toast('Centro de custo criado.'); } };
+  F.novaCategoriaForm = function () {
+    var tipo = el('txType').value, nome = prompt('Nome da nova categoria de ' + (tipo === 'RECEITA' ? 'receita' : 'despesa') + ':', '');
+    if (!nome) return;
+    var erro = F.addCategoria(nome, tipo, tipo === 'RECEITA' ? 'receita' : 'operacionais');
+    if (erro) return toast(erro, 'error');
+    var sel = el('txCategory'); sel.innerHTML = (window.CATEGORIES[tipo] || []).map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    sel.value = nome.trim(); sel.dataset.mexeu = '1'; toast('Categoria criada. A linha do DRE pode ser ajustada em Configurações.');
   };
 
   F.preencherFormulario = function (tx, opcoes) {
@@ -521,10 +588,10 @@
     s.transactions.forEach(function (t) { if (t.contato) contatos[t.contato] = 1; if (t.centroCusto) centros[t.centroCusto] = 1; });
     Object.keys(s.contatos || {}).forEach(function (n) { contatos[n] = 1; });
     el('finListaContatos').innerHTML = Object.keys(contatos).sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
-    el('finListaCentros').innerHTML = Object.keys(centros).sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+    F.preencherCentros(tx ? tx.centroCusto : '');
     var tipo = el('txType').value;
     el('txContatoLbl').textContent = tipo === 'RECEITA' ? 'Cliente' : 'Fornecedor';
-    el('txCategory').dataset.mexeu = ''; el('txVenc').dataset.mexeu = '';
+    el('txCategory').dataset.mexeu = ''; el('txVenc').dataset.mexeu = ''; el('txDate').dataset.mexeu = tx ? '1' : '';
     if (tx) {
       el('txStatus').value = tx.status || 'pago';
       el('txVenc').value = tx.vencimento || tx.date;
@@ -532,7 +599,6 @@
       el('txConta').value = tx.contaId || s.contas[0].id;
       el('txContato').value = tx.contato || '';
       el('txForma').value = tx.forma || '';
-      el('txCentro').value = tx.centroCusto || '';
       el('txRepetir').value = ''; el('txRepetirBox').style.display = 'none';
       var prox = tx.grupo ? s.transactions.filter(function (x) { return x.grupo === tx.grupo && x.id !== tx.id && !F.estaPago(x) && (x.vencimento || '') > (tx.vencimento || ''); }) : [];
       el('txSerieBox').style.display = prox.length ? '' : 'none'; el('txSerie').checked = false;
@@ -545,7 +611,9 @@
       el('txVenc').value = opcoes.vencimento || opcoes.data || hoje;
       el('txPagoEm').value = hoje;
       el('txConta').value = s.contas[0].id;
-      el('txContato').value = opcoes.contato || ''; el('txForma').value = ''; el('txCentro').value = '';
+      el('txContato').value = opcoes.contato || ''; el('txForma').value = '';
+      if (opcoes.vencimento) el('txVenc').dataset.mexeu = '1';
+      if (opcoes.data && opcoes.vencimento && opcoes.data !== opcoes.vencimento) el('txDate').dataset.mexeu = '1';
       el('txRepetir').value = ''; el('txVezes').value = 2; el('txRepetirBox').style.display = '';
     }
     F._atualizarForm && F._atualizarForm();
@@ -617,6 +685,10 @@
       '<div class="form-field"><label class="form-label" for="finBxDesc">Desconto (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="finBxDesc" value="0"></div>' +
       '<div class="form-field"><label class="form-label" for="finBxValor">Valor ' + (rec ? 'recebido' : 'pago') + ' (R$)</label><input type="number" step="0.01" min="0.01" class="form-input" id="finBxValor" value="' + t.amount + '"><span class="fin-sub" id="finBxInfo"></span></div>' +
       '<div class="form-field"><label class="form-label" for="finBxForma">Forma</label><select class="form-input" id="finBxForma"><option value="">—</option>' + F.FORMAS.map(function (f) { return '<option' + (f === t.forma ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></div>' +
+      '<div class="fin-linha span-2">Classificação</div>' +
+      '<div class="form-field"><label class="form-label" for="finBxCat">Categoria</label><select class="form-input" id="finBxCat">' + (window.CATEGORIES[t.type] || []).concat((window.CATEGORIES[t.type] || []).indexOf(t.category) > -1 || !t.category ? [] : [t.category]).map(function (c) { return '<option' + (c === t.category ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="form-field"><label class="form-label" for="finBxCentro">Centro de custo</label><select class="form-input" id="finBxCentro"><option value="">Nenhum</option>' + F.centros().map(function (c) { return '<option value="' + esc(c) + '"' + (c === t.centroCusto ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="form-field span-2"><label class="form-label" for="finBxObs">Observação</label><textarea class="form-input" id="finBxObs" rows="2" maxlength="500" placeholder="Ex.: pago com atraso combinado, comprovante enviado por WhatsApp">' + esc(t.notes || '') + '</textarea></div>' +
       '</div>',
       '<button class="btn-ghost" onclick="fin.fechar(\'finBaixaModal\')">Cancelar</button><button class="btn-primary" onclick="fin.confirmarBaixa(\'' + esc(t.id) + '\')">Confirmar</button>');
     var atualizar = function (mexeuValor) {
@@ -636,6 +708,8 @@
     if (desc >= t.amount) return toast('O desconto não pode ser maior que o valor.', 'error');
     var data = el('finBxData').value || F.hoje(), conta = el('finBxConta').value, forma = el('finBxForma').value || t.forma || '';
     var antes = Object.assign({}, t), principal = r2(t.amount - desc), rec = t.type === 'RECEITA', msg;
+    if (el('finBxCat') && el('finBxCat').value) t.category = el('finBxCat').value;
+    if (el('finBxCentro')) t.centroCusto = el('finBxCentro').value;
     if (pago < principal - 0.004) {
       // Baixa parcial: o que foi pago baixa; o restante continua em aberto
       var resto = r2(principal - pago);
@@ -654,6 +728,9 @@
       msg = rec ? 'Recebimento registrado.' : 'Pagamento registrado.';
     }
     t.status = 'pago'; t.pagoEm = data; t.contaId = conta; t.forma = forma; t.atualizadoEm = Date.now();
+    if (el('finBxCat') && el('finBxCat').value) t.category = el('finBxCat').value;
+    if (el('finBxCentro')) t.centroCusto = el('finBxCentro').value;
+    if (el('finBxObs')) t.notes = el('finBxObs').value.trim().slice(0, 500);
     if (window.logAudit) window.logAudit('update', 'transaction', t.id, 'Baixa de "' + t.desc + '" (' + moeda(pago) + ')', antes, t);
     salvar(); fechar('finBaixaModal'); toast(msg);
     F.atualizarTudo();
@@ -1043,6 +1120,7 @@
       var sit = F.situacao(t);
       if (filtro.conta && t.contaId !== filtro.conta) return false;
       if (filtro.categoria && t.category !== filtro.categoria) return false;
+      if (filtro.centro && (t.centroCusto || '') !== (filtro.centro === '__sem' ? '' : filtro.centro)) return false;
       if (t.transferenciaId && aba !== 'pagas' && aba !== 'todas') return false;
       if (aba === 'receber' && (t.type !== 'RECEITA' || sit === 'pago')) return false;
       if (aba === 'pagar' && (t.type !== 'DESPESA' || sit === 'pago')) return false;
@@ -1113,8 +1191,100 @@
         : '<div class="empty-block" style="padding:28px">' + (filtro.aba === 'vencidas' ? 'Nenhuma conta vencida. 👏' : 'Nada por aqui. Cadastre uma conta ' + (filtro.aba === 'pagar' ? 'a pagar' : 'a receber') + ' ou leia um boleto com IA.') + '</div>') +
       '</div>';
   };
+  // ── Contas a receber / Contas a pagar (telas separadas) ──
+  var filtrosTipo = { RECEITA: { aba: 'aberto', periodo: 'todos', busca: '', conta: '', categoria: '', centro: '' }, DESPESA: { aba: 'aberto', periodo: 'todos', busca: '', conta: '', categoria: '', centro: '' } };
+  F.linhaConta = function (t) {
+    var s = F.rotuloSituacao(t), rec = t.type === 'RECEITA', conta = F.contaPorId(t.contaId), sit = F.situacao(t);
+    var acoes = sit === 'pago'
+      ? (t.transferenciaId ? '' : '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎</button><button class="fin-btn" onclick="fin.recibo(\'' + t.id + '\')" title="Recibo">🧾</button>')
+      : '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')" title="Cobrar por Pix e WhatsApp">💠</button>' : '');
+    if (!t.transferenciaId) acoes += '<button class="fin-btn" onclick="fin.duplicar(\'' + t.id + '\')" title="Duplicar">⧉</button>';
+    return '<tr><td>' + (sit === 'pago' ? '' : '<input type="checkbox" class="fin-sel" value="' + t.id + '" aria-label="Selecionar">') + '</td>' +
+      '<td style="white-space:nowrap">' + F.dataBR(sit === 'pago' ? t.pagoEm : t.vencimento) + '</td>' +
+      '<td><div style="font-weight:600">' + esc(t.desc) + (t.parcela ? ' <span class="fin-sub">(' + esc(t.parcela) + ')</span>' : '') + '</div><div class="fin-sub">' + esc([t.contato, t.category, t.centroCusto].filter(Boolean).join(' · ')) + '</div>' + (t.notes ? '<div class="fin-sub" style="font-style:italic">' + esc(String(t.notes).slice(0, 90)) + '</div>' : '') + '</td>' +
+      '<td class="fin-hide-sm">' + esc(conta ? conta.nome : '—') + '</td>' +
+      '<td style="font-weight:800;white-space:nowrap" class="' + (rec ? 'fin-pos' : 'fin-neg') + '">' + moeda(t.amount) + '</td>' +
+      '<td><span class="fin-sit ' + s.cls + '">' + s.txt + '</span></td>' +
+      '<td><div class="fin-acoes">' + acoes + '<button class="fin-btn" onclick="editTx(\'' + t.id + '\')" title="Editar">✏️</button><button class="fin-btn" onclick="fin.excluir(\'' + t.id + '\')" title="Excluir">🗑️</button></div></td></tr>';
+  };
+  F.renderTipo = function (tipo) {
+    var rec = tipo === 'RECEITA', vid = rec ? 'view-receber' : 'view-pagar', v = el(vid); if (!v) return;
+    F.garantirModelo();
+    var f = filtrosTipo[tipo], hoje = F.hoje(), mes = F.mes(hoje);
+    var todos = st().transactions.filter(function (t) { return t.type === tipo && !t.transferenciaId; });
+    var abertos = todos.filter(function (t) { return !F.estaPago(t); }), vencidos = abertos.filter(function (t) { return F.situacao(t) === 'vencido'; });
+    var em30 = abertos.filter(function (t) { return F.diffDias(hoje, t.vencimento) <= 30; });
+    var mesPago = todos.filter(function (t) { return F.estaPago(t) && F.mes(t.pagoEm) === mes; });
+    var lista = todos.filter(function (t) {
+      var sit = F.situacao(t);
+      if (f.aba === 'aberto' && sit === 'pago') return false;
+      if (f.aba === 'vencidas' && sit !== 'vencido') return false;
+      if (f.aba === 'pagas' && sit !== 'pago') return false;
+      if (f.conta && t.contaId !== f.conta) return false;
+      if (f.categoria && t.category !== f.categoria) return false;
+      if (f.centro && (t.centroCusto || '') !== (f.centro === '__sem' ? '' : f.centro)) return false;
+      var ref = sit === 'pago' ? t.pagoEm : t.vencimento;
+      if (f.periodo === '7' && !(sit === 'vencido' || F.diffDias(hoje, ref) <= 7)) return false;
+      if (f.periodo === '30' && !(sit === 'vencido' || F.diffDias(hoje, ref) <= 30)) return false;
+      if (f.periodo === 'mes' && F.mes(ref) !== mes) return false;
+      if (f.periodo === 'passado' && F.mes(ref) !== F.mes(F.addMeses(hoje, -1))) return false;
+      if (f.busca) { var q = semAcento(f.busca).toLowerCase(); if (semAcento([t.desc, t.contato, t.category, t.centroCusto, t.notes].join(' ')).toLowerCase().indexOf(q) === -1) return false; }
+      return true;
+    }).sort(function (a, b) { var ra = F.estaPago(a) ? a.pagoEm : a.vencimento, rb = F.estaPago(b) ? b.pagoEm : b.vencimento; return f.aba === 'pagas' ? (rb > ra ? 1 : -1) : (ra > rb ? 1 : -1); });
+    var total = r2(lista.reduce(function (a, t) { return a + t.amount; }, 0));
+    var palavra = rec ? 'receber' : 'pagar', feito = rec ? 'Recebidas' : 'Pagas';
+    var abas = [['aberto', 'Em aberto', abertos.length], ['vencidas', 'Vencidas', vencidos.length], ['pagas', feito, 0], ['todas', 'Todas', 0]];
+    var cats = window.CATEGORIES[tipo] || [], centros = F.centros();
+    var sel = function (k, opts, vazio) { return '<select class="select-sm" onchange="fin.filtroT(\'' + tipo + '\',\'' + k + '\',this.value)" aria-label="' + vazio + '"><option value="">' + vazio + '</option>' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (f[k] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>'; };
+    v.innerHTML = '' +
+      '<div class="page-header"><div class="page-header-text"><h1>Contas a ' + palavra + '</h1><p class="page-subtitle">' + (rec ? 'O que clientes devem para a empresa: vencimentos, cobrança por Pix e recebimentos' : 'Boletos, fornecedores, impostos e salários: vencimentos e pagamentos') + '</p></div>' +
+      '<div class="page-header-actions">' + (rec ? '' : '<button class="btn-secondary" onclick="fin.abrirLeitura()">📷 Ler boleto</button>') + '<button class="' + (rec ? 'btn-primary' : 'btn-danger-outline') + '" onclick="fin.novo(\'' + tipo + '\',{status:\'pendente\'})">+ Nova conta a ' + palavra + '</button></div></div>' +
+      '<div class="fin-kpis">' +
+      '<div class="fin-kpi2"><div class="v ' + (rec ? 'fin-pos' : 'fin-neg') + '">' + moeda(F.somar(abertos)) + '</div><div class="l">Em aberto (' + abertos.length + ')</div></div>' +
+      '<div class="fin-kpi2"><div class="v ' + (vencidos.length ? 'fin-neg' : '') + '">' + moeda(F.somar(vencidos)) + '</div><div class="l">' + (rec ? 'Atrasado' : 'Vencido') + ' (' + vencidos.length + ')</div></div>' +
+      '<div class="fin-kpi2"><div class="v">' + moeda(F.somar(em30)) + '</div><div class="l">Vence em 30 dias</div></div>' +
+      '<div class="fin-kpi2"><div class="v" style="color:var(--gold)">' + moeda(F.somar(mesPago)) + '</div><div class="l">' + feito + ' no mês</div></div></div>' +
+      '<div class="card"><div class="fin-bar"><div class="fin-tabs">' + abas.map(function (a) { return '<button class="fin-tab' + (f.aba === a[0] ? ' on' : '') + '" onclick="fin.filtroT(\'' + tipo + '\',\'aba\',\'' + a[0] + '\')">' + a[1] + (a[2] ? '<b>' + a[2] + '</b>' : '') + '</button>'; }).join('') + '</div>' +
+      '<input class="search-sm" placeholder="Buscar…" value="' + esc(f.busca) + '" oninput="fin.filtroT(\'' + tipo + '\',\'busca\',this.value,true)" aria-label="Buscar"></div>' +
+      '<div class="fin-filtros" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' +
+      '<select class="select-sm" onchange="fin.filtroT(\'' + tipo + '\',\'periodo\',this.value)" aria-label="Período">' + [['todos', 'Todo período'], ['7', 'Próximos 7 dias'], ['30', 'Próximos 30 dias'], ['mes', 'Este mês'], ['passado', 'Mês passado']].map(function (p) { return '<option value="' + p[0] + '"' + (f.periodo === p[0] ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select>' +
+      sel('categoria', cats.map(function (c) { return [c, c]; }), 'Todas as categorias') +
+      sel('centro', [['__sem', 'Sem centro de custo']].concat(centros.map(function (c) { return [c, c]; })), 'Todos os centros de custo') +
+      sel('conta', st().contas.map(function (c) { return [c.id, c.nome]; }), 'Todas as contas') + '</div>' +
+      (lista.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th style="width:28px"><input type="checkbox" aria-label="Marcar todos" onchange="document.querySelectorAll(\'#' + vid + ' .fin-sel\').forEach(function(c){c.checked=event.target.checked})"></th><th>Data</th><th>Descrição</th><th class="fin-hide-sm">Conta</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>' + lista.map(F.linhaConta).join('') + '</tbody></table></div>' +
+        '<div class="table-footer"><span class="table-count">' + lista.length + ' conta(s)' + (f.aba !== 'pagas' ? ' · <a class="link-go" onclick="fin.baixarSelecionados()">' + (rec ? 'receber' : 'pagar') + ' as marcadas</a>' : '') + '</span><span class="table-total">Total: ' + moeda(total) + '</span></div>'
+        : '<div class="empty-block" style="padding:28px">' + (f.aba === 'vencidas' ? 'Nada ' + (rec ? 'atrasado' : 'vencido') + '. 👏' : 'Nenhuma conta aqui. Clique em <b>+ Nova conta a ' + palavra + '</b>.') + '</div>') + '</div>';
+  };
+  var tBuscaT = null;
+  F.filtroT = function (tipo, k, val, atrasar) {
+    filtrosTipo[tipo][k] = val; clearTimeout(tBuscaT);
+    var vid = tipo === 'RECEITA' ? 'view-receber' : 'view-pagar';
+    var go = function () { F.renderTipo(tipo); if (atrasar) { var i = document.querySelector('#' + vid + ' .search-sm'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } } };
+    if (atrasar) tBuscaT = setTimeout(go, 250); else go();
+  };
+
+  // ── Contas financeiras (bancos, caixa, cartão) ──
+  F.renderBancos = function () {
+    var v = el('view-bancos'); if (!v) return;
+    F.garantirModelo();
+    var sel = F._contaAberta || (st().contas[0] || {}).id, conta = F.contaPorId(sel) || st().contas[0];
+    var movs = st().transactions.filter(function (t) { return F.estaPago(t) && t.contaId === conta.id; }).sort(function (a, b) { return (b.pagoEm || b.date) > (a.pagoEm || a.date) ? 1 : -1; }).slice(0, 60);
+    v.innerHTML = '' +
+      '<div class="page-header"><div class="page-header-text"><h1>Contas financeiras</h1><p class="page-subtitle">Bancos, caixa e cartões: saldo de cada um e as movimentações</p></div>' +
+      '<div class="page-header-actions"><button class="btn-secondary" onclick="fin.transferir()">🔁 Transferir</button><button class="btn-primary" onclick="fin.editarConta()">+ Nova conta</button></div></div>' +
+      '<div class="fin-kpis"><div class="fin-kpi2"><div class="v" style="color:var(--gold)">' + moeda(F.saldoTotal()) + '</div><div class="l">Saldo total hoje</div><div class="s">sem cartão de crédito</div></div></div>' +
+      '<div class="fin-contas" style="margin-bottom:16px">' + st().contas.map(function (c) { var sd = F.saldoConta(c); return '<div class="fin-conta" style="' + (c.id === conta.id ? 'border-color:var(--gold)' : '') + '" onclick="fin.abrirConta(\'' + esc(c.id) + '\')"><div class="fin-sub">' + esc(c.tipo) + '</div><div style="font-weight:700;margin:2px 0">' + esc(c.nome) + '</div><div style="font-size:18px;font-weight:800" class="' + (sd < 0 ? 'fin-neg' : '') + '">' + moeda(sd) + '</div><div class="fin-sub">' + (c.dataSaldo ? 'saldo informado em ' + F.dataBR(c.dataSaldo) : 'informe o saldo do extrato') + '</div></div>'; }).join('') + '</div>' +
+      '<div class="card"><div class="card-header-row"><span class="card-title">Movimentações — ' + esc(conta.nome) + '</span><button class="fin-btn" onclick="fin.editarConta(\'' + esc(conta.id) + '\')">✏️ Editar conta / saldo</button></div>' +
+      (movs.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>' + movs.map(function (t) { var r = t.type === 'RECEITA'; return '<tr><td>' + F.dataBR(t.pagoEm || t.date) + '</td><td><b>' + esc(t.desc) + '</b><div class="fin-sub">' + esc([t.contato, t.centroCusto].filter(Boolean).join(' · ')) + '</div></td><td>' + esc(t.category) + '</td><td style="font-weight:700" class="' + (r ? 'fin-pos' : 'fin-neg') + '">' + (r ? '+' : '−') + moeda(t.amount) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+        : '<div class="empty-block" style="padding:24px">Nenhuma movimentação paga nesta conta ainda.</div>') + '</div>';
+  };
+  F.abrirConta = function (id) { F._contaAberta = id; F.renderBancos(); };
+
   var tBusca = null;
-  F.verContas = function (busca, aba) { filtro.busca = busca || ''; filtro.aba = aba || 'todas'; filtro.periodo = 'todos'; filtro.conta = ''; filtro.categoria = ''; window.switchView('contas'); };
+  F.verContas = function (busca, aba) {
+    if (aba === 'receber' || aba === 'pagar') { var ft = filtrosTipo[aba === 'receber' ? 'RECEITA' : 'DESPESA']; ft.busca = busca || ''; ft.aba = 'aberto'; ft.periodo = 'todos'; return window.switchView(aba); }
+    filtro.busca = busca || ''; filtro.aba = aba || 'todas'; filtro.periodo = 'todos'; filtro.conta = ''; filtro.categoria = ''; filtro.centro = ''; window.switchView('contas');
+  };
   F.filtro = function (k, v, atrasar) {
     filtro[k] = v;
     clearTimeout(tBusca);
@@ -1231,7 +1401,7 @@
   F.baixarArquivo = baixarArquivo;
 
   // ════════════════ TELA: DRE GERENCIAL ════════════════
-  var dreCfg = { periodo: '6m', regime: 'competencia', detalhar: false };
+  var dreCfg = { periodo: '6m', regime: 'competencia', detalhar: false, centro: '' };
   F.mesesDoPeriodo = function (p) {
     var hoje = F.hoje(), ano = +hoje.slice(0, 4);
     if (p === 'ano') return F.mesesAte(ano + '-12', 12);
@@ -1240,15 +1410,15 @@
     if (p === '3m') return F.mesesAte(F.mes(hoje), 3);
     return F.mesesAte(F.mes(hoje), 6);
   };
-  F.calcularDRE = function (meses, regime) {
-    var pm = F.porMes(meses, regime), cols = meses.map(function (m) { return F.dreDoMes(pm[m]); });
+  F.calcularDRE = function (meses, regime, centro) {
+    var pm = F.porMes(meses, regime, centro), cols = meses.map(function (m) { return F.dreDoMes(pm[m]); });
     var total = F.dreDoMes({ grupos: meses.reduce(function (acc, m) { var g = pm[m].grupos; Object.keys(g).forEach(function (k) { acc[k] = r2((acc[k] || 0) + g[k]); }); return acc; }, {}) });
     return { meses: meses, pm: pm, cols: cols, total: total };
   };
   F.renderDRE = function () {
     var v = el('view-dre'); if (!v) return;
     F.garantirModelo();
-    var meses = F.mesesDoPeriodo(dreCfg.periodo), d = F.calcularDRE(meses, dreCfg.regime);
+    var meses = F.mesesDoPeriodo(dreCfg.periodo), d = F.calcularDRE(meses, dreCfg.regime, dreCfg.centro);
     var linhas = [
       ['bruta', 'Receita bruta', 'tot', 'receita'], ['deducoes', '(−) Impostos sobre vendas', '', 'deducoes'], ['liquida', 'Receita líquida', 'tot'],
       ['custos', '(−) Custos de mercadorias e serviços', '', 'custos'], ['lucroBruto', 'Lucro bruto', 'tot'],
@@ -1287,6 +1457,7 @@
       '<div class="card"><div class="fin-bar"><div class="fin-tabs">' +
       [['competencia', 'Competência'], ['caixa', 'Caixa']].map(function (r) { return '<button class="fin-tab' + (dreCfg.regime === r[0] ? ' on' : '') + '" onclick="fin.cfgDRE(\'regime\',\'' + r[0] + '\')">' + r[1] + '</button>'; }).join('') +
       '</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label class="fin-check"><input type="checkbox" ' + (dreCfg.detalhar ? 'checked' : '') + ' onchange="fin.cfgDRE(\'detalhar\',this.checked)"> Abrir por categoria</label>' +
+      '<select class="select-sm" onchange="fin.cfgDRE(\'centro\',this.value)" aria-label="Centro de custo"><option value="">Todos os centros de custo</option><option value="__sem"' + (dreCfg.centro === '__sem' ? ' selected' : '') + '>Sem centro de custo</option>' + F.centros().map(function (c) { return '<option value="' + esc(c) + '"' + (dreCfg.centro === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
       '<select class="select-sm" onchange="fin.cfgDRE(\'periodo\',this.value)" aria-label="Período">' + [['3m', 'Últimos 3 meses'], ['6m', 'Últimos 6 meses'], ['12m', 'Últimos 12 meses'], ['ano', 'Este ano'], ['anoPassado', 'Ano passado']].map(function (p) { return '<option value="' + p[0] + '"' + (dreCfg.periodo === p[0] ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select></div></div>' +
       '<p class="fin-sub" style="margin-bottom:10px">' + (dreCfg.regime === 'competencia' ? 'Competência: cada lançamento entra no mês em que aconteceu, pago ou não.' : 'Caixa: só o que foi pago ou recebido, no mês do pagamento.') + '</p>' +
       '<div class="table-scroll"><table class="fin-dre" style="width:100%;border-collapse:collapse"><thead><tr><th></th>' + meses.map(function (m) { return '<th>' + F.nomeMes(m) + '</th>'; }).join('') + '<th>Total</th><th>% receita</th></tr></thead><tbody>' + corpo + '</tbody></table></div>' +
@@ -1407,13 +1578,13 @@
   };
   F.alertas = function () {
     var k = F.indicadores(), lista = [];
-    if (k.vencidosRec.length) lista.push({ cls: 'red', t: '💸 ' + k.vencidosRec.length + ' recebimento(s) em atraso: ' + moeda(F.somar(k.vencidosRec)) + '. Cobre por Pix em Contas a receber.', go: 'contas' });
-    if (k.vencidosPag.length) lista.push({ cls: 'red', t: '⏰ ' + k.vencidosPag.length + ' conta(s) a pagar vencida(s): ' + moeda(F.somar(k.vencidosPag)) + '.', go: 'contas' });
+    if (k.vencidosRec.length) lista.push({ cls: 'red', t: '💸 ' + k.vencidosRec.length + ' recebimento(s) em atraso: ' + moeda(F.somar(k.vencidosRec)) + '. Cobre por Pix em Contas a receber.', go: 'receber' });
+    if (k.vencidosPag.length) lista.push({ cls: 'red', t: '⏰ ' + k.vencidosPag.length + ' conta(s) a pagar vencida(s): ' + moeda(F.somar(k.vencidosPag)) + '.', go: 'pagar' });
     if (k.venceHoje.length) lista.push({ cls: 'gold', t: '📅 ' + k.venceHoje.length + ' conta(s) vencem hoje: ' + moeda(F.somar(k.venceHoje)) + '.', go: 'contas' });
     if (k.negativoEm) lista.push({ cls: 'red', t: '🔴 O caixa fica negativo em ' + F.dataBR(k.negativoEm) + ' (' + moeda(k.saldoNegativo) + ').', go: 'fluxo' });
     if (k.runway !== null && k.runway < 3 && k.saldo > 0) lista.push({ cls: 'gold', t: '⏳ O saldo cobre ' + k.runway.toFixed(1).replace('.', ',') + ' meses de despesas. O ideal é ter pelo menos 3.', go: 'fluxo' });
     var semConta = (st().contas || []).every(function (c) { return !c.dataSaldo; });
-    if (semConta && st().transactions.length) lista.push({ cls: 'blue', t: '🏦 Informe o saldo do extrato das suas contas para o caixa ficar exato.', go: 'fluxo' });
+    if (semConta && st().transactions.length) lista.push({ cls: 'blue', t: '🏦 Informe o saldo do extrato das suas contas para o caixa ficar exato.', go: 'bancos' });
     return lista;
   };
   F.atualizarTudo = function () {
@@ -1421,6 +1592,10 @@
     var ativa = document.querySelector('.view.active');
     var id = ativa ? ativa.id.replace('view-', '') : '';
     if (id === 'contas') F.renderContas();
+    if (id === 'receber') F.renderTipo('RECEITA');
+    if (id === 'pagar') F.renderTipo('DESPESA');
+    if (id === 'bancos') F.renderBancos();
+    if (id === 'contatos') F.renderContatos();
     if (id === 'fluxo') F.renderFluxo();
     if (id === 'dre') F.renderDRE();
     if (id === 'finance' && window.renderFinance) window.renderFinance();

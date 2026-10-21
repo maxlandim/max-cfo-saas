@@ -189,7 +189,7 @@ export default function DashboardPage() {
       empresas.ativa = ativa;
       window.workspaceId = empresas.espacoDe(ativa);
 
-      const v = 'v=7';
+      const v = 'v=8';
       if (!document.querySelector(`script[src="/engine.js?${v}"]`)) await loadScript(`/engine.js?${v}`);
       const modules = ['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'layout'];
       for (const mod of modules) {
