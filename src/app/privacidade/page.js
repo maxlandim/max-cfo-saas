@@ -46,7 +46,7 @@ export default function PrivacidadePage() {
       <p>Usamos conexão criptografada (HTTPS), regras de acesso que isolam os dados de cada conta e verificação de assinatura no servidor. Nenhum sistema é 100% imune; se houver um incidente relevante, avisaremos os afetados e a ANPD, como prevê a lei.</p>
 
       <h2>7. Seus direitos</h2>
-      <p>Você pode pedir confirmação do tratamento, acesso, correção, anonimização, portabilidade, exclusão, informação sobre compartilhamento e revogação do consentimento (art. 18 da LGPD). Escreva para o encarregado de dados: <span className="pendente">[E-MAIL DO ENCARREGADO]</span>. Respondemos em até 15 dias.</p>
+      <p>Você pode pedir confirmação do tratamento, acesso, correção, anonimização, portabilidade, exclusão, informação sobre compartilhamento e revogação do consentimento (art. 18 da LGPD). Escreva para o encarregado de dados: maxpaeslandim@gmail.com. Respondemos em até 15 dias.</p>
 
       <h2>8. Armazenamento no navegador</h2>
       <p>O painel guarda preferências e uma cópia dos dados no próprio navegador para funcionar mais rápido. Não usamos cookies de publicidade.</p>
