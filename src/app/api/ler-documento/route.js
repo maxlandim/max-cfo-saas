@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { limiteExcedido } from '../../../lib/limite';
+import { comModelos } from '../../../lib/modelosIA';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
-const MODELO = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const TIPOS = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
 const LIMITE_BYTES = 3.2 * 1024 * 1024;
 
@@ -62,11 +62,13 @@ Texto extraído do arquivo (use para conferir números, nomes e a linha digitáv
 ${textoPdf}
 ---` : ''}`;
 
-    const model = genAI.getGenerativeModel({ model: MODELO, generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } });
     let texto;
     try {
-      const result = await model.generateContent([{ inlineData: { data: arquivo, mimeType: tipo } }, { text: prompt }]);
-      texto = result.response.text();
+      texto = await comModelos(async (nome) => {
+        const model = genAI.getGenerativeModel({ model: nome, generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } });
+        const result = await model.generateContent([{ inlineData: { data: arquivo, mimeType: tipo } }, { text: prompt }]);
+        return result.response.text();
+      });
     } catch (e) {
       console.error('Gemini recusou o arquivo:', tipo, Math.round(arquivo.length * 0.75 / 1024) + ' KB', e && e.message);
       const msg = String((e && e.message) || '');
@@ -75,6 +77,7 @@ ${textoPdf}
       const detalhe = msg.replace(/key=[^&\s]+/gi, 'key=***').slice(0, 300);
       if (codigo === 401 || codigo === 403 || /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)) return NextResponse.json({ error: 'A chave da IA no servidor não é válida. Confira a GEMINI_API_KEY na Vercel.', detalhe }, { status: 503 });
       if (codigo === 429 || /RESOURCE_EXHAUSTED|\bquota\b|rate limit/i.test(msg)) return NextResponse.json({ error: 'A IA atingiu o limite de uso agora. Tente de novo em 1 minuto.', detalhe }, { status: 429 });
+      if (codigo === 503 || codigo === 500) return NextResponse.json({ error: 'A IA do Google está sobrecarregada agora. Tente de novo em alguns segundos.', detalhe }, { status: 503 });
       if (codigo === 404 || /not found for API version|is not found/i.test(msg)) return NextResponse.json({ error: 'O modelo de IA configurado não está disponível para esta chave.', detalhe }, { status: 503 });
       return NextResponse.json({ error: tipo === 'application/pdf' ? 'A IA não conseguiu abrir este PDF (pode estar protegido por senha).' : 'A IA não conseguiu ler esta imagem. Tente uma foto mais nítida.', detalhe }, { status: 422 });
     }
