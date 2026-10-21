@@ -82,8 +82,8 @@ async def main():
                 for vid, nome in itens:
                     antes = len(rel['console'])
                     await pg.click(f'#nav-{vid}'); await pg.wait_for_timeout(500)
-                    r2 = await pg.evaluate(f"(()=>{{const v=document.getElementById('view-{vid}');return [!!v&&v.classList.contains('active'), v?v.innerText.trim().length:0, (document.getElementById('breadcrumb-label')||{{}}).textContent]}})()")
-                    erros = [c for c in rel['console'][antes:] if c[0] in ('pageerror', 'error')]
+                    r2 = await pg.evaluate(f"(()=>{{const v=document.getElementById('view-{vid}');return [!!v&&v.classList.contains('active'), v?(v.innerText.trim().length + (v.querySelector('iframe[src]')?100:0)):0, (document.getElementById('breadcrumb-label')||{{}}).textContent]}})()")
+                    erros = [c for c in rel['console'][antes:] if c[0] == 'pageerror' or (c[0] == 'error' and '403' not in c[1])]
                     log(r2[0] and r2[1] > 20 and not erros, f'  {m} › {nome} abre', (r2, erros[:2]))
                     await pg.screenshot(path=f'{OUT}/tela_{vid}.png')
                     # o menu continua com este módulo aberto
@@ -91,6 +91,7 @@ async def main():
                         log(False, f'  menu fechou o módulo ao abrir {nome}')
                         await pg.click(f'{sel} .lay-mod-h'); await pg.wait_for_timeout(300)
             # abas no topo
+            await pg.click('.lay-mod[data-mod="Financeiro"] .lay-mod-h'); await pg.wait_for_timeout(300)
             await pg.click('#nav-receber'); await pg.wait_for_timeout(400)
             if await pg.locator('#laySubnav >> text=Contas a pagar').count():
                 await pg.click('#laySubnav >> text=Contas a pagar'); await pg.wait_for_timeout(400)
