@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { limiteExcedido } from '../../../lib/limite';
+import { comModelos } from '../../../lib/modelosIA';
 
 export const dynamic = 'force-dynamic';
 
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
-const MODELO = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 const brl = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -58,9 +58,11 @@ ${descreverContexto(context)}`;
     // A conversa precisa começar com o usuário
     while (historico.length && historico[0].role !== 'user') historico.shift();
 
-    const model = genAI.getGenerativeModel({ model: MODELO, systemInstruction: systemPrompt });
-    const chat = model.startChat({ history: historico });
-    const result = await chat.sendMessage(message);
+    const result = await comModelos(async (nome) => {
+      const model = genAI.getGenerativeModel({ model: nome, systemInstruction: systemPrompt });
+      const chat = model.startChat({ history: historico });
+      return chat.sendMessage(message);
+    });
     const text = result.response.text();
     return NextResponse.json({ reply: text });
   } catch (error) {
