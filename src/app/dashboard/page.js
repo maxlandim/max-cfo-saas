@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const [erroNuvem, setErroNuvem] = useState(false);
   const iniciado = useRef(false);
   const leituras = useRef(null); // leituras do Firestore iniciadas junto com o login
+  const raiz = useRef(null);
 
   // 0) Começa a baixar os scripts do painel enquanto o login e a assinatura são conferidos
   useEffect(() => {
@@ -112,6 +113,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user || !acesso?.acesso || iniciado.current) return;
     iniciado.current = true;
+    if (raiz.current && !raiz.current.firstChild) raiz.current.innerHTML = PAINEL_HTML;
 
     const emailLegado = (user.email || '').toLowerCase();
     window.maxcfoUser = { uid: user.uid, name: user.displayName || '', email: user.email || '' };
@@ -398,7 +400,14 @@ export default function DashboardPage() {
           )}
         </div>
       )}
-      <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `\n\n<!-- SIDEBAR -->
+      <div id="maxcfoPainel" ref={raiz} />
+    </>
+  );
+}
+
+// HTML do painel. É colocado pelo próprio código (não pelo React) para o React nunca redesenhar
+// essa parte: os scripts do painel mudam esse HTML o tempo todo e perderiam os cliques.
+const PAINEL_HTML = `\n\n<!-- SIDEBAR -->
 <aside class=\"sidebar\" id=\"sidebar\">
   <div class=\"sidebar-brand\">
     <div class=\"brand-logo\">\u26a1</div>
@@ -1309,7 +1318,4 @@ export default function DashboardPage() {
 
 
 
-` }} />
-    </>
-  );
-}
+`;
