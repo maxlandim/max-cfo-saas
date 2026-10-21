@@ -217,7 +217,10 @@ export default function DashboardPage() {
         }
         if (e && e.code === 'permission-denied') {
           // Regras do Firestore desatualizadas: abre (sem risco, a nuvem também recusa gravar) e avisa
-          if (window.showToast) setTimeout(() => window.showToast('O banco de dados recusou o acesso. Publique as regras do Firestore (firestore.rules) no console do Firebase.', 'error'), 800);
+          const semBanco = /has not been used|is disabled/i.test(String(e.message || ''));
+          if (window.showToast) setTimeout(() => window.showToast(semBanco
+            ? 'O banco de dados na nuvem (Firestore) ainda não foi criado no Firebase. Seus dados ficam só neste aparelho até ele ser ativado.'
+            : 'O banco de dados recusou o acesso. Publique as regras do Firestore (firestore.rules) no console do Firebase.', 'error'), 800);
           return null;
         }
         setErroNuvem(true);
