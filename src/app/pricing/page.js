@@ -53,20 +53,20 @@ export default function PricingPage() {
     <div className="pr">
       <style dangerouslySetInnerHTML={{ __html: ESTILO_PLANOS + ESTILO }} />
       <header className="pr-topo">
-        <Link href="/" className="pr-marca"><span className="pr-logo">⚡</span>MAX CFO AI</Link>
+        <Link href="/" className="pr-marca"><span className="pr-logo">LA</span>Landim Advisory</Link>
         {user ? <Link href="/dashboard" className="pr-link">Voltar ao painel</Link> : <Link href="/login" className="pr-link">Entrar</Link>}
       </header>
 
       <main className="pr-main">
         <h1>Escolha o seu plano</h1>
-        <p className="pr-sub">Todos os planos têm todas as funcionalidades. O que muda é quantas empresas você cuida.</p>
+        <p className="pr-sub">Cada plano soma recursos ao anterior. No teste grátis você usa tudo para conhecer.</p>
         <p className="pr-teste">{user ? 'Pagamento mensal no cartão. Cancele quando quiser.' : '7 dias grátis, sem cartão. Cancele quando quiser.'}</p>
         {erro && <div role="alert" className="pr-erro">{erro}</div>}
 
         <CardsPlanos onEscolher={handleSubscribe} carregando={loading} textoBotao={(p) => (user ? 'Assinar ' + p.nome : 'Começar grátis')} />
 
         <div className="pr-incluso">
-          <div className="pr-incluso-t">Incluso em todos os planos</div>
+          <div className="pr-incluso-t">Em todos os planos</div>
           <ul>{INCLUSO.map((i) => <li key={i}>{i}</li>)}</ul>
         </div>
 
@@ -92,7 +92,7 @@ const ESTILO = `
 .pr a{text-decoration:none}
 .pr-topo{max-width:1160px;margin:0 auto;padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
 .pr-marca{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px;color:#0B1220}
-.pr-logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#C5A059,#8a6d2f);display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.pr-logo{width:34px;height:34px;border-radius:9px;background:#0B1220;color:#C5A059;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900}
 .pr-main{max-width:1160px;margin:0 auto;padding:20px 20px 60px;text-align:center}
 .pr h1{font-size:40px;font-weight:900;letter-spacing:-.02em;margin:10px 0 10px}
 .pr-sub{color:#4B5565;font-size:17px;margin:0 auto 6px;max-width:620px}

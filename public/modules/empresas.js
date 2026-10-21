@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Várias empresas no mesmo login (BPO financeiro, contadores, grupos)
+ * Landim Advisory — Várias empresas no mesmo login (BPO financeiro, contadores, grupos)
  * Seletor de empresa no menu e painel consolidado com caixa, contas e vencidos de todas as empresas.
  */
 (function () {

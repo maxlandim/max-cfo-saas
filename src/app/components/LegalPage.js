@@ -1,11 +1,11 @@
 import Link from 'next/link';
 
-// Página de texto legal no visual escuro do MAX CFO AI.
+// Página de texto legal no visual escuro da Landim Advisory.
 export default function LegalPage({ titulo, atualizado, children }) {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0f1e', color: '#E8EFF8', padding: '48px 20px', fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
       <main style={{ maxWidth: 760, margin: '0 auto', lineHeight: 1.7, fontSize: 15 }}>
-        <Link href="/" style={{ color: '#C5A059', textDecoration: 'none', fontWeight: 700 }}>⚡ MAX CFO AI</Link>
+        <Link href="/" style={{ color: '#C5A059', textDecoration: 'none', fontWeight: 700 }}>Landim Advisory</Link>
         <h1 style={{ fontSize: 32, margin: '24px 0 4px', lineHeight: 1.2 }}>{titulo}</h1>
         <p style={{ color: '#8899B0', marginBottom: 32, fontSize: 13 }}>Última atualização: {atualizado}</p>
         <div className="legal">{children}</div>

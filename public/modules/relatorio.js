@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Relatório mensal para o cliente (PDF)
+ * Landim Advisory — Relatório mensal para o cliente (PDF)
  * Resumo do mês, gráfico de 6 meses, DRE, despesas por categoria, contas em aberto,
  * saldos e projeção, com a marca de quem prepara (logo, nome, cor e contato) e um comentário.
  * Baixa em PDF, imprime e envia o resumo por WhatsApp. Funciona para qualquer empresa do login (BPO).
@@ -31,6 +31,8 @@
 
   // ── Marca de quem prepara (fica na empresa aberta e também neste aparelho, para valer em todas) ──
   function chaveMarca() { return 'maxcfo_marca_' + ((window.maxcfoUser && window.maxcfoUser.uid) || 'local'); }
+  function marcaLiberada() { var p = window.maxcfoPlano; return !p || !p.nivel || p.nivel >= 3; }
+  function marcaUsada() { return marcaLiberada() ? marca() : { escritorio: '', contato: '', cor: '#C5A059', logo: '' }; }
   function marca() {
     var s = (window.state && window.state.settings) || {};
     var local = null; try { local = JSON.parse(localStorage.getItem(chaveMarca()) || 'null'); } catch (e) { }
@@ -174,7 +176,7 @@
       var prev = '<div style="display:flex;gap:10px">' + [['Em 30 dias', d.proj30], ['Em 60 dias', d.proj60], ['Em 90 dias', d.proj90]].map(function (p) { return kpi('Saldo previsto ' + p[0].toLowerCase(), moeda(p[1]), '', p[1] < 0 ? '#DC2626' : '#0F172A'); }).join('') + '</div><div style="font-size:10.5px;color:#6B7789;margin-top:6px">Previsão a partir do saldo de hoje e das contas a receber e a pagar lançadas.</div>';
       h += bloco('Saldos e previsão de caixa', '<div style="display:grid;grid-template-columns:1fr 1.25fr;gap:16px;align-items:start"><div>' + cont + '</div><div>' + prev + '</div></div>');
     }
-    h += '<div style="margin-top:22px;padding-top:10px;border-top:1px solid #E5E9F0;font-size:10px;color:#6B7789;display:flex;justify-content:space-between;gap:10px"><span>Relatório gerado com base nos ' + d.lancamentos + ' lançamentos registrados até ' + F().dataBR(d.hoje) + '.</span><span>' + (m.escritorio ? esc(m.escritorio) + ' · ' : '') + 'MAX CFO AI</span></div>';
+    h += '<div style="margin-top:22px;padding-top:10px;border-top:1px solid #E5E9F0;font-size:10px;color:#6B7789;display:flex;justify-content:space-between;gap:10px"><span>Relatório gerado com base nos ' + d.lancamentos + ' lançamentos registrados até ' + F().dataBR(d.hoje) + '.</span><span>' + (m.escritorio ? esc(m.escritorio) + ' · ' : '') + 'Landim Advisory</span></div>';
     return '<div class="rel-folha" style="width:718px;background:#fff;color:#0F172A;font-family:Inter,-apple-system,Segoe UI,Roboto,Arial,sans-serif;box-sizing:border-box">' + h + '</div>';
   }
 
@@ -205,12 +207,12 @@
       '<div class="form-field" style="margin-top:10px"><label class="form-label" for="relRegime">Números do mês</label><select class="form-input" id="relRegime" onchange="rel.mudar(\'regime\',this.value)"><option value="competencia"' + (cfg.regime === 'competencia' ? ' selected' : '') + '>Pelo mês de competência</option><option value="caixa"' + (cfg.regime === 'caixa' ? ' selected' : '') + '>Pelo que entrou e saiu no banco</option></select></div></div>' +
       '<div class="card"><div class="card-title" style="margin-bottom:8px">O que entra no relatório</div>' + chk('resumo', 'Números do mês e resumo') + chk('grafico', 'Gráfico de 6 meses') + chk('dre', 'Resultado (DRE)') + chk('categorias', 'Despesas por categoria') + chk('contas', 'Contas a receber e a pagar') + chk('caixa', 'Saldos e previsão de caixa') + '</div>' +
       '<div class="card"><div class="card-title" style="margin-bottom:8px">Comentário para o cliente</div><textarea class="form-input" id="relComentario" rows="5" maxlength="1500" placeholder="Ex.: Mês bom em vendas. Atenção ao aluguel que subiu. Sugiro negociar o prazo com o fornecedor X." oninput="rel.comentario(this.value)">' + esc(notas()[cfg.mes] || '') + '</textarea><div class="fin-sub" style="margin-top:4px">Fica guardado para este mês.</div></div>' +
-      '<div class="card"><div class="card-title" style="margin-bottom:10px">Sua marca no relatório</div>' +
+(marcaLiberada() ?       '<div class="card"><div class="card-title" style="margin-bottom:10px">Sua marca no relatório</div>' +
       '<div class="form-field"><label class="form-label" for="relEscritorio">Quem prepara (seu nome ou escritório)</label><input class="form-input" id="relEscritorio" maxlength="60" value="' + esc(m.escritorio) + '" placeholder="Ex.: Landim Advisory" oninput="rel.marca()"></div>' +
       '<div class="form-field" style="margin-top:10px"><label class="form-label" for="relContato">Contato</label><input class="form-input" id="relContato" maxlength="80" value="' + esc(m.contato) + '" placeholder="Ex.: (61) 99999-9999 · contato@escritorio.com" oninput="rel.marca()"></div>' +
       '<div style="display:flex;gap:10px;align-items:end;margin-top:10px"><div class="form-field"><label class="form-label" for="relCor">Cor</label><input type="color" id="relCor" value="' + esc(m.cor) + '" oninput="rel.marca()" style="width:56px;height:38px;border:1px solid var(--border);border-radius:8px;background:none;padding:2px"></div>' +
       '<div class="form-field" style="flex:1"><label class="form-label">Logo</label><div style="display:flex;gap:8px"><button class="btn-secondary" style="flex:1" onclick="document.getElementById(\'relLogoArq\').click()">' + (m.logo ? 'Trocar logo' : 'Enviar logo') + '</button>' + (m.logo ? '<button class="fin-btn" title="Remover logo" onclick="rel.semLogo()">✕</button>' : '') + '</div><input type="file" id="relLogoArq" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="rel.logo(this.files[0])"></div></div>' +
-      '<div class="fin-sub" style="margin-top:6px">A marca vale para todas as empresas deste login.</div></div>' +
+      '<div class="fin-sub" style="margin-top:6px">A marca vale para todas as empresas deste login.</div></div>' : '<div class="card"><div class="card-title" style="margin-bottom:8px">Sua marca no relatório 🔒</div><p class="fin-sub" style="line-height:1.6">No plano <b>Completo</b> o relatório sai com o seu nome, contato, cor e logo, pronto para enviar ao seu cliente.</p><button class="btn-secondary" style="margin-top:10px" onclick="layout.oferta(3,\'Relatório com a sua marca\')">Ver planos</button></div>') +
       '</div>' +
       '<div class="rel-previa-box"><div class="fin-sub" style="margin-bottom:8px">Prévia</div><div id="relPrevia" class="rel-previa"></div></div>' +
       '</div>' +
@@ -221,7 +223,7 @@
   var tPrev = null;
   function atualizarPrevia() {
     var p = el('relPrevia'); if (!p) return;
-    p.innerHTML = '<div class="rel-papel">' + montar(dados(cfg.mes, cfg.regime), marca(), notas()[cfg.mes] || '') + '</div>';
+    p.innerHTML = '<div class="rel-papel">' + montar(dados(cfg.mes, cfg.regime), marcaUsada(), notas()[cfg.mes] || '') + '</div>';
     escalar();
   }
   function escalar() {
@@ -282,8 +284,8 @@
         if (btn) { btn.disabled = true; btn.textContent = 'Gerando PDF…'; }
         await carregarHtml2pdf();
         var caixa = document.createElement('div'); caixa.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff';
-        caixa.innerHTML = montar(d, marca(), notas()[cfg.mes] || ''); document.body.appendChild(caixa);
-        var m = marca();
+        caixa.innerHTML = montar(d, marcaUsada(), notas()[cfg.mes] || ''); document.body.appendChild(caixa);
+        var m = marcaUsada();
         await window.html2pdf().set({
           margin: [10, 10, 14, 10], filename: nomeArquivo(d), image: { type: 'jpeg', quality: 0.96 },
           html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -300,11 +302,11 @@
     imprimir: function () {
       var d = dados(cfg.mes, cfg.regime), w = window.open('', '_blank');
       if (!w) return toast('O navegador bloqueou a janela. Libere pop-ups para este site.', 'error');
-      w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(nomeArquivo(d).replace('.pdf', '')) + '</title><style>@page{size:A4;margin:12mm}body{margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.rel-folha{width:100%!important;max-width:718px;margin:0 auto}.rel-bloco{break-inside:avoid}tr{break-inside:avoid}</style></head><body>' + montar(d, marca(), notas()[cfg.mes] || '') + '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
+      w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(nomeArquivo(d).replace('.pdf', '')) + '</title><style>@page{size:A4;margin:12mm}body{margin:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.rel-folha{width:100%!important;max-width:718px;margin:0 auto}.rel-bloco{break-inside:avoid}tr{break-inside:avoid}</style></head><body>' + montar(d, marcaUsada(), notas()[cfg.mes] || '') + '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
       w.document.close();
     },
     whats: function () {
-      var d = dados(cfg.mes, cfg.regime), m = marca(), com = notas()[cfg.mes] || '';
+      var d = dados(cfg.mes, cfg.regime), m = marcaUsada(), com = notas()[cfg.mes] || '';
       var txt = '*Relatório financeiro — ' + d.empresa + '*\n' + mesExtenso(d.ym).replace(/^./, function (c) { return c.toUpperCase(); }) + '\n\n' +
         '⬇️ Entradas: ' + moeda(d.receitas) + '\n⬆️ Saídas: ' + moeda(d.despesas) + '\n' + (d.resultado >= 0 ? '✅ Lucro: ' : '🔴 Prejuízo: ') + moeda(Math.abs(d.resultado)) + (d.receitas ? ' (margem ' + pct(d.resultado, d.receitas) + ')' : '') + '\n🏦 Saldo em contas: ' + moeda(d.saldo) + '\n' +
         (d.atrasadoRec ? '⚠️ A receber em atraso: ' + moeda(d.atrasadoRec) + '\n' : '') + (d.atrasadoPag ? '⚠️ Contas vencidas: ' + moeda(d.atrasadoPag) + '\n' : '') +

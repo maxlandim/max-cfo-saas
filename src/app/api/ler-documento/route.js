@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { limiteExcedido } from '../../../lib/limite';
 import { comModelos } from '../../../lib/modelosIA';
+import { statusDoUsuario } from '../../../lib/assinatura';
+import { nivelDoStatus } from '../../../lib/plans';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -17,6 +19,8 @@ export async function POST(request) {
     if (adminConfigurado) {
       const user = await usuarioDaRequisicao(request);
       if (!user) return NextResponse.json({ error: 'Sua sessão expirou. Entre de novo.' }, { status: 401 });
+      const st = await statusDoUsuario(user).catch(() => null);
+      if (st && nivelDoStatus(st) < 2) return NextResponse.json({ error: 'A leitura de documentos com IA faz parte do plano Intermediário ou superior.', plano: true }, { status: 403 });
       if (limiteExcedido('doc:' + user.uid, Number(process.env.DOC_LIMIT_PER_HOUR || 30))) return NextResponse.json({ error: 'Limite de leituras desta hora atingido. Tente mais tarde.' }, { status: 429 });
     }
     if (!genAI) return NextResponse.json({ error: 'A leitura com IA ainda não foi ativada neste site (falta a chave da IA no servidor).' }, { status: 503 });

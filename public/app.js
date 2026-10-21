@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — App Controller v3.0
+ * Landim Advisory — App Controller v3.0
  * Production Ready — Comercialização
  * Todos os módulos 100% funcionais
  */
@@ -197,7 +197,7 @@ function applySettings() {
   if (a) a.textContent = (nome || 'M')[0].toUpperCase();
   const plano = document.querySelector('.user-plan');
   if (plano) plano.textContent = window.maxcfoPlanoTexto || '';
-  document.querySelectorAll('.sidebar-version').forEach(e => e.textContent = 'MAX CFO AI v5');
+  document.querySelectorAll('.sidebar-version').forEach(e => e.textContent = 'Landim Advisory v5');
   document.querySelectorAll('.brand-tagline').forEach(e => e.textContent = 'Gestão financeira com IA');
 }
 
@@ -1414,7 +1414,7 @@ function addAIMsg(text) {
     .replace(/\n/g, '<br>')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-  el.innerHTML = `<div class="msg-content"><div class="msg-bubble">${formattedText}</div><div class="msg-time">MAX CFO AI • ${timeNow()}</div></div>`;
+  el.innerHTML = `<div class="msg-content"><div class="msg-bubble">${formattedText}</div><div class="msg-time">Landim Advisory • ${timeNow()}</div></div>`;
   document.getElementById('chatMessages')?.appendChild(el);
   scrollChat();
 }

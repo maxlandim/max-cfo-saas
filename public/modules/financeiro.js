@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Núcleo financeiro (v5)
+ * Landim Advisory — Núcleo financeiro (v5)
  * Contas a pagar e receber, contas bancárias, fluxo de caixa projetado,
  * DRE gerencial (competência e caixa), cobrança por Pix com QR Code,
  * lembrete por WhatsApp, categorização que aprende e leitura de documentos com IA.

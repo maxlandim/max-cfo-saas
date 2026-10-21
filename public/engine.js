@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Neural Financial Engine v3.5
+ * Landim Advisory — Neural Financial Engine v3.5
  * Motor de IA Financeira com NLP (Natural Language Processing) e formatação Markdown.
  * Produção Ready — Comercialização
  */
@@ -7,7 +7,7 @@
 class MaxCFOEngine {
   constructor() {
     this.version = '3.5.0';
-    this.name = 'MAX CFO AI';
+    this.name = 'Landim Advisory';
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -48,7 +48,7 @@ class MaxCFOEngine {
     const score = this.calcScore(ctx);
     const status = score >= 80 ? 'EXCELENTE' : score >= 60 ? 'BOM' : score >= 40 ? 'REGULAR' : 'CRÍTICO';
 
-    return `**RELATÓRIO EXECUTIVO - MAX CFO AI**
+    return `**RELATÓRIO EXECUTIVO - Landim Advisory**
 *${new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'})}*
 
 **1. RESUMO FINANCEIRO**
@@ -451,7 +451,7 @@ Fonte: dados públicos da Receita Federal (BrasilAPI). Para análise completa co
     }
 
     if (this.has(c, 'o que eu faço', 'como melhorar', 'dica', 'conselho', 'sugestão', 'ajuda pra crescer', 'analise pra mim')) {
-      return `**Conselho Executivo do CFO MAX:**\n\n1. **Acompanhe sua margem:** Sua margem atual é de ${(receitas>0 ? saldo/receitas*100 : 0).toFixed(1)}%. Tente levá-la de forma saudável para acima de 15%.\n2. **Runway:** Mantenha caixa suficiente para cobrir pelo menos 6 meses das suas despesas fixas. Você não quer ser surpreendido em uma crise.\n3. **Cortes inteligentes:** Foque em cortar custos que não afetam a qualidade da experiência do seu cliente.\n\nPosso gerar relatórios mais profundos baseados em contabilidade consultiva. Tente pedir um "DRE Completo" ou um "Diagnóstico".`;
+      return `**Conselho executivo do CFO da Landim Advisory:**\n\n1. **Acompanhe sua margem:** Sua margem atual é de ${(receitas>0 ? saldo/receitas*100 : 0).toFixed(1)}%. Tente levá-la de forma saudável para acima de 15%.\n2. **Runway:** Mantenha caixa suficiente para cobrir pelo menos 6 meses das suas despesas fixas. Você não quer ser surpreendido em uma crise.\n3. **Cortes inteligentes:** Foque em cortar custos que não afetam a qualidade da experiência do seu cliente.\n\nPosso gerar relatórios mais profundos baseados em contabilidade consultiva. Tente pedir um "DRE Completo" ou um "Diagnóstico".`;
     }
 
     if (c.includes('?')) {
@@ -471,10 +471,10 @@ Fonte: dados públicos da Receita Federal (BrasilAPI). Para análise completa co
   getGreeting() {
     const hour = new Date().getHours();
     const greet = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-    return `${greet}! Sou o **MAX**, seu CFO Virtual de inteligência artificial.\n\nEstou aqui para ser seu parceiro estratégico financeiro 24h por dia. Posso:\n\n* Analisar seu DRE em segundos\n* Apontar onde cortar despesas (Cost Cutting)\n* Simular cenários e Runways de sobrevivência\n* Avaliar empresas via CNPJ\n\nComo posso ajudar os negócios hoje? Digite ou escolha abaixo.`;
+    return `${greet}! Sou o **CFO virtual da Landim Advisory**, com inteligência artificial.\n\nEstou aqui para ser seu parceiro estratégico financeiro 24h por dia. Posso:\n\n* Analisar seu DRE em segundos\n* Apontar onde cortar despesas (Cost Cutting)\n* Simular cenários e Runways de sobrevivência\n* Avaliar empresas via CNPJ\n\nComo posso ajudar os negócios hoje? Digite ou escolha abaixo.`;
   }
   
-  getHelp() { return `**O que o MAX CFO pode fazer por você:**\n\n* Analisar a "Saúde Financeira" da empresa\n* Emitir um "DRE" para fechamento mensal\n* Indicar a melhor "Margem de Lucro"\n* Sugerir onde "Cortar Gastos"\n* Consultar dados reais na Receita se você me passar um CNPJ\n\nBasta escrever como você falaria com um consultor!`; }
+  getHelp() { return `**O que a Landim Advisory pode fazer por você:**\n\n* Analisar a "Saúde Financeira" da empresa\n* Emitir um "DRE" para fechamento mensal\n* Indicar a melhor "Margem de Lucro"\n* Sugerir onde "Cortar Gastos"\n* Consultar dados reais na Receita se você me passar um CNPJ\n\nBasta escrever como você falaria com um consultor!`; }
   
   getThanks() { return `De nada! O trabalho duro compensa. Conte com a minha análise sempre que for tomar decisões financeiras críticas! 🚀`; }
 

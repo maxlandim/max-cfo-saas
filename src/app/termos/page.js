@@ -1,15 +1,15 @@
 import LegalPage from '../components/LegalPage';
 
-export const metadata = { title: 'Termos de Uso — MAX CFO AI' };
+export const metadata = { title: 'Termos de Uso — Landim Advisory' };
 
 export default function TermosPage() {
   return (
     <LegalPage titulo="Termos de Uso" atualizado="outubro de 2026">
       <h2>1. Quem somos</h2>
-      <p>O MAX CFO AI é uma plataforma on-line de gestão financeira para empresas, operada por <span className="pendente">[RAZÃO SOCIAL]</span>, inscrita no CNPJ <span className="pendente">[CNPJ]</span>, com sede em Brasília-DF. Contato: maxpaeslandim@gmail.com ou WhatsApp (61) 99210-5889.</p>
+      <p>A Landim Advisory é uma plataforma on-line de gestão financeira para empresas, operada por <span className="pendente">[RAZÃO SOCIAL]</span>, inscrita no CNPJ <span className="pendente">[CNPJ]</span>, com sede em Brasília-DF. Contato: maxpaeslandim@gmail.com ou WhatsApp (61) 99210-5889.</p>
 
       <h2>2. Aceite</h2>
-      <p>Ao criar uma conta ou usar a plataforma, você declara ter lido e aceito estes Termos e a <a href="/privacidade">Política de Privacidade</a>. Se usar o MAX CFO AI em nome de uma empresa, você declara ter poderes para aceitá-los em nome dela.</p>
+      <p>Ao criar uma conta ou usar a plataforma, você declara ter lido e aceito estes Termos e a <a href="/privacidade">Política de Privacidade</a>. Se usar a Landim Advisory em nome de uma empresa, você declara ter poderes para aceitá-los em nome dela.</p>
 
       <h2>3. Conta e acesso</h2>
       <ul>
@@ -44,7 +44,7 @@ export default function TermosPage() {
       <p>Na máxima extensão permitida pela lei, nossa responsabilidade por danos ligados ao serviço fica limitada ao valor pago pelo cliente nos 12 meses anteriores ao fato. Não respondemos por decisões tomadas com base em dados incorretos informados pelo usuário.</p>
 
       <h2>10. Propriedade intelectual</h2>
-      <p>O software, a marca MAX CFO AI e o conteúdo da plataforma pertencem ao operador. A assinatura dá a você uma licença de uso, pessoal e intransferível, enquanto estiver ativa.</p>
+      <p>O software, a marca Landim Advisory e o conteúdo da plataforma pertencem ao operador. A assinatura dá a você uma licença de uso, pessoal e intransferível, enquanto estiver ativa.</p>
 
       <h2>11. Encerramento</h2>
       <p>Você pode encerrar a conta a qualquer momento. Podemos suspender ou encerrar contas que violem estes Termos. Após o encerramento, os dados ficam disponíveis para exportação por 30 dias e depois são excluídos, salvo obrigação legal de guarda.</p>

@@ -1,4 +1,4 @@
-# MAX CFO AI
+# Landim Advisory
 
 Plataforma de gestão financeira para pequenas e médias empresas: fluxo de caixa, DRE, conciliação bancária (OFX/CSV), CRM, estoque, ordens de serviço, orçamentos, comissões, RH, CNPJ, simulador tributário e da reforma (2026–2033) e um CFO com inteligência artificial.
 

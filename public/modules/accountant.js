@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI — Portal do Contador
+ * Landim Advisory — Portal do Contador
  * Pacote mensal para a contabilidade: lançamentos com competência e pagamento, DRE, notas fiscais
  * e lista de comprovantes. Mostra o que falta organizar antes de enviar.
  */
@@ -34,7 +34,7 @@ window.initAccountantModule = function () {};
       '• ' + d.txs.length + ' lançamentos (' + d.txs.filter(function (t) { return t.type === 'RECEITA'; }).length + ' receitas e ' + d.txs.filter(function (t) { return t.type === 'DESPESA'; }).length + ' despesas)\n' +
       '• Receita bruta (competência): ' + F().moeda(res.bruta) + '\n• Resultado gerencial: ' + F().moeda(res.resultado) + '\n' +
       '• ' + d.notas.filter(function (n) { return n.status !== 'Cancelada'; }).length + ' nota(s) fiscal(is) emitida(s)\n' +
-      'Os arquivos (lançamentos, DRE e notas) vão em anexo. Gerado pelo MAX CFO AI.';
+      'Os arquivos (lançamentos, DRE e notas) vão em anexo. Gerado pela Landim Advisory.';
     v.innerHTML = '' +
       '<div class="page-header"><div class="page-header-text"><h1>Portal do Contador</h1><p class="page-subtitle">Pacote mensal pronto para a contabilidade</p></div>' +
       '<div class="page-header-actions"><input type="month" class="form-input" style="width:auto" value="' + mesSel + '" onchange="contador.mes(this.value)" aria-label="Mês"></div></div>' +
@@ -58,7 +58,7 @@ window.initAccountantModule = function () {};
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="fin-btn gold" onclick="fin.copiar(\'contadorResumo\')">Copiar</button>' +
       '<a class="fin-btn" href="mailto:?subject=' + encodeURIComponent('Fechamento ' + F().nomeMes(mesSel) + (empresa ? ' — ' + empresa : '')) + '&body=' + encodeURIComponent(resumo) + '">Abrir no e-mail</a>' +
       '<a class="fin-btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(resumo) + '">WhatsApp</a></div>' +
-      '<p class="fin-sub" style="margin-top:12px">Acesso de leitura para o contador entrar direto no MAX CFO: em desenvolvimento.</p></div>' +
+      '<p class="fin-sub" style="margin-top:12px">Acesso de leitura para o contador entrar direto na Landim Advisory: em desenvolvimento.</p></div>' +
       '</div>';
   };
 

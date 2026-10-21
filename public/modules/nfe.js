@@ -1,8 +1,8 @@
 /**
- * MAX CFO AI — Notas fiscais
+ * Landim Advisory — Notas fiscais
  * Registro das notas emitidas (NFS-e padrão nacional, NF-e ou da prefeitura), com consulta de CNPJ do
  * tomador, conta a receber automática e faturamento de 12 meses (RBT12).
- * A emissão direta pelo MAX CFO ainda não existe: a nota é emitida no Emissor Nacional e registrada aqui.
+ * A emissão direta pela Landim Advisory ainda não existe: a nota é emitida no Emissor Nacional e registrada aqui.
  */
 
 window.initNFeModule = function () {
@@ -51,7 +51,7 @@ window.initNFeModule = function () {
     v.innerHTML = '' +
       '<div class="page-header"><div class="page-header-text"><h1>Notas Fiscais</h1><p class="page-subtitle">Registro das notas emitidas, com conta a receber e faturamento de 12 meses</p></div>' +
       '<div class="page-header-actions"><a class="btn-secondary" href="' + EMISSOR + '" target="_blank" rel="noopener">Abrir Emissor Nacional ↗</a><button class="btn-primary" onclick="openNFeModal()">+ Registrar nota emitida</button></div></div>' +
-      '<div class="fin-alerta gold" style="margin-top:14px">🧾 <b>NFS-e no padrão nacional:</b> ' + (depois ? 'desde' : 'a partir de') + ' <b>01/11/2026</b>, MEs e EPPs do Simples Nacional emitem nota de serviço pelo padrão nacional (Resolução CGSN nº 191/2026), no Emissor Nacional ou por integração. Emita lá e registre aqui para o MAX CFO criar a conta a receber e somar o faturamento. A emissão direto pelo MAX CFO está em desenvolvimento.</div>' +
+      '<div class="fin-alerta gold" style="margin-top:14px">🧾 <b>NFS-e no padrão nacional:</b> ' + (depois ? 'desde' : 'a partir de') + ' <b>01/11/2026</b>, MEs e EPPs do Simples Nacional emitem nota de serviço pelo padrão nacional (Resolução CGSN nº 191/2026), no Emissor Nacional ou por integração. Emita lá e registre aqui para a Landim Advisory criar a conta a receber e somar o faturamento. A emissão direto pela Landim Advisory está em desenvolvimento.</div>' +
       '<div class="fin-kpis"><div class="fin-kpi2"><div class="v">' + doMes.length + '</div><div class="l">Notas no mês</div></div>' +
       '<div class="fin-kpi2"><div class="v fin-pos">' + moeda(doMes.reduce(function (a, n) { return a + (n.valor || 0); }, 0)) + '</div><div class="l">Faturado no mês</div></div>' +
       '<div class="fin-kpi2"><div class="v" style="color:var(--gold)">' + moeda(rbt12) + '</div><div class="l">Faturamento 12 meses (RBT12)</div><div class="s">base do Simples Nacional · limite R$ 4,8 milhões</div></div></div>' +

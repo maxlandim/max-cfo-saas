@@ -1,5 +1,5 @@
 /**
- * MAX CFO AI - Team & Workspaces Module
+ * Landim Advisory - Team & Workspaces Module
  */
 
 window.initTeamModule = function() {
