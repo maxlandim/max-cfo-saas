@@ -12,7 +12,7 @@ const LIMITE_DOC = 900 * 1024; // o Firestore aceita até 1 MB por documento
 
 // Versão dos scripts do painel: muda a cada publicação, então o navegador pode guardá-los em cache sem medo
 const VERSAO = 'v=' + (process.env.NEXT_PUBLIC_BUILD_ID || '9');
-const SCRIPTS = ['/engine.js', ...['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'layout'].map((m) => `/modules/${m}.js`), '/app.js'].map((s) => `${s}?${VERSAO}`);
+const SCRIPTS = ['/engine.js', ...['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'relatorio', 'layout'].map((m) => `/modules/${m}.js`), '/app.js'].map((s) => `${s}?${VERSAO}`);
 const CACHE_ACESSO_MS = 12 * 3600 * 1000; // a verificação da assinatura é refeita em segundo plano
 
 // Nenhuma etapa de rede pode travar a abertura: depois do prazo, desiste e segue com o plano B
