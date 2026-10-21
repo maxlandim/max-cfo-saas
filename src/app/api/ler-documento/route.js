@@ -70,9 +70,13 @@ ${textoPdf}
     } catch (e) {
       console.error('Gemini recusou o arquivo:', tipo, Math.round(arquivo.length * 0.75 / 1024) + ' KB', e && e.message);
       const msg = String((e && e.message) || '');
-      if (/API key|API_KEY|permission|403/i.test(msg)) return NextResponse.json({ error: 'A chave da IA no servidor não é válida. Confira a GEMINI_API_KEY na Vercel.' }, { status: 503 });
-      if (/quota|429|rate/i.test(msg)) return NextResponse.json({ error: 'A IA está com muitos pedidos agora. Tente de novo em 1 minuto.' }, { status: 429 });
-      return NextResponse.json({ error: tipo === 'application/pdf' ? 'A IA não conseguiu abrir este PDF (pode estar protegido por senha).' : 'A IA não conseguiu ler esta imagem. Tente uma foto mais nítida.' }, { status: 422 });
+      const codigo = Number(e && e.status) || Number((msg.match(/\[(\d{3})\b/) || [])[1]) || 0;
+      // detalhe curto do erro da IA (sem dados do arquivo) para diagnóstico
+      const detalhe = msg.replace(/key=[^&\s]+/gi, 'key=***').slice(0, 300);
+      if (codigo === 401 || codigo === 403 || /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)) return NextResponse.json({ error: 'A chave da IA no servidor não é válida. Confira a GEMINI_API_KEY na Vercel.', detalhe }, { status: 503 });
+      if (codigo === 429 || /RESOURCE_EXHAUSTED|\bquota\b|rate limit/i.test(msg)) return NextResponse.json({ error: 'A IA atingiu o limite de uso agora. Tente de novo em 1 minuto.', detalhe }, { status: 429 });
+      if (codigo === 404 || /not found for API version|is not found/i.test(msg)) return NextResponse.json({ error: 'O modelo de IA configurado não está disponível para esta chave.', detalhe }, { status: 503 });
+      return NextResponse.json({ error: tipo === 'application/pdf' ? 'A IA não conseguiu abrir este PDF (pode estar protegido por senha).' : 'A IA não conseguiu ler esta imagem. Tente uma foto mais nítida.', detalhe }, { status: 422 });
     }
     let dados;
     try { dados = JSON.parse(texto.replace(/^```json\s*|\s*```$/g, '')); } catch { return NextResponse.json({ error: 'Não consegui entender o documento. Tente uma foto mais nítida.' }, { status: 422 }); }
