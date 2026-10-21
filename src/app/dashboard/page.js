@@ -189,9 +189,9 @@ export default function DashboardPage() {
       empresas.ativa = ativa;
       window.workspaceId = empresas.espacoDe(ativa);
 
-      const v = 'v=5';
+      const v = 'v=6';
       if (!document.querySelector(`script[src="/engine.js?${v}"]`)) await loadScript(`/engine.js?${v}`);
-      const modules = ['financeiro', 'empresas', 'accountant', 'assets', 'billing', 'budget', 'checkout', 'commissions', 'hr', 'nfe', 'plans', 'tax-audit', 'team', 'thermofinance', 'audit', 'os'];
+      const modules = ['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team'];
       for (const mod of modules) {
         if (!document.querySelector(`script[src="/modules/${mod}.js?${v}"]`)) await loadScript(`/modules/${mod}.js?${v}`);
       }

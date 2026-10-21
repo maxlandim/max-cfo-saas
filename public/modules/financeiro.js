@@ -56,7 +56,14 @@
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'success'); }
   function salvar() { if (window.persist) window.persist(); }
   function semAcento(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-  function num(v) { var n = typeof v === 'number' ? v : parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')); return isFinite(n) ? n : 0; }
+  // Aceita "1050.00" (campo numérico) e "1.050,00" (digitado no padrão brasileiro)
+  function num(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : 0;
+    var t = String(v == null ? '' : v).trim().replace(/[R$\s]/g, '');
+    if (t.indexOf(',') > -1) t = t.replace(/\./g, '').replace(',', '.');
+    var n = parseFloat(t); return isFinite(n) ? n : 0;
+  }
+  F.num = num;
   function el(id) { return document.getElementById(id); }
   function r2(v) { return Math.round(v * 100) / 100; }
 
@@ -95,6 +102,8 @@
   F.grupoDe = function (t) {
     var m = MAPA[t.type] || {};
     if (m[t.category]) return m[t.category];
+    var custom = (st().categoriasCustom || []).find(function (c) { return c.tipo === t.type && c.nome === t.category; });
+    if (custom && F.GRUPOS[custom.grupo]) return custom.grupo;
     return t.type === 'RECEITA' ? 'outras_rec' : 'operacionais';
   };
   F.atualizarCategorias = function () {
@@ -102,10 +111,30 @@
     ['RECEITA', 'DESPESA'].forEach(function (tipo) {
       var atuais = window.CATEGORIES[tipo] || [];
       Object.keys(MAPA[tipo]).forEach(function (c) { if (atuais.indexOf(c) === -1) atuais.splice(Math.max(atuais.length - 1, 0), 0, c); });
+      (st().categoriasCustom || []).forEach(function (c) { if (c.tipo === tipo && atuais.indexOf(c.nome) === -1) atuais.splice(Math.max(atuais.length - 1, 0), 0, c.nome); });
       // "Outros" sempre por último
       var i = atuais.indexOf('Outros'); if (i > -1) { atuais.splice(i, 1); atuais.push('Outros'); }
       window.CATEGORIES[tipo] = atuais;
     });
+  };
+
+  F.MAPA = MAPA;
+  F.ehPadrao = function (tipo, nome) { return !!(MAPA[tipo] || {})[nome]; };
+  F.addCategoria = function (nome, tipo, grupo) {
+    nome = String(nome || '').trim().slice(0, 50);
+    if (!nome) return 'Dê um nome para a categoria.';
+    if ((window.CATEGORIES[tipo] || []).indexOf(nome) > -1) return 'Essa categoria já existe.';
+    st().categoriasCustom = st().categoriasCustom || [];
+    st().categoriasCustom.push({ nome: nome, tipo: tipo, grupo: F.GRUPOS[grupo] ? grupo : (tipo === 'RECEITA' ? 'receita' : 'operacionais') });
+    F.atualizarCategorias(); salvar(); return null;
+  };
+  F.removerCategoria = function (nome, tipo) {
+    var usados = st().transactions.filter(function (t) { return t.type === tipo && t.category === nome; });
+    if (usados.length && !confirm(usados.length + ' lançamento(s) usam "' + nome + '". Eles vão para "Outros". Continuar?')) return false;
+    usados.forEach(function (t) { t.category = 'Outros'; });
+    st().categoriasCustom = (st().categoriasCustom || []).filter(function (c) { return !(c.nome === nome && c.tipo === tipo); });
+    var lista = window.CATEGORIES[tipo] || [], i = lista.indexOf(nome); if (i > -1) lista.splice(i, 1);
+    salvar(); return true;
   };
 
   // ════════════════ MODELO ════════════════
@@ -389,7 +418,7 @@
     var fin = el('nav-finance');
     if (fin && !el('nav-contas')) {
       var depois = fin;
-      [['contas', '📅', 'Contas a Pagar e Receber'], ['fluxo', '🌊', 'Fluxo de Caixa e Bancos'], ['dre', '📊', 'DRE Gerencial']].forEach(function (x) {
+      [['contas', '📅', 'Contas a Pagar e Receber'], ['contatos', '👥', 'Clientes e Fornecedores'], ['fluxo', '🌊', 'Fluxo de Caixa e Bancos'], ['dre', '📊', 'DRE Gerencial']].forEach(function (x) {
         var item = navItem(x[0], x[1], x[2]);
         depois.parentNode.insertBefore(item, depois.nextSibling); depois = item;
       });
@@ -403,10 +432,15 @@
       l.textContent = l.textContent.replace('FINTECH & FATURAMENTO', 'FATURAMENTO').replace('ONBOARDING & EQUIPE', 'CONTA E EQUIPE').replace('OPERAÇÃO & VENDAS', 'FINANCEIRO E VENDAS');
     });
     // Telas sem integração real ficam fora do menu até existirem de verdade
-    ['fintech', 'thermofinance', 'checkout', 'billing'].forEach(function (v) { var a = el('nav-' + v); if (a) a.classList.add('fin-escondido'); });
+    // Telas sem integração real saem do painel
+    ['fintech', 'thermofinance', 'checkout', 'billing'].forEach(function (v) { var a = el('nav-' + v); if (a) a.remove(); var sec = el('view-' + v); if (sec) sec.remove(); });
+    ['billingModal', 'checkoutModal', 'nfeModal', 'ocrModal', 'crmModal', 'invModal', 'budgetModal', 'commModal', 'hrModal', 'assetModal', 'planModal'].forEach(function (id) { var m = el(id); if (m) m.remove(); });
+    [].forEach.call(document.querySelectorAll('.nav-section-label'), function (l) { var prox = l.nextElementSibling; if (!prox || prox.classList.contains('nav-section-label')) l.remove(); });
     secao('contas', 'Contas a pagar e receber');
     secao('fluxo', 'Fluxo de caixa');
     secao('dre', 'DRE gerencial');
+    secao('contatos', 'Clientes e fornecedores');
+    window.viewMeta.contatos = { label: 'Clientes e Fornecedores', render: function () { F.renderContatos(); } };
     window.viewMeta = window.viewMeta || {};
     window.viewMeta.contas = { label: 'Contas a Pagar e Receber', render: F.renderContas };
     window.viewMeta.fluxo = { label: 'Fluxo de Caixa e Bancos', render: F.renderFluxo };
@@ -418,6 +452,7 @@
     window.viewMeta.billing = { label: 'Contas a Pagar e Receber', render: function () { setTimeout(function () { window.switchView('contas'); }, 0); } };
     window.viewMeta.checkout = window.viewMeta.billing;
     window.viewMeta.fintech = window.viewMeta.billing;
+    window.viewMeta.thermofinance = window.viewMeta.billing;
     // Botão de leitura com IA na tela de lançamentos
     var acoes = document.querySelector('#view-finance .page-header-actions');
     if (acoes && !el('fin-btn-ia')) {
@@ -441,6 +476,7 @@
       '<div class="form-field"><label class="form-label" for="txForma">Forma de pagamento</label><select class="form-input" id="txForma"><option value="">—</option>' + F.FORMAS.map(function (f) { return '<option>' + f + '</option>'; }).join('') + '</select></div>' +
       '<div class="form-field"><label class="form-label" for="txCentro">Centro de custo</label><input type="text" class="form-input" id="txCentro" list="finListaCentros" maxlength="60" autocomplete="off" placeholder="Opcional, ex.: Loja 1"><datalist id="finListaCentros"></datalist></div>' +
       '<div class="form-field" id="txRepetirBox"><label class="form-label" for="txRepetir">Repetir</label><select class="form-input" id="txRepetir"><option value="">Não repete</option><option value="parcelado">Parcelar o valor</option><option value="mensal">Repetir todo mês</option></select></div>' +
+      '<div class="form-field span-2" id="txSerieBox" style="display:none"><label class="fin-check"><input type="checkbox" id="txSerie"> <span id="txSerieTxt">Aplicar também às próximas parcelas em aberto</span></label></div>' +
       '<div class="form-field" id="txVezesBox" style="display:none"><label class="form-label" for="txVezes" id="txVezesLbl">Quantas vezes</label><input type="number" class="form-input" id="txVezes" min="2" max="120" value="2"><span class="fin-sub" id="txVezesInfo"></span></div>';
     var notas = el('txNotes'); var ref = notas ? notas.closest('.form-field') : null;
     var wrap = document.createElement('div'); wrap.className = 'fin-extra'; wrap.innerHTML = html;
@@ -497,7 +533,11 @@
       el('txForma').value = tx.forma || '';
       el('txCentro').value = tx.centroCusto || '';
       el('txRepetir').value = ''; el('txRepetirBox').style.display = 'none';
+      var prox = tx.grupo ? s.transactions.filter(function (x) { return x.grupo === tx.grupo && x.id !== tx.id && !F.estaPago(x) && (x.vencimento || '') > (tx.vencimento || ''); }) : [];
+      el('txSerieBox').style.display = prox.length ? '' : 'none'; el('txSerie').checked = false;
+      el('txSerieTxt').textContent = 'Aplicar descrição, valor, categoria, cliente e conta também às próximas ' + prox.length + ' parcela(s) em aberto';
     } else {
+      el('txSerieBox').style.display = 'none'; el('txSerie').checked = false;
       var hoje = F.hoje();
       el('txDate').value = opcoes.data || hoje;
       el('txStatus').value = opcoes.status || 'pago';
@@ -554,6 +594,7 @@
   }
   function fechar(id) { if (window.closeModal) window.closeModal(id); else { var m = el(id); if (m) { m.classList.remove('open'); m.style.display = 'none'; } } }
   F.fechar = fechar;
+  F.modal = modal;
 
   F.tx = function (id) { return st().transactions.find(function (t) { return t.id === id; }); };
 
@@ -561,32 +602,137 @@
     if (window.openModal) window.openModal(tipo === 'RECEITA' ? 'receita' : 'despesa', '', opcoes || {});
   };
 
-  // Dar baixa (pagar / receber)
+  // Dar baixa (pagar / receber), com juros/multa, desconto e baixa parcial
   F.baixar = function (id) {
     var t = F.tx(id); if (!t) return;
     var rec = t.type === 'RECEITA';
     var contas = st().contas.map(function (c) { return '<option value="' + esc(c.id) + '"' + (c.id === t.contaId ? ' selected' : '') + '>' + esc(c.nome) + '</option>'; }).join('');
     modal('finBaixaModal', (rec ? '✅ Registrar recebimento' : '✅ Registrar pagamento'),
-      '<p style="color:var(--text-muted);margin-bottom:14px">' + esc(t.desc) + (t.contato ? ' · ' + esc(t.contato) : '') + ' · vencimento ' + F.dataBR(t.vencimento) + '</p>' +
+      '<p style="color:var(--text-muted);margin-bottom:14px">' + esc(t.desc) + (t.contato ? ' · ' + esc(t.contato) : '') + ' · ' + moeda(t.amount) + ' · vencimento ' + F.dataBR(t.vencimento) + '</p>' +
       '<div class="form-grid">' +
-      '<div class="form-field"><label class="form-label" for="finBxData">Data</label><input type="date" class="form-input" id="finBxData" value="' + F.hoje() + '"></div>' +
-      '<div class="form-field"><label class="form-label" for="finBxValor">Valor ' + (rec ? 'recebido' : 'pago') + ' (R$)</label><input type="number" step="0.01" min="0.01" class="form-input" id="finBxValor" value="' + t.amount + '"><span class="fin-sub">Altere se houve juros, multa ou desconto.</span></div>' +
+      '<div class="form-field"><label class="form-label" for="finBxData">Data do ' + (rec ? 'recebimento' : 'pagamento') + '</label><input type="date" class="form-input" id="finBxData" value="' + F.hoje() + '"></div>' +
       '<div class="form-field"><label class="form-label" for="finBxConta">Conta</label><select class="form-input" id="finBxConta">' + contas + '</select></div>' +
+      '<div class="form-field"><label class="form-label" for="finBxJuros">Juros e multa (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="finBxJuros" value="0"></div>' +
+      '<div class="form-field"><label class="form-label" for="finBxDesc">Desconto (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="finBxDesc" value="0"></div>' +
+      '<div class="form-field"><label class="form-label" for="finBxValor">Valor ' + (rec ? 'recebido' : 'pago') + ' (R$)</label><input type="number" step="0.01" min="0.01" class="form-input" id="finBxValor" value="' + t.amount + '"><span class="fin-sub" id="finBxInfo"></span></div>' +
       '<div class="form-field"><label class="form-label" for="finBxForma">Forma</label><select class="form-input" id="finBxForma"><option value="">—</option>' + F.FORMAS.map(function (f) { return '<option' + (f === t.forma ? ' selected' : '') + '>' + f + '</option>'; }).join('') + '</select></div>' +
       '</div>',
       '<button class="btn-ghost" onclick="fin.fechar(\'finBaixaModal\')">Cancelar</button><button class="btn-primary" onclick="fin.confirmarBaixa(\'' + esc(t.id) + '\')">Confirmar</button>');
+    var atualizar = function (mexeuValor) {
+      var j = num(el('finBxJuros').value), d = num(el('finBxDesc').value), devido = r2(t.amount + j - d);
+      if (!mexeuValor) el('finBxValor').value = devido.toFixed(2);
+      var v = num(el('finBxValor').value);
+      el('finBxInfo').textContent = v < r2(t.amount - d) - 0.004 ? 'Baixa parcial: ' + moeda(r2(t.amount - d - v)) + ' ficam em aberto com o mesmo vencimento.' : (j ? 'Os juros entram como lançamento separado, no resultado financeiro.' : '');
+    };
+    ['finBxJuros', 'finBxDesc'].forEach(function (i) { el(i).addEventListener('input', function () { atualizar(false); }); });
+    el('finBxValor').addEventListener('input', function () { atualizar(true); });
+    atualizar(true);
   };
   F.confirmarBaixa = function (id) {
     var t = F.tx(id); if (!t) return;
-    var valor = num(el('finBxValor').value);
-    if (!(valor > 0)) return toast('Informe o valor.', 'error');
-    var antes = Object.assign({}, t);
-    if (r2(valor) !== r2(t.amount)) { t.valorOriginal = t.valorOriginal || t.amount; t.amount = r2(valor); }
-    t.status = 'pago'; t.pagoEm = el('finBxData').value || F.hoje(); t.contaId = el('finBxConta').value; t.forma = el('finBxForma').value || t.forma || ''; t.atualizadoEm = Date.now();
-    if (window.logAudit) window.logAudit('update', 'transaction', t.id, 'Baixa de "' + t.desc + '"', antes, t);
-    salvar(); fechar('finBaixaModal');
-    toast(t.type === 'RECEITA' ? 'Recebimento registrado.' : 'Pagamento registrado.');
+    var pago = r2(num(el('finBxValor').value)), juros = r2(num(el('finBxJuros').value)), desc = r2(num(el('finBxDesc').value));
+    if (!(pago > 0)) return toast('Informe o valor.', 'error');
+    if (desc >= t.amount) return toast('O desconto não pode ser maior que o valor.', 'error');
+    var data = el('finBxData').value || F.hoje(), conta = el('finBxConta').value, forma = el('finBxForma').value || t.forma || '';
+    var antes = Object.assign({}, t), principal = r2(t.amount - desc), rec = t.type === 'RECEITA', msg;
+    if (pago < principal - 0.004) {
+      // Baixa parcial: o que foi pago baixa; o restante continua em aberto
+      var resto = r2(principal - pago);
+      var novo = Object.assign({}, t, { id: novoId(), amount: resto, status: 'pendente', pagoEm: '', parcela: (t.parcela ? t.parcela + ' ' : '') + '(saldo)', grupo: t.grupo || t.id, fitid: '', cobradoEm: '', atualizadoEm: Date.now() });
+      delete novo.valorOriginal;
+      st().transactions.push(novo);
+      t.valorOriginal = t.valorOriginal || t.amount; t.amount = pago; t.grupo = t.grupo || t.id;
+      msg = 'Baixa parcial: ' + moeda(pago) + ' ' + (rec ? 'recebido' : 'pago') + ', ' + moeda(resto) + ' em aberto.';
+    } else {
+      if (desc) { t.valorOriginal = t.valorOriginal || t.amount; t.amount = principal; t.desconto = desc; }
+      var extra = r2(pago - principal);
+      if (extra > 0.004) {
+        // Juros e multa viram um lançamento próprio (resultado financeiro no DRE)
+        st().transactions.push({ id: novoId(), type: t.type, desc: 'Juros/multa — ' + t.desc, amount: extra, category: rec ? 'Rendimentos Financeiros' : 'Tarifas Bancárias e Juros', date: data, vencimento: data, status: 'pago', pagoEm: data, contaId: conta, contato: t.contato || '', forma: forma, vinculo: t.id, atualizadoEm: Date.now() });
+      }
+      msg = rec ? 'Recebimento registrado.' : 'Pagamento registrado.';
+    }
+    t.status = 'pago'; t.pagoEm = data; t.contaId = conta; t.forma = forma; t.atualizadoEm = Date.now();
+    if (window.logAudit) window.logAudit('update', 'transaction', t.id, 'Baixa de "' + t.desc + '" (' + moeda(pago) + ')', antes, t);
+    salvar(); fechar('finBaixaModal'); toast(msg);
     F.atualizarTudo();
+  };
+  // Transferência entre contas: sai de uma, entra na outra, fora do resultado
+  F.transferir = function () {
+    var contas = st().contas;
+    if (contas.length < 2) { toast('Cadastre pelo menos duas contas para transferir.', 'error'); return F.editarConta(); }
+    var op = function (sel) { return contas.map(function (c, i) { return '<option value="' + esc(c.id) + '"' + (i === sel ? ' selected' : '') + '>' + esc(c.nome) + '</option>'; }).join(''); };
+    modal('finTransfModal', '🔁 Transferência entre contas',
+      '<div class="form-grid"><div class="form-field"><label class="form-label" for="finTrDe">De</label><select class="form-input" id="finTrDe">' + op(0) + '</select></div>' +
+      '<div class="form-field"><label class="form-label" for="finTrPara">Para</label><select class="form-input" id="finTrPara">' + op(1) + '</select></div>' +
+      '<div class="form-field"><label class="form-label" for="finTrValor">Valor (R$)</label><input type="number" step="0.01" min="0.01" class="form-input" id="finTrValor"></div>' +
+      '<div class="form-field"><label class="form-label" for="finTrData">Data</label><input type="date" class="form-input" id="finTrData" value="' + F.hoje() + '"></div>' +
+      '<div class="form-field span-2"><span class="fin-sub">Não entra no DRE: é dinheiro mudando de conta.</span></div></div>',
+      '<button class="btn-ghost" onclick="fin.fechar(\'finTransfModal\')">Cancelar</button><button class="btn-primary" onclick="fin.confirmarTransferencia()">Transferir</button>');
+  };
+  F.confirmarTransferencia = function () {
+    var de = el('finTrDe').value, para = el('finTrPara').value, valor = r2(num(el('finTrValor').value)), data = el('finTrData').value || F.hoje();
+    if (de === para) return toast('Escolha contas diferentes.', 'error');
+    if (!(valor > 0)) return toast('Informe o valor.', 'error');
+    var id = novoId(), nDe = (F.contaPorId(de) || {}).nome, nPara = (F.contaPorId(para) || {}).nome, agora = Date.now();
+    var base = { amount: valor, category: 'Transferência entre Contas', date: data, vencimento: data, status: 'pago', pagoEm: data, transferenciaId: id, atualizadoEm: agora };
+    st().transactions.push(Object.assign({ id: novoId(), type: 'DESPESA', desc: 'Transferência para ' + nPara, contaId: de }, base));
+    st().transactions.push(Object.assign({ id: novoId(), type: 'RECEITA', desc: 'Transferência de ' + nDe, contaId: para }, base));
+    salvar(); fechar('finTransfModal'); toast('Transferência registrada.'); F.atualizarTudo();
+  };
+  // Duplicar: abre um lançamento novo com os mesmos dados, para o mês seguinte
+  F.duplicar = function (id) {
+    var t = F.tx(id); if (!t) return;
+    F.novo(t.type, { status: 'pendente', data: F.addMeses(t.date, 1), vencimento: F.addMeses(t.vencimento || t.date, 1), contato: t.contato || '' });
+    setTimeout(function () {
+      el('txDesc').value = t.desc; el('txAmount').value = t.amount; el('txNotes').value = t.notes || '';
+      var sel = el('txCategory'); if (![].some.call(sel.options, function (o) { return o.value === t.category; })) sel.add(new Option(t.category, t.category));
+      sel.value = t.category; sel.dataset.mexeu = '1';
+      el('txConta').value = t.contaId; el('txForma').value = t.forma || ''; el('txCentro').value = t.centroCusto || '';
+      el('txModalSubtitle').textContent = 'Cópia de um lançamento. Ajuste e salve.';
+      F._atualizarForm && F._atualizarForm();
+    }, 60);
+  };
+  // Recibo para imprimir ou salvar em PDF
+  F.extenso = function (v) {
+    var u = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+    var d = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+    var c = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+    var ate999 = function (n) {
+      if (n === 100) return 'cem';
+      var partes = [], ce = Math.floor(n / 100), r = n % 100;
+      if (ce) partes.push(c[ce]);
+      if (r < 20) { if (r) partes.push(u[r]); } else { partes.push(d[Math.floor(r / 10)] + (r % 10 ? ' e ' + u[r % 10] : '')); }
+      return partes.join(' e ');
+    };
+    var inteiro = Math.floor(v), cent = Math.round((v - inteiro) * 100);
+    var grupos = [], n = inteiro;
+    while (n > 0) { grupos.push(n % 1000); n = Math.floor(n / 1000); }
+    var nomes = [['', ''], ['mil', 'mil'], ['milhão', 'milhões'], ['bilhão', 'bilhões']], txt = [];
+    for (var i = grupos.length - 1; i >= 0; i--) {
+      var g = grupos[i]; if (!g) continue;
+      var parte = (i === 1 && g === 1) ? 'mil' : ate999(g) + (i ? ' ' + nomes[i][g > 1 ? 1 : 0] : '');
+      txt.push(parte);
+    }
+    var reais = txt.length ? txt.join(txt.length > 1 && grupos[0] && (grupos[0] < 100 || grupos[0] % 100 === 0) ? ' e ' : ', ').replace(/, (?=[^,]*$)/, ' e ') : 'zero';
+    var res = reais + (inteiro === 1 ? ' real' : ' reais');
+    if (/(milhão|milhões|bilhão|bilhões)$/.test(reais)) res = reais + ' de reais';
+    if (cent) res += ' e ' + ate999(cent) + (cent === 1 ? ' centavo' : ' centavos');
+    return res;
+  };
+  F.recibo = function (id) {
+    var t = F.tx(id); if (!t || !F.estaPago(t)) return;
+    var s = st().settings || {}, emp = s.company || s.name || '', doc = s.cnpj || '', rec = t.type === 'RECEITA';
+    var cont = (st().contatos || {})[t.contato] || {};
+    var quem = rec ? (t.contato || '________________') : emp, para = rec ? emp : (t.contato || '________________');
+    var w = window.open('', '_blank');
+    if (!w) return toast('Libere as janelas do navegador para gerar o recibo.', 'error');
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Recibo</title><style>body{font-family:Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;color:#111}h1{text-align:center;letter-spacing:.2em}.v{font-size:22px;font-weight:bold;text-align:right;border:2px solid #111;padding:8px 14px;display:inline-block;float:right}p{line-height:1.8;font-size:15px;clear:both}.ass{margin-top:70px;text-align:center}.ass div{border-top:1px solid #111;width:60%;margin:0 auto;padding-top:6px}button{margin-top:30px}@media print{button{display:none}}</style></head><body>' +
+      '<h1>RECIBO</h1><div class="v">' + esc(moeda(t.amount)) + '</div>' +
+      '<p>Recebi(emos) de <b>' + esc(quem) + '</b>' + (rec && cont.documento ? ' (CPF/CNPJ ' + esc(cont.documento) + ')' : '') + ' a importância de <b>' + esc(F.extenso(t.amount)) + '</b>, referente a <b>' + esc(t.desc) + (t.parcela ? ' (parcela ' + esc(t.parcela) + ')' : '') + '</b>' + (t.forma ? ', pago via ' + esc(t.forma) : '') + '.</p>' +
+      '<p>Para clareza, firmo(amos) o presente recibo.</p><p style="text-align:right">' + F.dataBR(t.pagoEm) + '</p>' +
+      '<div class="ass"><div>' + esc(para) + (rec && doc ? '<br>CNPJ ' + esc(doc) : '') + '</div></div><button onclick="print()">Imprimir ou salvar em PDF</button></body></html>');
+    w.document.close();
   };
   F.estornar = function (id) {
     var t = F.tx(id); if (!t) return;
@@ -604,6 +750,11 @@
   };
   F.excluir = function (id) {
     var t = F.tx(id); if (!t) return;
+    if (t.transferenciaId) {
+      if (!confirm('Excluir a transferência (sai das duas contas)?')) return;
+      st().transactions = st().transactions.filter(function (x) { return x.transferenciaId !== t.transferenciaId; });
+      salvar(); F.atualizarTudo(); return toast('Transferência excluída.', 'warn');
+    }
     var doGrupo = t.grupo ? st().transactions.filter(function (x) { return x.grupo === t.grupo && x.status !== 'pago' && x.id !== t.id; }) : [];
     var msg = 'Excluir "' + t.desc + '"' + (t.parcela ? ' (' + t.parcela + ')' : '') + '?';
     if (!confirm(msg)) return;
@@ -721,12 +872,177 @@
     salvar(); fechar('finContaModal'); F.atualizarTudo();
   };
 
+  // ════════════════ CRIAR LANÇAMENTOS A PARTIR DE OUTROS MÓDULOS ════════════════
+  F.criarLancamento = function (o) {
+    var t = Object.assign({ id: novoId(), status: 'pendente', pagoEm: '', contaId: (st().contas[0] || {}).id, notes: '', category: 'Outros', atualizadoEm: Date.now() }, o);
+    t.amount = r2(num(t.amount));
+    if (!t.contaId) t.contaId = (st().contas[0] || {}).id;
+    if (!t.date) t.date = F.hoje();
+    if (!t.vencimento) t.vencimento = t.date;
+    if (t.status === 'pago' && !t.pagoEm) t.pagoEm = t.vencimento;
+    st().transactions.push(t);
+    if (t.contato) F.registrarContato(t.contato, t.type);
+    if (window.logAudit) window.logAudit('create', 'transaction', t.id, 'Lançamento "' + t.desc + '" criado', null, t);
+    return t;
+  };
+  // Janela única para "faturar" (orçamento, OS, venda): vencimento, parcelas e conta → contas a receber
+  F.faturar = function (o, aoConcluir) {
+    F._faturamento = { o: o, cb: aoConcluir };
+    var contas = st().contas.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.nome) + '</option>'; }).join('');
+    var cats = (window.CATEGORIES[o.tipo || 'RECEITA'] || []).map(function (c) { return '<option' + (c === o.categoria ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('');
+    modal('finFaturarModal', o.titulo || '💰 Gerar conta a receber',
+      '<p style="color:var(--text-muted);margin-bottom:12px">' + esc(o.desc) + (o.contato ? ' · <b>' + esc(o.contato) + '</b>' : '') + ' · <b>' + moeda(o.valor) + '</b></p>' +
+      '<div class="form-grid">' +
+      '<div class="form-field"><label class="form-label" for="fatVenc">Primeiro vencimento</label><input type="date" class="form-input" id="fatVenc" value="' + (o.vencimento || F.addDias(F.hoje(), 7)) + '"></div>' +
+      '<div class="form-field"><label class="form-label" for="fatParc">Parcelas</label><select class="form-input" id="fatParc">' + [1, 2, 3, 4, 5, 6, 10, 12].map(function (n) { return '<option value="' + n + '">' + (n === 1 ? 'À vista (1x)' : n + 'x de ' + moeda(r2(o.valor / n))) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="form-field"><label class="form-label" for="fatCat">Categoria</label><select class="form-input" id="fatCat">' + cats + '</select></div>' +
+      '<div class="form-field"><label class="form-label" for="fatConta">Conta de ' + ((o.tipo || 'RECEITA') === 'RECEITA' ? 'recebimento' : 'pagamento') + '</label><select class="form-input" id="fatConta">' + contas + '</select></div>' +
+      '<div class="form-field span-2"><label class="fin-check"><input type="checkbox" id="fatPago"> Já foi ' + ((o.tipo || 'RECEITA') === 'RECEITA' ? 'recebido' : 'pago') + ' (à vista, hoje)</label></div>' +
+      '</div>',
+      '<button class="btn-ghost" onclick="fin.fechar(\'finFaturarModal\')">Cancelar</button><button class="btn-primary" onclick="fin.confirmarFaturamento()">Gerar lançamento</button>');
+  };
+  F.confirmarFaturamento = function () {
+    var f = F._faturamento; if (!f) return;
+    var o = f.o, n = parseInt(el('fatParc').value, 10) || 1, venc = el('fatVenc').value || F.hoje(), pago = el('fatPago').checked;
+    if (pago) n = 1;
+    var grupo = n > 1 ? novoId() : '', base = Math.floor(o.valor / n * 100) / 100, ids = [];
+    for (var i = 0; i < n; i++) {
+      var t = F.criarLancamento({
+        type: o.tipo || 'RECEITA', desc: o.desc, amount: i === n - 1 ? r2(o.valor - base * (n - 1)) : base, category: el('fatCat').value,
+        date: o.competencia || F.hoje(), vencimento: pago ? F.hoje() : F.addMeses(venc, i), status: pago ? 'pago' : 'pendente', pagoEm: pago ? F.hoje() : '',
+        contaId: el('fatConta').value, contato: o.contato || '', notes: o.notas || '', grupo: grupo, parcela: n > 1 ? (i + 1) + '/' + n : '', origem: o.origem || null
+      });
+      ids.push(t.id);
+    }
+    salvar(); fechar('finFaturarModal');
+    toast(n > 1 ? n + ' parcelas criadas em Contas a receber.' : (pago ? 'Recebimento registrado.' : 'Conta a receber criada.'));
+    if (f.cb) f.cb(ids);
+    F._faturamento = null;
+    F.atualizarTudo();
+  };
+
+  // ════════════════ CLIENTES E FORNECEDORES ════════════════
+  F.contatos = function () { st().contatos = st().contatos || {}; return st().contatos; };
+  F.registrarContato = function (nome, tipoTx) {
+    nome = String(nome || '').trim(); if (!nome) return;
+    var c = F.contatos(), tipo = tipoTx === 'RECEITA' ? 'cliente' : 'fornecedor';
+    if (!c[nome]) c[nome] = { nome: nome, tipo: tipo, criadoEm: F.hoje() };
+    else { if (!c[nome].nome) c[nome].nome = nome; if (c[nome].tipo && c[nome].tipo !== tipo && c[nome].tipo !== 'ambos') c[nome].tipo = 'ambos'; if (!c[nome].tipo) c[nome].tipo = tipo; }
+  };
+  F.todosContatos = function () {
+    var c = F.contatos();
+    st().transactions.forEach(function (t) { if (t.contato && !c[t.contato]) F.registrarContato(t.contato, t.type); });
+    return Object.keys(c).map(function (n) { return Object.assign({ nome: n }, c[n]); }).sort(function (a, b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });
+  };
+  var filtroCt = { tipo: 'todos', busca: '' };
+  F.renderContatos = function () {
+    var v = el('view-contatos'); if (!v) return;
+    F.garantirModelo();
+    var lista = F.todosContatos(), hoje = F.hoje(), ano = F.addMeses(hoje, -12);
+    var resumo = {};
+    st().transactions.forEach(function (t) {
+      if (!t.contato) return;
+      var r = resumo[t.contato] = resumo[t.contato] || { rec: 0, pag: 0, atraso: 0, mov12: 0, ultimo: '' };
+      if (!F.estaPago(t)) { if (t.type === 'RECEITA') r.rec += t.amount; else r.pag += t.amount; if (F.situacao(t) === 'vencido') r.atraso += t.amount; }
+      else if ((t.pagoEm || t.date) > ano) r.mov12 += t.amount;
+      if ((t.date || '') > r.ultimo) r.ultimo = t.date;
+    });
+    var q = semAcento(filtroCt.busca).toLowerCase();
+    var vis = lista.filter(function (c) {
+      if (filtroCt.tipo !== 'todos' && c.tipo !== filtroCt.tipo && c.tipo !== 'ambos') return false;
+      return !q || semAcento([c.nome, c.documento, c.email, c.telefone, c.cidade].join(' ')).toLowerCase().indexOf(q) > -1;
+    });
+    var nClientes = lista.filter(function (c) { return c.tipo !== 'fornecedor'; }).length, nForn = lista.filter(function (c) { return c.tipo !== 'cliente'; }).length;
+    var linhas = vis.map(function (c, i) {
+      var r = resumo[c.nome] || { rec: 0, pag: 0, atraso: 0, mov12: 0 };
+      var rotulo = c.tipo === 'ambos' ? 'Cliente e fornecedor' : c.tipo === 'fornecedor' ? 'Fornecedor' : 'Cliente';
+      return '<tr><td><div style="font-weight:700">' + esc(c.nome) + '</div><div class="fin-sub">' + esc([rotulo, c.documento ? docFmt(c.documento) : '', c.cidade].filter(Boolean).join(' · ')) + '</div></td>' +
+        '<td class="fin-hide-sm">' + esc(c.telefone || '—') + (c.email ? '<div class="fin-sub">' + esc(c.email) + '</div>' : '') + '</td>' +
+        '<td class="fin-pos">' + (r.rec ? moeda(r2(r.rec)) : '—') + '</td><td class="fin-neg">' + (r.pag ? moeda(r2(r.pag)) : '—') + '</td>' +
+        '<td>' + (r.atraso ? '<span class="fin-sit atraso">' + moeda(r2(r.atraso)) + '</span>' : '—') + '</td>' +
+        '<td class="fin-hide-sm">' + (r.mov12 ? moeda(r2(r.mov12)) : '—') + '</td>' +
+        '<td><div class="fin-acoes"><button class="fin-btn" data-ct="' + i + '" onclick="fin.verContasDe(this)">Lançamentos</button><button class="fin-btn" data-ct="' + i + '" onclick="fin.editarContato(this)">✏️</button></div></td></tr>';
+    }).join('');
+    F._contatosVisiveis = vis;
+    v.innerHTML = '<div class="page-header"><div class="page-header-text"><h1>Clientes e Fornecedores</h1><p class="page-subtitle">Cadastro com CPF/CNPJ, contato e o que cada um tem em aberto</p></div>' +
+      '<div class="page-header-actions"><button class="btn-secondary" onclick="fin.exportarContatos()">⬇️ Exportar</button><button class="btn-primary" onclick="fin.editarContato()">+ Novo cadastro</button></div></div>' +
+      '<div class="fin-kpis"><div class="fin-kpi2"><div class="v">' + nClientes + '</div><div class="l">Clientes</div></div><div class="fin-kpi2"><div class="v">' + nForn + '</div><div class="l">Fornecedores</div></div>' +
+      '<div class="fin-kpi2"><div class="v fin-neg">' + moeda(r2(Object.keys(resumo).reduce(function (a, k) { return a + resumo[k].atraso; }, 0))) + '</div><div class="l">Em atraso (todos)</div></div></div>' +
+      '<div class="card"><div class="fin-bar"><div class="fin-tabs">' + [['todos', 'Todos'], ['cliente', 'Clientes'], ['fornecedor', 'Fornecedores']].map(function (a) { return '<button class="fin-tab' + (filtroCt.tipo === a[0] ? ' on' : '') + '" onclick="fin.filtroContatos(\'tipo\',\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div>' +
+      '<input class="search-sm" placeholder="Buscar nome, CNPJ, cidade…" value="' + esc(filtroCt.busca) + '" oninput="fin.filtroContatos(\'busca\',this.value)" aria-label="Buscar"></div>' +
+      (vis.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Nome</th><th class="fin-hide-sm">Contato</th><th>A receber</th><th>A pagar</th><th>Atrasado</th><th class="fin-hide-sm">Movimentado 12 meses</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table></div>'
+        : '<div class="empty-block" style="padding:28px">Nenhum cadastro ainda. Eles também são criados sozinhos quando você informa o cliente ou o fornecedor num lançamento.</div>') + '</div>';
+  };
+  function docFmt(d) { d = String(d || '').replace(/\D/g, ''); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : d.length === 11 ? d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4') : d; }
+  F.docFmt = docFmt;
+  var tCt = null;
+  F.filtroContatos = function (k, v) {
+    filtroCt[k] = v; clearTimeout(tCt);
+    tCt = setTimeout(function () { F.renderContatos(); if (k === 'busca') { var i = document.querySelector('#view-contatos .search-sm'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } } }, k === 'busca' ? 250 : 0);
+  };
+  F.verContasDe = function (btn) { var c = (F._contatosVisiveis || [])[+btn.dataset.ct]; if (c) F.verContas(c.nome, 'todas'); };
+  F.editarContato = function (btn) {
+    var c = btn && btn.dataset ? (F._contatosVisiveis || [])[+btn.dataset.ct] : null;
+    F._contatoEditando = c ? c.nome : null;
+    c = c || { tipo: 'cliente' };
+    modal('finContatoModal', c.nome ? '✏️ Editar cadastro' : '👥 Novo cliente ou fornecedor',
+      '<div class="form-grid">' +
+      '<div class="form-field"><label class="form-label" for="ctDoc">CPF ou CNPJ</label><input class="form-input" id="ctDoc" maxlength="18" value="' + esc(docFmt(c.documento)) + '" placeholder="Com CNPJ, busca os dados na Receita"></div>' +
+      '<div class="form-field"><label class="form-label" for="ctTipo">Tipo</label><select class="form-input" id="ctTipo">' + [['cliente', 'Cliente'], ['fornecedor', 'Fornecedor'], ['ambos', 'Cliente e fornecedor']].map(function (o) { return '<option value="' + o[0] + '"' + (c.tipo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      '<div class="form-field span-2"><label class="form-label" for="ctNome">Nome *</label><input class="form-input" id="ctNome" maxlength="80" value="' + esc(c.nome || '') + '"></div>' +
+      '<div class="form-field"><label class="form-label" for="ctTel">WhatsApp / telefone</label><input class="form-input" id="ctTel" maxlength="20" value="' + esc(c.telefone || '') + '"></div>' +
+      '<div class="form-field"><label class="form-label" for="ctEmail">E-mail</label><input class="form-input" id="ctEmail" type="email" maxlength="80" value="' + esc(c.email || '') + '"></div>' +
+      '<div class="form-field"><label class="form-label" for="ctCidade">Cidade / UF</label><input class="form-input" id="ctCidade" maxlength="60" value="' + esc(c.cidade || '') + '"></div>' +
+      '<div class="form-field"><label class="form-label" for="ctObs">Observação</label><input class="form-input" id="ctObs" maxlength="200" value="' + esc(c.obs || '') + '"></div>' +
+      '</div>',
+      (c.nome ? '<button class="btn-ghost" style="margin-right:auto;color:var(--danger)" onclick="fin.removerContato()">Excluir</button>' : '') +
+      '<button class="btn-ghost" onclick="fin.fechar(\'finContatoModal\')">Cancelar</button><button class="btn-primary" onclick="fin.salvarContato()">Salvar</button>');
+    el('ctDoc').addEventListener('blur', async function () {
+      var d = el('ctDoc').value.replace(/\D/g, ''); if (d.length !== 14) return;
+      try {
+        var r = await fetch('https://brasilapi.com.br/api/cnpj/v1/' + d); if (!r.ok) return;
+        var j = await r.json();
+        if (!el('ctNome').value) el('ctNome').value = (j.nome_fantasia || j.razao_social || '').slice(0, 80);
+        if (!el('ctCidade').value && j.municipio) el('ctCidade').value = j.municipio + (j.uf ? '/' + j.uf : '');
+        if (!el('ctTel').value && j.ddd_telefone_1) el('ctTel').value = j.ddd_telefone_1;
+        if (!el('ctEmail').value && j.email) el('ctEmail').value = String(j.email).toLowerCase();
+        toast('Dados da Receita preenchidos.', 'info');
+      } catch (e) { }
+    });
+  };
+  F.salvarContato = function () {
+    var nome = el('ctNome').value.trim(); if (!nome) return toast('Informe o nome.', 'error');
+    var c = F.contatos(), antigo = F._contatoEditando;
+    if (nome !== antigo && c[nome]) return toast('Já existe um cadastro com esse nome.', 'error');
+    var dados = { nome: nome, tipo: el('ctTipo').value, documento: el('ctDoc').value.replace(/\D/g, ''), telefone: el('ctTel').value.trim(), email: el('ctEmail').value.trim(), cidade: el('ctCidade').value.trim(), obs: el('ctObs').value.trim(), criadoEm: (antigo && c[antigo] && c[antigo].criadoEm) || F.hoje() };
+    if (antigo && antigo !== nome) {
+      delete c[antigo];
+      st().transactions.forEach(function (t) { if (t.contato === antigo) t.contato = nome; });
+      (st().nfes || []).forEach(function (n) { if (n.tomador === antigo) n.tomador = nome; });
+    }
+    c[nome] = dados; salvar(); fechar('finContatoModal'); toast('Cadastro salvo.'); F.renderContatos();
+  };
+  F.removerContato = function () {
+    var nome = F._contatoEditando; if (!nome) return;
+    var usados = st().transactions.filter(function (t) { return t.contato === nome; }).length;
+    if (usados) return toast('Esse cadastro tem ' + usados + ' lançamento(s). Renomeie em vez de excluir.', 'error');
+    if (!confirm('Excluir "' + nome + '"?')) return;
+    delete F.contatos()[nome]; salvar(); fechar('finContatoModal'); F.renderContatos();
+  };
+  F.exportarContatos = function () {
+    var linhas = ['Nome;Tipo;CPF/CNPJ;Telefone;E-mail;Cidade;Observação'].concat(F.todosContatos().map(function (c) { return ['"' + c.nome.replace(/"/g, '""') + '"', c.tipo || '', docFmt(c.documento), c.telefone || '', c.email || '', '"' + (c.cidade || '') + '"', '"' + (c.obs || '').replace(/"/g, '""') + '"'].join(';'); }));
+    baixarArquivo('﻿' + linhas.join('\n'), 'clientes-fornecedores.csv', 'text/csv');
+  };
+
   // ════════════════ TELA: CONTAS A PAGAR E RECEBER ════════════════
-  var filtro = { aba: 'receber', periodo: 'todos', busca: '' };
+  var filtro = { aba: 'receber', periodo: 'todos', busca: '', conta: '', categoria: '' };
   F.filtrarContas = function (aba, periodo, busca) {
     var hoje = F.hoje();
     return st().transactions.filter(function (t) {
       var sit = F.situacao(t);
+      if (filtro.conta && t.contaId !== filtro.conta) return false;
+      if (filtro.categoria && t.category !== filtro.categoria) return false;
+      if (t.transferenciaId && aba !== 'pagas' && aba !== 'todas') return false;
       if (aba === 'receber' && (t.type !== 'RECEITA' || sit === 'pago')) return false;
       if (aba === 'pagar' && (t.type !== 'DESPESA' || sit === 'pago')) return false;
       if (aba === 'vencidas' && sit !== 'vencido') return false;
@@ -762,8 +1078,9 @@
     var linhas = lista.map(function (t) {
       var s = F.rotuloSituacao(t), rec = t.type === 'RECEITA', conta = F.contaPorId(t.contaId), sit = F.situacao(t);
       var acoes = sit === 'pago'
-        ? '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎ Estornar</button>'
+        ? (t.transferenciaId ? '' : '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎ Estornar</button><button class="fin-btn" onclick="fin.recibo(\'' + t.id + '\')" title="Recibo">🧾 Recibo</button>')
         : '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')">💠 Cobrar</button>' : '');
+      if (!t.transferenciaId) acoes += '<button class="fin-btn" onclick="fin.duplicar(\'' + t.id + '\')" title="Duplicar">⧉</button>';
       return '<tr>' +
         '<td>' + (sit === 'pago' ? '' : '<input type="checkbox" class="fin-sel" value="' + t.id + '" aria-label="Selecionar">') + '</td>' +
         '<td style="white-space:nowrap">' + F.dataBR(sit === 'pago' ? t.pagoEm : t.vencimento) + '</td>' +
@@ -787,13 +1104,16 @@
       '<div class="card"><div class="fin-bar"><div class="fin-tabs">' + abas.map(function (a) { return '<button class="fin-tab' + (filtro.aba === a[0] ? ' on' : '') + '" onclick="fin.filtro(\'aba\',\'' + a[0] + '\')">' + a[1] + (cont[a[0]] ? '<b>' + cont[a[0]] + '</b>' : '') + '</button>'; }).join('') + '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><select class="select-sm" onchange="fin.filtro(\'periodo\',this.value)" aria-label="Período">' +
       [['todos', 'Todo período'], ['7', 'Próximos 7 dias'], ['30', 'Próximos 30 dias'], ['mes', 'Este mês'], ['passado', 'Mês passado']].map(function (p) { return '<option value="' + p[0] + '"' + (filtro.periodo === p[0] ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') +
-      '</select><input class="search-sm" placeholder="Buscar cliente, descrição…" value="' + esc(filtro.busca) + '" oninput="fin.filtro(\'busca\',this.value,true)" aria-label="Buscar"></div></div>' +
+      '</select><select class="select-sm" onchange="fin.filtro(\'conta\',this.value)" aria-label="Conta"><option value="">Todas as contas</option>' + st().contas.map(function (c) { return '<option value="' + esc(c.id) + '"' + (filtro.conta === c.id ? ' selected' : '') + '>' + esc(c.nome) + '</option>'; }).join('') + '</select>' +
+      '<select class="select-sm" onchange="fin.filtro(\'categoria\',this.value)" aria-label="Categoria"><option value="">Todas as categorias</option>' + (window.CATEGORIES.RECEITA || []).concat(window.CATEGORIES.DESPESA || []).filter(function (c, i, a) { return a.indexOf(c) === i; }).map(function (c) { return '<option' + (filtro.categoria === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' +
+      '<input class="search-sm" placeholder="Buscar cliente, descrição…" value="' + esc(filtro.busca) + '" oninput="fin.filtro(\'busca\',this.value,true)" aria-label="Buscar"></div></div>' +
       (lista.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th style="width:28px"><input type="checkbox" aria-label="Marcar todos" onchange="document.querySelectorAll(\'.fin-sel\').forEach(function(c){c.checked=event.target.checked})"></th><th>Data</th><th>Descrição</th><th class="fin-hide-sm">Conta</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
         '<div class="table-footer"><span class="table-count">' + lista.length + ' lançamento(s) · <a class="link-go" onclick="fin.baixarSelecionados()">dar baixa nas marcadas</a></span><span class="table-total ' + (totalLista >= 0 ? 'fin-pos' : 'fin-neg') + '">Total: ' + moeda(totalLista) + '</span></div>'
         : '<div class="empty-block" style="padding:28px">' + (filtro.aba === 'vencidas' ? 'Nenhuma conta vencida. 👏' : 'Nada por aqui. Cadastre uma conta ' + (filtro.aba === 'pagar' ? 'a pagar' : 'a receber') + ' ou leia um boleto com IA.') + '</div>') +
       '</div>';
   };
   var tBusca = null;
+  F.verContas = function (busca, aba) { filtro.busca = busca || ''; filtro.aba = aba || 'todas'; filtro.periodo = 'todos'; filtro.conta = ''; filtro.categoria = ''; window.switchView('contas'); };
   F.filtro = function (k, v, atrasar) {
     filtro[k] = v;
     clearTimeout(tBusca);
@@ -828,7 +1148,7 @@
       : '<div class="fin-alerta green">🟢 O caixa fica positivo nos próximos ' + fluxoCfg.dias + ' dias. O ponto mais baixo é ' + moeda(minimo.saldo) + ' em ' + F.dataBR(minimo.data) + '.</div>';
     v.innerHTML = '' +
       '<div class="page-header"><div class="page-header-text"><h1>Fluxo de Caixa e Bancos</h1><p class="page-subtitle">Saldo real das contas e projeção com o que está a pagar e a receber</p></div>' +
-      '<div class="page-header-actions"><button class="btn-secondary" onclick="fin.exportarFluxo()">⬇️ Exportar</button><button class="btn-primary" onclick="fin.editarConta()">+ Conta bancária</button></div></div>' +
+      '<div class="page-header-actions"><button class="btn-secondary" onclick="fin.exportarFluxo()">⬇️ Exportar</button><button class="btn-secondary" onclick="fin.transferir()">🔁 Transferir</button><button class="btn-primary" onclick="fin.editarConta()">+ Conta bancária</button></div></div>' +
       '<div class="fin-kpis">' +
       '<div class="fin-kpi2"><div class="v" style="color:var(--gold)">' + moeda(saldoHoje) + '</div><div class="l">Saldo hoje</div><div class="s">soma das contas (sem cartão)</div></div>' +
       '<div class="fin-kpi2"><div class="v ' + (em(30) < 0 ? 'fin-neg' : '') + '">' + moeda(em(30)) + '</div><div class="l">Previsto em 30 dias</div></div>' +

@@ -370,11 +370,10 @@ Acompanhe os cards na página inicial para ver gráficos da evolução históric
     const riskLevel = score >= 70 ? 'Baixo' : score >= 45 ? 'Moderado' : 'Alto';
     const emoji = score >= 70 ? '🟢' : score >= 45 ? '🟡' : '🔴';
 
-    const parecer = score >= 70
-      ? `Empresa do setor **${cnaeDesc}** com ${age} anos de mercado e situação ${isAtiva ? 'regular' : 'irregular'} na Receita Federal. O capital social de ${this.fmt(capital)} e a maturidade do negócio indicam solidez operacional. Risco calculado: **${riskLevel}**. Recomendação: manter monitoramento trimestral e buscar oportunidades de expansão.`
-      : score >= 45
-      ? `Empresa do setor **${cnaeDesc}** apresenta risco **${riskLevel}**. Com ${age} anos de operação e capital de ${this.fmt(capital)}, existem pontos de atenção que merecem acompanhamento próximo. Recomendação: avaliar saúde financeira trimestral e diversificar fontes de receita.`
-      : `Empresa do setor **${cnaeDesc}** em situação de risco **${riskLevel}**. Indicadores apontam fragilidades significativas. Recomendação urgente: revisão completa da estrutura financeira, renegociação de passivos e plano de reestruturação.`;
+    const desde = data.data_inicio_atividade ? data.data_inicio_atividade.split('-').reverse().join('/') : 'data não informada';
+    const simples = data.opcao_pelo_mei ? 'optante pelo MEI' : data.opcao_pelo_simples ? 'optante pelo Simples Nacional' : 'fora do Simples Nacional';
+    const parecer = `Dados públicos da Receita Federal: empresa de **${cnaeDesc}**, aberta em ${desde} (${age} anos), situação **${data.descricao_situacao_cadastral || 'não informada'}**, ${simples}, capital social de ${this.fmt(capital)} e ${(data.qsa || []).length} sócio(s) no quadro.
+O indicador ao lado usa só esses dados cadastrais (idade, situação, capital e sócios). Não é análise de crédito: para vender a prazo valores altos, consulte também um birô de crédito.`;
 
     return {
       isReal: true,
@@ -403,117 +402,27 @@ Acompanhe os cards na página inicial para ver gráficos da evolução históric
   }
 
 
-  analyzeCompany(cnpj, name) {
-    // Fallback determinístico quando a API da Receita não responde
-    const hash = cnpj.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const score = 30 + (hash % 50);
-    const riskLevel = score >= 70 ? 'Baixo' : score >= 45 ? 'Moderado' : 'Alto';
-    const emoji = score >= 70 ? '🟢' : score >= 45 ? '🟡' : '🔴';
-
-    return {
-      isReal: false,
-      name: name,
-      status: 'N/D',
-      capital_social: 0,
-      data_abertura: '',
-      idade: 'N/D',
-      sector: 'Não identificado (simulação)',
-      natureza_juridica: 'N/D',
-      endereco: '',
-      contatos: '',
-      qsa: [],
-      cnaes_secundarios: [],
-      score: score,
-      riskLevel: riskLevel,
-      emoji: emoji,
-      scoreBreakdown: [
-        { label: 'Análise simulada (sem dados reais)', value: `${score}`, type: 'neutral' }
-      ],
-      parecer: `Não foi possível consultar os dados oficiais da Receita Federal para o CNPJ **${cnpj}**. O score apresentado é uma estimativa simulada pela IA. Para uma análise precisa, verifique se o CNPJ está correto (14 dígitos) e tente novamente.`
-    };
+  analyzeCompany() {
+    // Removido: gerava um score simulado sem dados reais.
+    return null;
   }
 
   generateOracle(data) {
-    const cnaeDesc = (data.cnae_fiscal_descricao || "").toLowerCase();
-    
-    // Análise de Porte e Empresa
-    let sit = data.descricao_situacao_cadastral || "Desconhecida";
-    let cs = data.capital_social || 0;
-    
-    let diagEmpresa = `* **Razão Social:** ${data.razao_social}
-* **Situação:** ${sit}
-* **Capital Social:** ${this.fmt(cs)}
-* **Atividade (CNAE):** ${data.cnae_fiscal_descricao}`;
+    const desde = data.data_inicio_atividade ? data.data_inicio_atividade.split('-').reverse().join('/') : 'não informada';
+    const socios = (data.qsa || []).slice(0, 5).map(q => q.nome_socio).filter(Boolean).join(', ');
+    const regime = data.opcao_pelo_mei ? 'MEI' : data.opcao_pelo_simples ? 'Simples Nacional' : 'fora do Simples (Presumido ou Real)';
+    return `**${data.razao_social || 'Empresa'}**${data.nome_fantasia ? ' (' + data.nome_fantasia + ')' : ''}
 
-    // Motor Macro-Econômico Simulado (Baseado em Dados Globais de 2026)
-    let tendenciaGlobal = ``;
-    let planoAcao = ``;
-    let riscoSetor = ``;
+* **Situação na Receita:** ${data.descricao_situacao_cadastral || 'não informada'}
+* **Abertura:** ${desde}
+* **Atividade principal:** ${data.cnae_fiscal_descricao || 'não informada'}
+* **Regime:** ${regime}
+* **Porte:** ${data.porte || data.descricao_porte || 'não informado'}
+* **Capital social:** ${this.fmt(data.capital_social || 0)}
+* **Endereço:** ${[data.logradouro, data.numero, data.bairro, data.municipio, data.uf].filter(Boolean).join(', ') || 'não informado'}
+${socios ? '* **Sócios:** ' + socios : ''}
 
-    if (cnaeDesc.includes("varejista") || cnaeDesc.includes("comercio") || cnaeDesc.includes("supermercado")) {
-      riscoSetor = "🟡 Risco Setorial Moderado";
-      tendenciaGlobal = `**Contexto Macro (Varejo & Comércio):**
-A inflação mundial estabilizou, mas a taxa básica de juros (Selic) ainda pressiona o crédito. Notícias recentes indicam que gigantes asiáticas estão forçando as varejistas locais a investirem massivamente em *Phygital* (Integração Físico e Digital) para sobreviverem. O custo de aquisição de cliente (CAC) subiu 15% no último semestre globalmente.`;
-      planoAcao = `1. **Liquidação de Estoque Parado:** Transforme produtos encalhados em caixa rápido.
-2. **Fidelização:** Custa 7x mais atrair um novo cliente do que vender para o atual. Crie um programa de recompensas.
-3. **Corte Intermediários:** Compre diretamente de fabricantes maiores para proteger sua margem de lucro.`;
-    } 
-    else if (cnaeDesc.includes("tecnologia") || cnaeDesc.includes("software") || cnaeDesc.includes("informacao")) {
-      riscoSetor = "🟢 Risco Setorial Baixo (Alto Crescimento)";
-      tendenciaGlobal = `**Contexto Macro (Tecnologia & Inovação):**
-Mercados globais reportam que a adoção de Inteligência Artificial reduziu custos operacionais de software em até 40%. Contudo, há uma bolha de startups e investidores (VCs) exigem lucro rápido no lugar de apenas crescimento. A escassez de desenvolvedores sêniores continua sendo um gargalo global.`;
-      planoAcao = `1. **Integração IA:** Adote ferramentas de IA (como o CFO MAX) para otimizar suas operações internas hoje mesmo.
-2. **Pricing:** Suba os preços para clientes corporativos (B2B); o mercado aceita repasses se houver ganho de produtividade.
-3. **Métricas de SaaS:** Monitore seu Churn (Cancelamentos) semanalmente. Acima de 5% a.m. é fatal.`;
-    }
-    else if (cnaeDesc.includes("construcao") || cnaeDesc.includes("engenharia") || cnaeDesc.includes("imobiliario")) {
-      riscoSetor = "🔴 Risco Setorial Alto (Sensível a Juros)";
-      tendenciaGlobal = `**Contexto Macro (Construção Civil):**
-O mercado imobiliário mundial sofre o impacto dos juros de longo prazo. Em relatórios da Bloomberg, o custo de materiais (aço e cimento) teve pico de inflação, mas agora começa a ceder. O sucesso do setor em 2026 depende de parcerias com bancos que ofereçam taxas subsidiadas aos clientes finais.`;
-      planoAcao = `1. **Proteção de Margem:** Compre insumos (ferro, cimento) com contratos travados (hedge) para evitar sustos de inflação.
-2. **Alavancagem:** Evite pegar empréstimos com taxas pré-fixadas altas agora.
-3. **Foco em Alta Renda:** O público de luxo continua comprando à vista, sem depender de financiamentos caros.`;
-    }
-    else if (cnaeDesc.includes("saude") || cnaeDesc.includes("medica") || cnaeDesc.includes("clinica")) {
-      riscoSetor = "🟢 Risco Setorial Baixo (Demanda Inelástica)";
-      tendenciaGlobal = `**Contexto Macro (Saúde e Bem-Estar):**
-O envelhecimento populacional global garante demanda infinita. A OMS e os jornais econômicos mostram uma migração para 'Medicina Preventiva'. Contudo, a inflação médica é historicamente o dobro da inflação normal, achatando as margens das clínicas que não reajustam preços.`;
-      planoAcao = `1. **Repasse de Custos:** Reajuste suas tabelas particulares anualmente acima da inflação para cobrir suprimentos importados.
-2. **Verticalização:** Ofereça exames básicos dentro da própria clínica para aumentar o Ticket Médio do paciente.
-3. **Redução de Glosas:** Se atende convênios, automatize seu faturamento para zerar as perdas por burocracia.`;
-    }
-    else if (cnaeDesc.includes("alimentacao") || cnaeDesc.includes("restaurante") || cnaeDesc.includes("bar")) {
-      riscoSetor = "🔴 Risco Setorial Alto (Baixa Barreira de Entrada)";
-      tendenciaGlobal = `**Contexto Macro (Alimentação e Food-Service):**
-Notícias mundiais destacam a pressão gigantesca dos aplicativos de entrega (taxas de até 27%). Além disso, a inflação de alimentos in-natura flutua com as mudanças climáticas (El Niño). O consumidor está saindo menos e pedindo mais delivery, mas exige velocidade e embalagens impecáveis.`;
-      planoAcao = `1. **Engenharia de Cardápio:** Retire os 20% dos pratos que menos vendem. Foco em ingredientes que você já usa para outros pratos.
-2. **Canal Próprio:** Crie um sistema de delivery próprio no WhatsApp para fugir das taxas absurdas dos apps grandes.
-3. **Controle de Desperdício (CMV):** Pese tudo. Desperdício no lixo é dinheiro do lucro evaporando.`;
-    }
-    else {
-      riscoSetor = "🟡 Risco Setorial Moderado (Serviços e Genéricos)";
-      tendenciaGlobal = `**Contexto Macro (Economia Global):**
-A economia mundial caminha para uma leve desaceleração ('Pouso Suave' dos EUA). No Brasil, a reforma tributária pode impactar o setor de serviços, aumentando a carga final. Empresas sem diferencial competitivo estão perdendo margem esmagadas pela inflação de insumos.`;
-      planoAcao = `1. **Foco em Caixa:** Dinheiro na mão é rei. Segure investimentos de longo prazo por enquanto.
-2. **Automação:** Invista em sistemas para reduzir dependência de mão de obra braçal.
-3. **Nichar o Produto:** Pare de vender para 'todo mundo'. Torne-se o especialista no seu nicho e cobre mais caro por isso.`;
-    }
-
-    return `🔮 **MÓDULO ORÁCULO: PREVISÃO MACROECONÔMICA**
-
-Analisei a fundo a estrutura da empresa via Receita Federal (CNPJ: ${data.cnpj}) e cruzei seu setor de atuação (*${cnaeDesc.toUpperCase()}*) com dados econômicos mundiais.
-
-**1. DIAGNÓSTICO DO CNPJ**
-${diagEmpresa}
-* **Alerta do CFO:** ${riscoSetor}
-
-**2. ORÁCULO: O QUE ACONTECE NO SEU MERCADO HOJE?**
-${tendenciaGlobal}
-
-**3. PLANO DE AÇÃO PARA BLINDAR SEUS LUCROS**
-${planoAcao}
-
-*Análise gerada em tempo real cruzando a Receita Federal com projeções do mercado financeiro global.*`;
+Fonte: dados públicos da Receita Federal (BrasilAPI). Para análise completa com indicador cadastral, use **Consulta de CNPJ** no menu.`;
   }
 
   // ══════════════════════════════════════════════════════════════
