@@ -115,6 +115,18 @@ async def main():
             log('Teste robô aluguel' in await pg.inner_text('#view-pagar'), 'lançamento continua depois de recarregar')
             st, doc = rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/workspaces/{uid}', None, token, 'GET')
             log(st == 200 and 'Teste robô aluguel' in json.dumps(doc, ensure_ascii=False), 'lançamento gravado na nuvem (Firestore)', st if st != 200 else '')
+            # relatório mensal em PDF
+            try:
+                await pg.evaluate("switchView('reports')"); await pg.wait_for_timeout(800)
+                tx = await pg.inner_text('#relPrevia')
+                log('Teste robô aluguel' in tx and 'EM RESUMO' in tx.upper(), 'relatório mensal mostra a prévia com os lançamentos')
+                async with pg.expect_download(timeout=60000) as dl:
+                    await pg.click('#relPdfBtn')
+                arq = await dl.value; caminho = f'{OUT}/relatorio.pdf'; await arq.save_as(caminho)
+                tam = os.path.getsize(caminho); cab = open(caminho, 'rb').read(5)
+                log(cab == b'%PDF-' and tam > 20000, f'PDF do relatório baixado ({tam // 1024} KB)', arq.suggested_filename)
+            except Exception as e:
+                log(False, 'relatório mensal / PDF', str(e)[:300])
             # celular
             m = await b.new_page(viewport={'width': 390, 'height': 844}, storage_state=None) if False else await ctx.new_page()
             await m.set_viewport_size({'width': 390, 'height': 844})

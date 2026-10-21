@@ -8,21 +8,33 @@ permissions:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
       - run: pip install playwright==1.47.0 && python -m playwright install --with-deps chromium
+      # Se tests/alvo.txt tiver o nome de um branch, testa esse código rodando localmente (antes de publicar)
+      - name: Sobe o site do branch alvo
+        run: |
+          ALVO=$(cat tests/alvo.txt 2>/dev/null | tr -d '[:space:]')
+          if [ -n "$ALVO" ]; then
+            git clone -q --depth 1 -b "$ALVO" https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git /tmp/app
+            cd /tmp/app && npm ci --no-audit --no-fund && npm run build > /tmp/build.log 2>&1 || (tail -60 /tmp/build.log; exit 1)
+            (npm start -- -p 3000 > /tmp/start.log 2>&1 &) ; sleep 8
+            echo "SITE=http://localhost:3000" >> $GITHUB_ENV
+          fi
       - run: python e2e_producao.py 2>&1 | tee saida_log.txt
+        working-directory: tests
+        continue-on-error: true
+      - run: python telas.py 2>&1 | tee -a saida_log.txt
         working-directory: tests
         continue-on-error: true
       - name: Publica o resultado no branch resultado-e2e
         if: always()
         run: |
-          mkdir -p /tmp/r && cp -r tests/saida /tmp/r/ 2>/dev/null; cp tests/saida_log.txt /tmp/r/ 2>/dev/null
+          mkdir -p /tmp/r && cp -r tests/saida /tmp/r/ 2>/dev/null; cp tests/saida_log.txt /tmp/r/ 2>/dev/null; cp /tmp/build.log /tmp/r/ 2>/dev/null || true
           git config user.name robo-teste && git config user.email robo@users.noreply.github.com
           git checkout --orphan resultado-e2e && git rm -rfq . && cp -r /tmp/r/* . && git add -A && git commit -qm "resultado $GITHUB_RUN_ID" && git push -f origin resultado-e2e
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with: { name: saida, path: tests/saida }
