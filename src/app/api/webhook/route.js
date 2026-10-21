@@ -1,52 +1,61 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { adminConfigurado } from '../../../lib/firebaseAdmin';
+import { gravarAssinatura } from '../../../lib/assinatura';
 
-const stripe = process.env.STRIPE_SECRET_KEY 
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
-  : null;
+export const dynamic = 'force-dynamic';
 
-// Chave secreta de webhook do Stripe (para verificar a assinatura de segurança)
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' }) : null;
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+// Recebe os avisos do Stripe e mantém subscriptions/{uid} atualizado.
 export async function POST(req) {
-  if (!stripe) return NextResponse.json({ error: 'Stripe API keys missing' }, { status: 500 });
-
-  const sig = req.headers.get('stripe-signature');
-  let event;
-
-  try {
-    const rawBody = await req.text(); // Precisamos do raw body para verificar a assinatura
-    
-    // Verifica se a requisição realmente veio do Stripe
-    if (endpointSecret) {
-      event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
-    } else {
-      // Bypass para testes rápidos se você não configurou o endpointSecret
-      event = JSON.parse(rawBody);
-    }
-  } catch (err) {
-    console.error('Webhook Error:', err.message);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+  if (!stripe || !endpointSecret || !adminConfigurado) {
+    return NextResponse.json({ error: 'Webhook não configurado.' }, { status: 503 });
   }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object;
-      console.log('💰 Pagamento Recebido!', session.customer_email);
-      // Aqui você salvaria no banco de dados que o usuário pagou!
-      // ex: await db.users.update({ email: session.customer_email, status: 'PRO' })
-      break;
-    case 'invoice.paid':
-      const invoice = event.data.object;
-      console.log('🔄 Renovação paga!', invoice.customer_email);
-      break;
-    case 'customer.subscription.deleted':
-      const subscription = event.data.object;
-      console.log('❌ Assinatura Cancelada!', subscription.id);
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  let event;
+  try {
+    const rawBody = await req.text();
+    event = stripe.webhooks.constructEvent(rawBody, req.headers.get('stripe-signature'), endpointSecret);
+  } catch (err) {
+    console.error('Assinatura do webhook inválida:', err.message);
+    return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 400 });
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const uid = session.client_reference_id || session.metadata?.uid;
+        if (uid && session.subscription) {
+          const sub = await stripe.subscriptions.retrieve(session.subscription);
+          await gravarAssinatura(uid, sub, { plan: session.metadata?.planId || null });
+        }
+        break;
+      }
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+        if (sub.metadata?.uid) await gravarAssinatura(sub.metadata.uid, sub);
+        break;
+      }
+      case 'invoice.payment_failed':
+      case 'invoice.paid': {
+        const invoice = event.data.object;
+        if (invoice.subscription) {
+          const sub = await stripe.subscriptions.retrieve(invoice.subscription);
+          if (sub.metadata?.uid) await gravarAssinatura(sub.metadata.uid, sub);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  } catch (e) {
+    console.error('Erro ao processar webhook:', event.type, e);
+    return NextResponse.json({ error: 'Erro ao processar.' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

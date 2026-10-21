@@ -4,9 +4,9 @@
  * Todos os módulos 100% funcionais
  */
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // STATE & PERSISTENCE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 
 const API_BASE = 'https://max-cfo-api.onrender.com/api/v1';
 const API = {
@@ -64,9 +64,9 @@ function persist() {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // CONTEXT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function getCtx() {
   const sDate = document.getElementById('reportStartDate')?.value;
   const eDate = document.getElementById('reportEndDate')?.value;
@@ -92,9 +92,9 @@ function getCtx() {
   };
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // FORMAT UTILS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function fmt(v, currency = state.settings.currency) {
   const sym = { BRL: 'BRL', USD: 'USD', EUR: 'EUR' }[currency] || 'BRL';
   return v.toLocaleString('pt-BR', { style: 'currency', currency: sym });
@@ -111,10 +111,13 @@ function escHtml(s = '') {
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // INIT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 var initMaxCfoApp = async () => {
+  // O painel chama esta função depois de carregar os scripts; evita iniciar duas vezes
+  if (window.__maxcfoIniciado) return;
+  window.__maxcfoIniciado = true;
   if (window.loadStateFromFirebase && window.workspaceId) {
     const remoteState = await window.loadStateFromFirebase(window.workspaceId);
     if (remoteState) {
@@ -151,15 +154,18 @@ var initMaxCfoApp = async () => {
   showToast('⚡ MAX CFO AI v4.0 iniciado', 'success');
 };
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initMaxCfoApp);
-} else {
-  setTimeout(initMaxCfoApp, 100);
+// Fora do painel Next.js (arquivo aberto direto), inicia sozinho
+if (!window.workspaceId) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMaxCfoApp);
+  } else {
+    setTimeout(initMaxCfoApp, 100);
+  }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // SETTINGS APPLICATION
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function applySettings() {
   const s = state.settings;
   // Apply theme
@@ -239,6 +245,7 @@ var viewMeta = {
     finance:   { label: 'Financeiro', render: renderFinance },
     reconciliation: { label: 'Conciliação Bancária', render: () => {} },
     simulator: { label: 'Simulador', render: renderSimulator },
+    tributario: { label: 'Simulador Tributário', render: () => { const f = document.getElementById('tributarioFrame'); if (f && !f.getAttribute('src')) f.setAttribute('src', f.dataset.src); } },
     companies: { label: 'Empresas', render: renderCompanyHistory },
     reports:   { label: 'Relatórios & BI', render: renderReportsV5 },
     settings:  { label: 'Configurações', render: updateSettingsPanel },
@@ -257,7 +264,7 @@ var viewMeta = {
     plans:     { label: 'Assinaturas', render: () => { if(window.renderPlans) window.renderPlans(); } },
     commissions: { label: 'Comissões', render: () => { if(window.renderCommissions) window.renderCommissions(); } },
     audit:       { label: 'Auditoria', render: () => { if(window.renderAudit) window.renderAudit(); } },
-    os:          { label: 'Ordem de Servio', render: () => { if(window.initOS) window.initOS(); } }
+    os:          { label: 'Ordem de Serviço', render: () => { if(window.initOS) window.initOS(); } }
   };
 
 function initNavigation() {
@@ -280,9 +287,9 @@ function switchView(id) {
   if (window.innerWidth <= 900) closeSidebar();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // SIDEBAR
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function initSidebar() {
   document.getElementById('sidebarToggle')?.addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('open');
@@ -296,9 +303,9 @@ function closeSidebar() {
   if (ov) ov.style.display = 'none';
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // GLOBAL SEARCH
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function initSearch() {
   const input = document.getElementById('globalSearch');
   const dd    = document.getElementById('searchDropdown');
@@ -315,12 +322,13 @@ function initSearch() {
     { icon:'📋', text:'Relatórios — DRE, Diagnóstico, Tributário', fn: () => switchView('reports') },
     { icon:'📈', text:'Relatório DRE Completo', fn: () => { switchView('reports'); setTimeout(() => generateReport('dre'), 100); } },
     { icon:'🩺', text:'Diagnóstico Financeiro', fn: () => { switchView('reports'); setTimeout(() => generateReport('diagnostico'), 100); } },
+    { icon:'⚖️', text:'Simulador Tributário e Reforma', fn: () => switchView('tributario') },
     { icon:'📋', text:'Planejamento Tributário', fn: () => { switchView('reports'); setTimeout(() => generateReport('tributario'), 100); } },
     { icon:'🔥', text:'Burn Rate e Runway de Caixa', fn: () => sendToChat('burn rate e runway') },
     { icon:'💼', text:'Consultoria de Investimentos', fn: () => sendToChat('onde investir meu excedente') },
-    { icon:'âœ‚ï¸', text:'Estratégia de Redução de Custos', fn: () => sendToChat('reduzir custos') },
-    { icon:'âš™ï¸', text:'Configurações — perfil e dados', fn: () => switchView('settings') },
-    { icon:'â¬‡ï¸', text:'Exportar dados CSV', fn: () => exportCSV() },
+    { icon:'✂️', text:'Estratégia de Redução de Custos', fn: () => sendToChat('reduzir custos') },
+    { icon:'⚙️', text:'Configurações — perfil e dados', fn: () => switchView('settings') },
+    { icon:'⬇️', text:'Exportar dados CSV', fn: () => exportCSV() },
   ];
 
   input.addEventListener('input', () => {
@@ -349,9 +357,9 @@ function initSearch() {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // NOTIFICATIONS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function initNotifications() {
   const btn = document.getElementById('notifBtn');
   if (!btn) return;
@@ -364,7 +372,7 @@ function buildNotifs() {
   if (ctx.txCount === 0) msgs.push({ icon: '📌', text: 'Nenhum lançamento registrado. Adicione transações para análise completa.', type: 'info' });
   if (ctx.saldo < 0) msgs.push({ icon: '🔴', text: `Resultado negativo de ${fmt(ctx.saldo)}. Ação recomendada.`, type: 'error' });
   const margem = ctx.receitas > 0 ? ctx.saldo / ctx.receitas * 100 : 0;
-  if (margem > 0 && margem < 10) msgs.push({ icon: 'âš ï¸', text: `Margem abaixo de 10% (${margem.toFixed(1)}%). Revise precificação.`, type: 'warn' });
+  if (margem > 0 && margem < 10) msgs.push({ icon: '⚠️', text: `Margem abaixo de 10% (${margem.toFixed(1)}%). Revise precificação.`, type: 'warn' });
   if (ctx.receitas > 0 && margem > 20) msgs.push({ icon: '✅', text: `Margem de ${margem.toFixed(1)}% — bom momento para investir excedente.`, type: 'success' });
   msgs.push({ icon: '💡', text: 'Use Ctrl+K para buscar qualquer funcionalidade.', type: 'info' });
   msgs.push({ icon: '🤖', text: 'Converse com o CFO IA para análises detalhadas.', type: 'info' });
@@ -390,9 +398,9 @@ function openNotifModal() {
   state.notifSeen = true;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // DASHBOARD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function renderDashboard() {
   const ctx = getCtx();
   const { receitas, despesas, saldo, txCount } = ctx;
@@ -409,7 +417,7 @@ function renderDashboard() {
   setText('kpi-saldo', fmt(saldo));
   setText('kpi-margem', fmtPct(margem));
   setText('kpi-runway', runway + ' meses');
-  setHtml('kpi-saldo-trend', `<span class="${saldo >= 0 ? 'positive' : 'negative'}">${saldo >= 0 ? 'â†‘ Positivo' : 'â†“ Negativo'}</span>`);
+  setHtml('kpi-saldo-trend', `<span class="${saldo >= 0 ? 'positive' : 'negative'}">${saldo >= 0 ? '↑ Positivo' : '↓ Negativo'}</span>`);
   setHtml('kpi-margem-trend', `<span class="${margem >= 15 ? 'positive' : margem >= 5 ? '' : 'negative'}">${margem.toFixed(1)}%</span>`);
   setHtml('kpi-runway-trend', `<span class="${runway >= 6 ? 'positive' : 'negative'}">${runway >= 6 ? 'Seguro' : 'Alerta'}</span>`);
   setText('kpi-rec-trend', `${txCount} tx`);
@@ -441,7 +449,7 @@ function renderDashboard() {
   // Alerts
   const alerts = [];
   if (saldo < 0) alerts.push({ cls: 'red', t: '🔴 Resultado negativo — revise despesas urgentemente' });
-  if (margem < 10 && margem > 0) alerts.push({ cls: 'gold', t: `âš ï¸ Margem de ${margem.toFixed(1)}% abaixo do ideal (â‰¥15%)` });
+  if (margem < 10 && margem > 0) alerts.push({ cls: 'gold', t: `⚠️ Margem de ${margem.toFixed(1)}% abaixo do ideal (≥15%)` });
   if (receitas === 0) alerts.push({ cls: 'gold', t: '📌 Registre suas receitas para análise completa' });
   if (saldo > 0 && margem > 20) alerts.push({ cls: 'green', t: '💡 Margem saudável — considere investir o excedente' });
   if (txCount === 0) alerts.push({ cls: 'blue', t: '📊 Adicione lançamentos para análises do CFO' });
@@ -564,9 +572,9 @@ function drawTrendChart(receitasAtual, despesasAtual) {
   drawArea(despData, '#EF4444', 'rgba(239,68,68,0.3)');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // FINANCE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 var CATEGORIES = {
   RECEITA: ['Consultoria', 'Vendas de Produto', 'Serviços Prestados', 'Licenciamento', 'Royalties', 'Dividendos', 'Aluguéis Recebidos', 'Investimentos', 'Outros'],
   DESPESA: ['Salários e Pró-labore', 'Aluguel e Condomínio', 'Fornecedores', 'Marketing e Publicidade', 'TI e Software', 'Impostos e Taxas', 'Transporte e Logística', 'Energia e Utilidades', 'Equipamentos', 'Outros']
@@ -725,8 +733,8 @@ function renderTxTable() {
       </td>
       <td style="display:flex;gap:4px">
         ${t.attachmentUrl ? `<a href="${t.attachmentUrl}" target="_blank" class="action-btn" title="Ver Anexo">📎</a>` : ''}
-        <button class="action-btn" onclick="editTx('${t.id}')" title="Editar">âœï¸</button>
-        <button class="action-btn del" onclick="deleteTx('${t.id}')" title="Excluir">🗑ï¸</button>
+        <button class="action-btn" onclick="editTx('${t.id}')" title="Editar">✏️</button>
+        <button class="action-btn del" onclick="deleteTx('${t.id}')" title="Excluir">🗑️</button>
       </td>
     </tr>`).join('');
 }
@@ -755,14 +763,14 @@ function sortTx(field) {
   }
   ['date','desc','amount'].forEach(f => {
     const el = document.getElementById('sort-' + f);
-    if (el) el.textContent = state.txSort.field === f ? (state.txSort.dir === 'asc' ? 'â†‘' : 'â†“') : 'â†•';
+    if (el) el.textContent = state.txSort.field === f ? (state.txSort.dir === 'asc' ? '↑' : '↓') : '↕';
   });
   renderTxTable();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // TRANSACTION CRUD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function openModal(type, editId = '') {
   const isRec = type === 'receita' || type === 'RECEITA';
   const isEdit = !!editId;
@@ -876,7 +884,7 @@ function deleteTx(id) {
       persist();
       renderDashboard();
       renderFinance();
-      showToast('🗑ï¸ Lançamento removido', 'warn');
+      showToast('🗑️ Lançamento removido', 'warn');
     }, 300);
   }
 }
@@ -886,9 +894,9 @@ function quickAdd() {
   setTimeout(() => openModal('receita'), 150);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // EXPORT / IMPORT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function exportCSV() {
   if (!state.transactions.length) return showToast('Nenhum dado para exportar', 'warn');
   const header = 'Data,Descrição,Categoria,Tipo,Valor,Observação';
@@ -897,13 +905,13 @@ function exportCSV() {
   );
   const csv = [header, ...rows].join('\n');
   downloadText(csv, 'max-cfo-lancamentos.csv', 'text/csv');
-  showToast('â¬‡ï¸ CSV exportado com sucesso!', 'success');
+  showToast('⬇️ CSV exportado com sucesso!', 'success');
 }
 
 function exportAllData() {
   const data = { transactions: state.transactions, companies: state.companies, settings: state.settings, exportedAt: new Date().toISOString() };
   downloadText(JSON.stringify(data, null, 2), 'max-cfo-backup.json', 'application/json');
-  showToast('â¬‡ï¸ Backup exportado!', 'success');
+  showToast('⬇️ Backup exportado!', 'success');
 }
 
 function importData() {
@@ -939,19 +947,19 @@ function downloadText(content, filename, type) {
 }
 
 function clearAllData() {
-  if (!confirm('âš ï¸ Apagar TODOS os dados? Esta ação não pode ser desfeita!')) return;
+  if (!confirm('⚠️ Apagar TODOS os dados? Esta ação não pode ser desfeita!')) return;
   state.transactions = [];
   state.companies = [];
   persist();
   renderDashboard();
   renderFinance();
   updateSettingsPanel();
-  showToast('🗑ï¸ Todos os dados foram removidos', 'warn');
+  showToast('🗑️ Todos os dados foram removidos', 'warn');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // SIMULATOR
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function renderSimulator() {
   onSliderChange();
 }
@@ -1013,9 +1021,9 @@ function applyScenario(rec, desp, label) {
   showToast(`📊 Cenário "${label}" aplicado`, 'success');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // COMPANIES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function formatCnpj(input) {
   let v = input.value.replace(/\D/g, '');
   if (v.length > 14) v = v.substr(0, 14);
@@ -1086,7 +1094,7 @@ async function consultarEmpresa(forceName = "") {
       <div class="comp-detail"><span class="comp-detail-lbl">Capital Social</span><span class="comp-detail-val">${result.capital_social ? engine.fmt(result.capital_social) : 'N/D'}</span></div>
       <div class="comp-detail"><span class="comp-detail-lbl">Setor Principal</span><span class="comp-detail-val" title="${result.sector}">${result.sector.length > 30 ? result.sector.substring(0, 30) + '...' : result.sector}</span></div>
       <div class="comp-detail"><span class="comp-detail-lbl">Natureza Jurídica</span><span class="comp-detail-val">${result.natureza_juridica || 'N/D'}</span></div>
-      <div class="comp-detail"><span class="comp-detail-lbl">Dados Oficiais</span><span class="comp-detail-val">${result.isReal ? '✅ Receita Federal' : 'âš ï¸ Simulação AI'}</span></div>
+      <div class="comp-detail"><span class="comp-detail-lbl">Dados Oficiais</span><span class="comp-detail-val">${result.isReal ? '✅ Receita Federal' : '⚠️ Simulação AI'}</span></div>
       <div class="comp-detail"><span class="comp-detail-lbl">Contato</span><span class="comp-detail-val" style="font-size:11px">${result.contatos || 'N/D'}</span></div>
     </div>
     
@@ -1178,12 +1186,12 @@ function clearCompanyHistory() {
   state.companies = [];
   persist();
   renderCompanyHistory();
-  showToast('🗑ï¸ Histórico limpo', 'warn');
+  showToast('🗑️ Histórico limpo', 'warn');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // REPORTS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 var reportDefs = {
   dre:           { title: 'DRE — Demonstrativo de Resultado', fn: ctx => engine.generateDRE(ctx), tile: 'tile-dre' },
   diagnostico:   { title: 'Diagnóstico Financeiro', fn: ctx => engine.generateDiagnosis(ctx), tile: 'tile-diagnostico' },
@@ -1224,15 +1232,16 @@ function copyReport() {
   navigator.clipboard.writeText(content).then(() => showToast('📋 Relatório copiado!', 'success')).catch(() => showToast('Erro ao copiar', 'error'));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // CHAT IA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function initChat() {
   addAIMsg(engine.getGreeting());
 
-  try {
+  // O chat em tempo real depende do servidor Python; só conecta se ele estiver configurado
+  if (window.MAXCFO_WS_URL) try {
       // Connect to WebSocket backend
-      const wsUrl = API_BASE.replace('http', 'ws') + '/ws/chat';
+      const wsUrl = window.MAXCFO_WS_URL;
       window.chatSocket = new WebSocket(`${wsUrl}?token=${localStorage.getItem('maxcfo_jwt') || 'demo_token'}`);
       window.chatSocket.onmessage = function(event) {
           // Remove typing indicator if it exists
@@ -1304,17 +1313,21 @@ async function sendChat() {
            // A resposta será tratada no onmessage do websocket
        } else {
            try {
+               const ctx = getCtx();
+               const headers = {'Content-Type': 'application/json'};
+               if (window.getAuthToken) { try { headers['Authorization'] = 'Bearer ' + await window.getAuthToken(); } catch(e) {} }
                const res = await fetch('/api/chat', { 
                    method: 'POST', 
-                   headers: {'Content-Type': 'application/json'}, 
-                   body: JSON.stringify({message: msg}) 
+                   headers, 
+                   body: JSON.stringify({message: msg, context: { receitas: ctx.receitas, despesas: ctx.despesas, saldo: ctx.saldo, txCount: ctx.txCount }}) 
                });
                removeTyping(tid);
+               const data = await res.json().catch(() => ({}));
                if (res.ok) {
-                   const data = await res.json();
                    addAIMsg(data.reply || "Resposta recebida do servidor.");
+                   state.chatHistory.push({ role: 'ai', text: data.reply || '' });
                } else {
-                   addAIMsg("Erro ao processar mensagem via servidor NLP.");
+                   addAIMsg(data.reply || "Não consegui responder agora. Tente de novo em instantes.");
                }
            } catch(e) {
                removeTyping(tid);
@@ -1384,13 +1397,13 @@ function scrollChat() {
   if (w) setTimeout(() => w.scrollTop = w.scrollHeight, 20);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // VOICE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function toggleVoice() {
   const btn = document.getElementById('voiceBtn');
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return showToast('âš ï¸ Use o Google Chrome para reconhecimento de voz', 'error');
+  if (!SR) return showToast('⚠️ Use o Google Chrome para reconhecimento de voz', 'error');
 
   if (state.isListening) {
     state.voiceRec?.stop();
@@ -1426,9 +1439,9 @@ function toggleVoice() {
   state.voiceRec = rec;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // MODALS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function openModalEl(id) {
   const m = document.getElementById(id);
   if (m) { m.classList.add('open'); state.currentModal = id; }
@@ -1442,9 +1455,9 @@ document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
 });
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function initKeyboard() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { if (state.currentModal) closeModal(state.currentModal); }
@@ -1459,9 +1472,9 @@ function initKeyboard() {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // TOAST
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function showToast(msg, type = 'success') {
   const c = document.getElementById('toastContainer');
   if (!c) return;
@@ -1473,9 +1486,9 @@ function showToast(msg, type = 'success') {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 4000);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 // DOM HELPERS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════
 function setText(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
 function setHtml(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 function show(id) { const el = document.getElementById(id); if (el) el.style.display = 'block'; }

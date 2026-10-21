@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -28,7 +28,9 @@ export default function LoginPage() {
     setErrorMsg('');
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      if (!auth) throw new Error('firebase');
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem('maxcfo_user', JSON.stringify({ name: cred.user.displayName, email: cred.user.email }));
       router.push('/dashboard');
     } catch (err) {
       console.error(err);
@@ -38,6 +40,17 @@ export default function LoginPage() {
         setErrorMsg('Erro ao tentar fazer login. Verifique sua conexão.');
       }
       setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setErrorMsg('');
+    if (!email) { setErrorMsg('Digite seu e-mail acima para receber o link de nova senha.'); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setErrorMsg('Enviamos um link para criar uma nova senha. Confira sua caixa de entrada e o spam.');
+    } catch (err) {
+      setErrorMsg('Não foi possível enviar o link agora. Confira o e-mail digitado.');
     }
   };
 
@@ -96,6 +109,9 @@ export default function LoginPage() {
           <span style={{ marginRight: '8px' }}>G</span> Entrar com Google
         </button>
 
+        <div className="auth-link">
+          <button type="button" onClick={handleReset} style={{ background: 'none', border: 0, color: 'var(--primary)', cursor: 'pointer', fontSize: '13px', padding: 0 }}>Esqueci minha senha</button>
+        </div>
         <div className="auth-link">
           Não tem uma conta? <Link href="/register">Crie agora</Link>
         </div>

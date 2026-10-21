@@ -1,15 +1,33 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 
-// Initialize the Google Generative AI with the API key
-// Se não houver chave no servidor (em produção), usamos uma de desenvolvimento/fallback ou retornamos erro
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSy_MOCK_FALLBACK_KEY_HERE_IF_NEEDED");
+export const dynamic = 'force-dynamic';
+
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+
+// Limite simples por usuário (por instância do servidor) para a chave de IA não ser usada por terceiros.
+const usos = new Map();
+function limiteExcedido(uid) {
+  const agora = Date.now(), janela = 60 * 60 * 1000, max = Number(process.env.CHAT_LIMIT_PER_HOUR || 40);
+  const lista = (usos.get(uid) || []).filter((t) => agora - t < janela);
+  lista.push(agora); usos.set(uid, lista);
+  return lista.length > max;
+}
 
 export async function POST(request) {
   try {
-    const { message, context } = await request.json();
+    if (adminConfigurado) {
+      const user = await usuarioDaRequisicao(request);
+      if (!user) return NextResponse.json({ reply: 'Sua sessão expirou. Entre de novo para usar o CFO IA.' }, { status: 401 });
+      if (limiteExcedido(user.uid)) return NextResponse.json({ reply: 'Você atingiu o limite de perguntas desta hora. Tente de novo mais tarde.' }, { status: 429 });
+    }
+    const body = await request.json();
+    const message = String(body.message || '').slice(0, 4000);
+    const context = body.context || {};
+    if (!message) return NextResponse.json({ reply: 'Escreva uma pergunta.' }, { status: 400 });
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!genAI) {
       console.warn("GEMINI_API_KEY não está definida nas variáveis de ambiente!");
       // Em modo dev, se não tiver chave, devolvemos a chave pra pessoa configurar
       return NextResponse.json(

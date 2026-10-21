@@ -1,42 +1,51 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authFetch } from '../../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 
 export default function PricingPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('maxcfo_user') || '{}');
-    if (user.email) setUserEmail(user.email);
-  }, []);
+  const [erro, setErro] = useState('');
 
   const handleSubscribe = async (planId) => {
+    setErro('');
+    if (!user) {
+      router.push('/register');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, planId })
-      });
-      
-      const data = await res.json();
+      const res = await authFetch('/api/checkout', { method: 'POST', body: JSON.stringify({ planId }) });
+      const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
-      } else {
-        alert('Stripe não configurado (' + (data.error || 'Desconhecido') + '). Liberando acesso livre (Modo Desenvolvedor)!');
-        localStorage.setItem('maxcfo_pro_status', 'active');
-        router.push('/dashboard');
+        return;
       }
+      setErro(data.error || 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.');
     } catch (err) {
       console.error(err);
-      alert('Stripe não configurado. Liberando acesso livre (Modo Desenvolvedor)!');
-      localStorage.setItem('maxcfo_pro_status', 'active');
-      router.push('/dashboard');
+      setErro('Sem conexão com o servidor. Verifique a internet e tente de novo.');
     }
+    setLoading(false);
+  };
+
+  const abrirPortal = async () => {
+    setErro('');
+    setLoading(true);
+    try {
+      const res = await authFetch('/api/portal', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) { window.location.href = data.url; return; }
+      setErro(data.error || 'Não foi possível abrir o portal agora.');
+    } catch {
+      setErro('Sem conexão com o servidor. Verifique a internet e tente de novo.');
+    }
+    setLoading(false);
   };
 
   return (
@@ -60,6 +69,14 @@ export default function PricingPage() {
       <p style={{ color: '#8899B0', marginBottom: '40px', fontSize: '18px', textAlign: 'center', maxWidth: '600px' }}>
         O ERP inteligente que cresce com você. De autônomos a grandes corporações.
       </p>
+      <p style={{ color: '#C5A059', marginBottom: '28px', fontSize: '15px', textAlign: 'center' }}>
+        7 dias grátis para testar. Cancele quando quiser.
+      </p>
+      {erro && (
+        <div role="alert" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '12px 16px', borderRadius: '8px', marginBottom: '24px', fontSize: '14px', border: '1px solid rgba(239,68,68,0.3)', maxWidth: '600px', textAlign: 'center' }}>
+          {erro}
+        </div>
+      )}
 
       <div style={{
         display: 'grid',
@@ -180,9 +197,19 @@ export default function PricingPage() {
 
       </div>
 
-      <Link href="/success?session_id=dev" style={{ marginTop: '32px', color: '#8899B0', textDecoration: 'underline' }}>
-        Acessar com Passe Livre
-      </Link>
+      <div style={{ marginTop: '32px', display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Link href="/dashboard" style={{ color: '#8899B0', textDecoration: 'underline' }}>
+          Continuar no teste grátis
+        </Link>
+        {user && (
+          <button type="button" onClick={abrirPortal} disabled={loading} style={{ background: 'none', border: 0, color: '#8899B0', textDecoration: 'underline', cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
+            Já sou assinante: gerenciar assinatura
+          </button>
+        )}
+      </div>
+      <p style={{ marginTop: '16px', color: '#5A6B85', fontSize: '12px', textAlign: 'center', maxWidth: '560px' }}>
+        Ao assinar, você concorda com os <Link href="/termos" style={{ color: '#8899B0' }}>Termos de Uso</Link> e a <Link href="/privacidade" style={{ color: '#8899B0' }}>Política de Privacidade</Link>. Pagamento mensal no cartão, renovação automática e cancelamento a qualquer momento.
+      </p>
 
       <style dangerouslySetInnerHTML={{__html: `
         .plan-btn {

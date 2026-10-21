@@ -118,11 +118,12 @@ export default function LandingPage() {
           <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #f59e0b, #d97706)', padding: '4px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
             Plano MAX
           </div>
-          <div style={{ fontSize: '56px', fontWeight: '900', marginBottom: '8px' }}>R$ 49<span style={{ fontSize: '20px', color: '#a1a1aa', fontWeight: 'normal' }}>/mês</span></div>
-          <p style={{ color: '#a1a1aa', marginBottom: '32px', fontSize: '14px' }}>Acesso ilimitado a todas as ferramentas de IA.</p>
+          <div style={{ fontSize: '14px', color: '#a1a1aa', marginBottom: '4px' }}>a partir de</div>
+          <div style={{ fontSize: '56px', fontWeight: '900', marginBottom: '8px' }}>R$ 49,90<span style={{ fontSize: '20px', color: '#a1a1aa', fontWeight: 'normal' }}>/mês</span></div>
+          <p style={{ color: '#a1a1aa', marginBottom: '32px', fontSize: '14px' }}>7 dias grátis, sem cartão. <Link href="/pricing" style={{ color: '#a1a1aa' }}>Ver todos os planos</Link></p>
           
           <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, margin: '0 0 40px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {['Chat Inteligente Ilimitado', 'Análise de CNPJs (Radar)', 'Conciliação Automática OFX', 'Simulador de Cenários', 'Exportação de DREs em PDF', 'Sem fidelidade, cancele quando quiser'].map((item, i) => (
+            {['Chat Inteligente Ilimitado', 'Análise de CNPJs (Radar)', 'Conciliação Automática OFX', 'Simulador Tributário e Reforma 2026–2033', 'Simulador de Cenários', 'Exportação de DREs em PDF', 'Sem fidelidade, cancele quando quiser'].map((item, i) => (
               <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px' }}>
                 <span style={{ color: '#10b981' }}>✓</span> {item}
               </li>
@@ -168,9 +169,9 @@ export default function LandingPage() {
         </div>
         <p style={{ fontSize: '14px', marginBottom: '24px' }}>© 2026 MAX CFO AI. Todos os direitos reservados.</p>
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', fontSize: '13px' }}>
-          <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Termos de Uso</a>
-          <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Privacidade</a>
-          <a href="#" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Contato</a>
+          <Link href="/termos" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Termos de Uso</Link>
+          <Link href="/privacidade" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Privacidade</Link>
+          <a href="https://wa.me/5561992105889?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20MAX%20CFO%20AI." target="_blank" rel="noopener" style={{ color: '#a1a1aa', textDecoration: 'none' }}>Contato</a>
         </div>
       </footer>
     </div>
