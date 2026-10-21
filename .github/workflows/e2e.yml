@@ -26,7 +26,7 @@ jobs:
             (npm start -- -p 3000 > /tmp/start.log 2>&1 &) ; sleep 8
             echo "SITE=http://localhost:3000" >> $GITHUB_ENV
           fi
-      - run: python e2e_producao.py 2>&1 | tee saida_log.txt
+      - run: python ia_pdf.py 2>&1 | tee saida_log.txt
         working-directory: tests
         continue-on-error: true
       - run: python telas.py 2>&1 | tee -a saida_log.txt
