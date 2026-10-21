@@ -122,7 +122,9 @@ async def main():
             await m.screenshot(path=f'{OUT}/celular.png')
             await b.close()
     finally:
-        rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/workspaces/{uid}', None, token, 'DELETE')
+        # a regra não deixa apagar a empresa principal; o robô esvazia os dados dela
+        sd, _ = rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/workspaces/{uid}?updateMask.fieldPaths=data&updateMask.fieldPaths=owner', {'fields': {'data': {'stringValue': '{}'}, 'owner': {'stringValue': uid}}}, token, 'PATCH')
+        print('dados de teste esvaziados' if sd == 200 else f'não esvaziou os dados de teste ({sd})')
         rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/perfis/{uid}', None, token, 'DELETE')
         s, _ = rest(f'https://identitytoolkit.googleapis.com/v1/accounts:delete?key={KEY}', {'idToken': token})
         print('conta de teste apagada' if s == 200 else f'não apagou a conta de teste ({s})')
