@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.github
+backend
+*.md
+!README.md
+.env*
+public/__harness.html

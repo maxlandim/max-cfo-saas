@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Gera um servidor enxuto em .next/standalone, usado pela imagem Docker do servidor próprio
+  output: 'standalone',
   // Cada publicação gera uma versão nova dos scripts do painel (quebra o cache do navegador só quando muda)
   env: {
-    NEXT_PUBLIC_BUILD_ID: (process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now())).slice(0, 10),
+    NEXT_PUBLIC_BUILD_ID: (process.env.VERCEL_GIT_COMMIT_SHA || process.env.SOURCE_COMMIT || String(Date.now())).slice(0, 10),
   },
   typescript: {
     ignoreBuildErrors: true,
