@@ -45,7 +45,9 @@ export async function GET(req) {
       if (admins.includes(email)) situacao = 'admin';
       else if (s && s.status === 'trialing') situacao = 'teste_com_cartao';
       else if (s && STATUS_ATIVOS.includes(s.status)) situacao = 'assinante';
+      else if (s && s.pagoAte && Date.parse(s.pagoAte) > agora) situacao = agora < fimTeste ? 'teste_com_cartao' : 'assinante';
       else if (s && s.status === 'past_due') situacao = 'pagamento_pendente';
+      else if (s && s.boletoPendente && Date.parse(s.boletoPendente.ate) > agora && agora >= fimTeste) situacao = 'pagamento_pendente';
       else if (agora < fimTeste) situacao = 'teste';
       else situacao = s && s.status === 'canceled' ? 'cancelou' : 'teste_acabou';
       return {
@@ -54,11 +56,20 @@ export async function GET(req) {
         ultimaAlteracao: ultimaAlteracao[u.uid] || null, empresas: empresas[u.uid] || 0,
         emailConfirmado: !!u.emailVerified, provedor: (u.providerData[0] || {}).providerId || 'password',
         fimTeste: new Date(fimTeste).toISOString(), situacao,
-        plano: s ? s.plan || null : null, status: s ? s.status : null, renovaEm: s ? s.currentPeriodEnd || null : null,
-        cancelaNoFim: !!(s && s.cancelAtPeriodEnd),
-        fundador: !!(s && s.fundador), periodo: (s && s.periodo) || 'mensal',
-        // valor que a conta paga por mês (anual dividido por 12; fundador com o preço de fundador)
-        valorMensal: s && PLANOS[s.plan] ? ((s.fundador ? PLANOS[s.plan].fundador : PLANOS[s.plan].valor) / 100) * ((s.periodo === 'anual') ? MESES_PAGOS_NO_ANUAL / 12 : 1) : 0,
+        ...(() => {
+          // Pix/boleto com período em vigor vale como assinatura (sem renovação automática)
+          const av = !!(s && s.pagoAte && Date.parse(s.pagoAte) > agora && !(STATUS_ATIVOS.includes(s.status)));
+          const plano = s ? (av ? s.planoAvulso : s.plan) || null : null;
+          const periodo = (s && (av ? s.periodoAvulso : s.periodo)) || 'mensal';
+          const fundador = !!(s && s.fundador);
+          return {
+            plano, periodo, fundador, forma: av ? 'pix/boleto' : s && s.stripeSubscriptionId ? 'cartão' : null,
+            status: s ? (av ? 'pago até' : s.status) : null, renovaEm: s ? (av ? s.pagoAte : s.currentPeriodEnd) || null : null,
+            cancelaNoFim: av ? true : !!(s && s.cancelAtPeriodEnd),
+            // valor que a conta paga por mês (anual dividido por 12; fundador com o preço de fundador)
+            valorMensal: PLANOS[plano] ? ((fundador ? PLANOS[plano].fundador : PLANOS[plano].valor) / 100) * (periodo === 'anual' ? MESES_PAGOS_NO_ANUAL / 12 : 1) : 0,
+          };
+        })(),
         robo: /@exemplo\.com$/.test(email),
       };
     }).sort((a, b) => (a.criadoEm < b.criadoEm ? 1 : -1));

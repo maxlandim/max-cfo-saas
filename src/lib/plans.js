@@ -24,5 +24,16 @@ export function nivelDoStatus(st) {
 // Dias de teste grátis a partir da criação da conta.
 export const DIAS_DE_TESTE = Number(process.env.TRIAL_DAYS || 7);
 
+// Pix e boleto: pagamento avulso que libera o plano por 1 mês ou 1 ano, sem renovação automática.
+// (O Stripe não faz Pix recorrente para empresas no Brasil, e o boleto avulso evita assinatura "pendente" todo mês.)
+export const DIAS_AVISO_RENOVACAO = 5;
+export function somarMeses(ms, meses) {
+  const d = new Date(ms);
+  const dia = d.getUTCDate();
+  d.setUTCMonth(d.getUTCMonth() + meses);
+  if (d.getUTCDate() < dia) d.setUTCDate(0); // 31/01 + 1 mês = 28 ou 29/02
+  return d.getTime();
+}
+
 // Status do Stripe que liberam o acesso.
 export const STATUS_ATIVOS = ['active', 'trialing'];

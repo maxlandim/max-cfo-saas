@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminConfigurado } from '../../../lib/firebaseAdmin';
-import { gravarAssinatura } from '../../../lib/assinatura';
+import { gravarAssinatura, creditarAvulso, marcarBoletoPendente, limparBoletoPendente } from '../../../lib/assinatura';
 
 export const dynamic = 'force-dynamic';
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' }) : null;
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+async function linkDoBoleto(session) {
+  try {
+    if (!session.payment_intent) return null;
+    const pi = await stripe.paymentIntents.retrieve(typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent.id);
+    return pi.next_action?.boleto_display_details?.hosted_voucher_url || null;
+  } catch { return null; }
+}
+
 // Recebe os avisos do Stripe e mantém subscriptions/{uid} atualizado.
+// Eventos usados: checkout.session.completed, checkout.session.async_payment_succeeded,
+// checkout.session.async_payment_failed, customer.subscription.created/updated/deleted, invoice.paid, invoice.payment_failed.
 export async function POST(req) {
   if (!stripe || !endpointSecret || !adminConfigurado) {
     return NextResponse.json({ error: 'Webhook não configurado.' }, { status: 503 });
@@ -31,7 +41,23 @@ export async function POST(req) {
         if (uid && session.subscription) {
           const sub = await stripe.subscriptions.retrieve(session.subscription);
           await gravarAssinatura(uid, sub, { plan: session.metadata?.planId || null });
+        } else if (uid && session.metadata?.tipo === 'avulso') {
+          if (session.payment_status === 'paid') await creditarAvulso(session); // Pix: já vem pago
+          else { const url = await linkDoBoleto(session); if (url) await marcarBoletoPendente(uid, session, url); } // boleto gerado, falta pagar
         }
+        break;
+      }
+      // Boleto (e Pix, se demorar) pago depois de fechar o checkout
+      case 'checkout.session.async_payment_succeeded': {
+        const session = event.data.object;
+        if (session.metadata?.tipo === 'avulso') await creditarAvulso(session);
+        break;
+      }
+      case 'checkout.session.async_payment_failed':
+      case 'checkout.session.expired': {
+        const session = event.data.object;
+        const uid = session.client_reference_id || session.metadata?.uid;
+        if (uid && session.metadata?.tipo === 'avulso') await limparBoletoPendente(uid, session.id);
         break;
       }
       case 'customer.subscription.created':
