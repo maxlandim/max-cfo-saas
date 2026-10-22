@@ -12,6 +12,7 @@ function SuccessContent() {
   const { user, loading: carregandoLogin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [aviso, setAviso] = useState('');
+  const [primeiraCobranca, setPrimeiraCobranca] = useState('');
 
   // Confirma o pagamento no servidor (o webhook do Stripe também confirma, em segundo plano)
   useEffect(() => {
@@ -22,6 +23,7 @@ function SuccessContent() {
         const r = await authFetch('/api/subscription', { method: 'POST', body: JSON.stringify({ sessionId }) });
         const d = await r.json().catch(() => ({}));
         if (!r.ok) setAviso(d.error || 'Estamos confirmando o pagamento. Pode levar alguns minutos.');
+        else if (d.status === 'trialing' && d.renovaEm) setPrimeiraCobranca(new Date(d.renovaEm).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
       } catch {
         setAviso('Estamos confirmando o pagamento. Pode levar alguns minutos.');
       }
@@ -42,8 +44,9 @@ function SuccessContent() {
       <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚡🎉</div>
       <h1 style={{ fontSize: '28px', marginBottom: '10px', color: '#E8EFF8' }}>Assinatura Confirmada!</h1>
       <p style={{ color: '#8899B0', marginBottom: '30px', lineHeight: '1.6' }}>
-        Parabéns! Seu pagamento foi recebido.
-        Agora você tem acesso total ao <strong>Landim Advisory</strong>.
+        {primeiraCobranca
+          ? <>Seu cartão foi cadastrado e você continua no teste grátis. A primeira cobrança será em <strong>{primeiraCobranca}</strong>. Se cancelar antes, não paga nada.</>
+          : <>Parabéns! Seu pagamento foi recebido. Agora você tem acesso ao <strong>Landim Advisory</strong> no plano escolhido.</>}
       </p>
 
       {aviso && <p style={{ color: '#C5A059', marginBottom: '20px', fontSize: '14px' }}>{aviso}</p>}
