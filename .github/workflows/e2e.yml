@@ -27,10 +27,19 @@ jobs:
         continue-on-error: true
         working-directory: app
         run: |
-          npm install --no-audit --no-fund > /tmp/npm.log 2>&1 || { tail -5 /tmp/npm.log | while read l; do echo "::warning::npm: $l"; done; exit 1; }
-          npm run build > /tmp/build.log 2>&1 || { tail -15 /tmp/build.log | while read l; do echo "::warning::build: $l"; done; exit 1; }
-          nohup npm start -- -p 3000 > /tmp/start.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://localhost:3000/ >/dev/null && break; sleep 1; done
+          if [ -f Dockerfile ]; then
+            # do jeito que roda no servidor próprio: imagem Docker
+            docker build --build-arg SOURCE_COMMIT=$(git rev-parse HEAD) -t landim . > /tmp/build.log 2>&1 || { tail -25 /tmp/build.log | while read l; do echo "::warning::docker: $l"; done; exit 1; }
+            docker images landim --format '{{.Size}}' | while read l; do echo "::warning::imagem: $l"; done
+            docker run -d --name landim -p 3000:3000 landim > /dev/null
+            sleep 3; docker logs landim 2>&1 | tail -5 | while read l; do echo "::warning::container: $l"; done
+          else
+            npm install --no-audit --no-fund > /tmp/npm.log 2>&1 || { tail -5 /tmp/npm.log | while read l; do echo "::warning::npm: $l"; done; exit 1; }
+            npm run build > /tmp/build.log 2>&1 || { tail -15 /tmp/build.log | while read l; do echo "::warning::build: $l"; done; exit 1; }
+            nohup npm start -- -p 3000 > /tmp/start.log 2>&1 &
+          fi
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/ >/dev/null && break; sleep 1; done
+          curl -s http://localhost:3000/api/saude | while read l; do echo "::warning::saude: $l"; done
           echo "SITE=http://localhost:3000" >> $GITHUB_ENV
           echo "::warning::site do branch ${{ steps.alvo.outputs.ref }} no ar em localhost:3000"
       - uses: actions/cache@v4
