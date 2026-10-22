@@ -93,7 +93,7 @@ export default function ConsultoriaPage() {
                 <h3>{s.titulo}</h3>
                 <p>{s.texto}</p>
                 <ul>{s.itens.map((i) => <li key={i}>{i}</li>)}</ul>
-                <a href={'#contato'} data-servico={s.id} className="cs-link">Pedir proposta de {s.titulo.toLowerCase()} →</a>
+                <a href={'#contato'} data-servico={s.id} className="cs-link">Pedir proposta →</a>
               </div>
             ))}
           </div>
