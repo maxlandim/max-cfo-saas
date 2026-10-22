@@ -13,7 +13,8 @@ export const NOME_PLANO = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4:
 // Teste grátis, administrador e modo de configuração usam tudo
 export function nivelDoStatus(st) {
   if (!st || !st.acesso) return 0;
-  return st.motivo === 'assinatura' ? (NIVEL_PLANO[st.plano] || 1) : 4;
+  // assinou durante o teste grátis (status "trialing"): continua com tudo liberado até o teste acabar
+  return st.motivo === 'assinatura' && st.status !== 'trialing' ? (NIVEL_PLANO[st.plano] || 1) : 4;
 }
 
 // Dias de teste grátis a partir da criação da conta.

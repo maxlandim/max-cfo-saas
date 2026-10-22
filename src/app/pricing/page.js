@@ -60,7 +60,7 @@ export default function PricingPage() {
       <main className="pr-main">
         <h1>Escolha o seu plano</h1>
         <p className="pr-sub">Cada plano soma recursos ao anterior. No teste grátis você usa tudo para conhecer.</p>
-        <p className="pr-teste">{user ? 'Pagamento mensal no cartão. Cancele quando quiser.' : '7 dias grátis, sem cartão. Cancele quando quiser.'}</p>
+        <p className="pr-teste">{user ? 'Assinando durante o teste, você não perde os dias grátis: a primeira cobrança só acontece quando os 7 dias acabarem. Cancele quando quiser.' : '7 dias grátis, sem cartão. Cancele quando quiser.'}</p>
         {erro && <div role="alert" className="pr-erro">{erro}</div>}
 
         <CardsPlanos onEscolher={handleSubscribe} carregando={loading} textoBotao={(p) => (user ? 'Assinar ' + p.nome : 'Começar grátis')} />

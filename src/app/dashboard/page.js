@@ -30,7 +30,8 @@ function gravarCache(chave, dados) { try { localStorage.setItem(chave, JSON.stri
 // Nível do plano para liberar as telas: 1 Básico, 2 Intermediário, 3 Completo, 4 Ilimitado (teste grátis usa tudo)
 const NIVEIS = { basic: 1, intermediate: 2, complete: 3, unlimited: 4 };
 function nivelPlano(a) {
-  const nivel = a && a.motivo === 'assinatura' ? (NIVEIS[a.plano] || 1) : 4;
+  // quem assinou durante o teste grátis (status "trialing") continua com tudo liberado até o teste acabar
+  const nivel = a && a.motivo === 'assinatura' && a.status !== 'trialing' ? (NIVEIS[a.plano] || 1) : 4;
   return { nivel, plano: (a && a.plano) || null, motivo: (a && a.motivo) || '' };
 }
 
@@ -280,7 +281,7 @@ export default function DashboardPage() {
 
     // Empresas do mesmo login (BPO, grupo de empresas). A principal usa o uid; as demais, "<uid>__<id>".
     const LIMITES = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
-    const limiteEmpresas = acesso.motivo === 'assinatura' ? (LIMITES[acesso.plano] || 1)
+    const limiteEmpresas = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(LIMITES[acesso.plano] || 1, 3) : (LIMITES[acesso.plano] || 1))
       : acesso.motivo === 'teste' ? 3 : 9999; // admin e modo de configuração
     const chaveAtiva = 'maxcfo_empresa_' + user.uid;
     const perfilRef = doc(db, 'perfis', user.uid);
@@ -408,7 +409,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!acesso?.acesso || !window.maxcfoEmpresas) return;
     const LIM = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
-    window.maxcfoEmpresas.limite = acesso.motivo === 'assinatura' ? (LIM[acesso.plano] || 1) : acesso.motivo === 'teste' ? 3 : 9999;
+    window.maxcfoEmpresas.limite = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(LIM[acesso.plano] || 1, 3) : (LIM[acesso.plano] || 1)) : acesso.motivo === 'teste' ? 3 : 9999;
     window.maxcfoEmpresas.plano = acesso.plano || null; window.maxcfoEmpresas.motivo = acesso.motivo;
     const antes = window.maxcfoPlano && window.maxcfoPlano.nivel;
     window.maxcfoPlano = nivelPlano(acesso);
