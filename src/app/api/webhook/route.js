@@ -44,8 +44,10 @@ export async function POST(req) {
       case 'invoice.payment_failed':
       case 'invoice.paid': {
         const invoice = event.data.object;
-        if (invoice.subscription) {
-          const sub = await stripe.subscriptions.retrieve(invoice.subscription);
+        // Versões novas da API do Stripe guardam a assinatura em invoice.parent.subscription_details
+        const subId = invoice.subscription || invoice.parent?.subscription_details?.subscription || invoice.lines?.data?.[0]?.parent?.subscription_item_details?.subscription;
+        if (subId) {
+          const sub = await stripe.subscriptions.retrieve(typeof subId === 'string' ? subId : subId.id);
           if (sub.metadata?.uid) await gravarAssinatura(sub.metadata.uid, sub);
         }
         break;
