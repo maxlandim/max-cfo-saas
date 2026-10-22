@@ -1,1 +1,1 @@
-painel-admin
+precos-novos
