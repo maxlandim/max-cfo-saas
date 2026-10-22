@@ -30,6 +30,26 @@ def planilha():
     ws.append(['Pagar', 'Internet XLSX', 'Provedor', '199,90', (hoje + timedelta(days=3)).strftime('%d/%m/%Y'), 'Internet e Telefone', 'pendente'])
     wb.save(f'{OUT}/teste.xlsx'); return f'{OUT}/teste.xlsx'
 
+def resumo_exemplo():
+    from datetime import datetime, timedelta, timezone
+    hoje = datetime.now(timezone.utc).date()
+    dias = []
+    for i in range(29, -1, -1):
+        d = (hoje - timedelta(days=i)).isoformat()
+        v = (i * 7) % 13 + (3 if i < 7 else 0)
+        dias.append({'dia': d, 'visitas': v * 2, 'visitantes': v, 'cadastros': 1 if i % 5 == 0 else 0, 'paginas': {'inicio': v, 'planos': v // 2}, 'origens': {'instagram': v // 2, 'linkedin': v - v // 2}, 'cadastrosPorOrigem': {'instagram': 1} if i % 5 == 0 else {}})
+    iso = lambda dd: (datetime.now(timezone.utc) + timedelta(days=dd)).isoformat()
+    contas = [
+        {'email': 'admin@x.com', 'nome': 'Admin', 'criadoEm': iso(-40), 'ultimoLogin': iso(0), 'ultimaAlteracao': iso(0), 'empresas': 2, 'emailConfirmado': True, 'provedor': 'google.com', 'fimTeste': iso(-33), 'situacao': 'admin', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': False},
+        {'email': 'ana@padaria.com', 'nome': 'Ana', 'criadoEm': iso(-2), 'ultimoLogin': iso(0), 'ultimaAlteracao': iso(0), 'empresas': 1, 'emailConfirmado': True, 'provedor': 'password', 'fimTeste': iso(5), 'situacao': 'teste', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': False},
+        {'email': 'bruno@oficina.com', 'nome': 'Bruno', 'criadoEm': iso(-6), 'ultimoLogin': iso(-1), 'ultimaAlteracao': iso(-1), 'empresas': 1, 'emailConfirmado': False, 'provedor': 'password', 'fimTeste': iso(1), 'situacao': 'teste_com_cartao', 'plano': 'basic', 'status': 'trialing', 'renovaEm': iso(1), 'cancelaNoFim': False, 'robo': False},
+        {'email': 'carla@clinica.com', 'nome': 'Carla', 'criadoEm': iso(-20), 'ultimoLogin': iso(-3), 'ultimaAlteracao': iso(-3), 'empresas': 3, 'emailConfirmado': True, 'provedor': 'password', 'fimTeste': iso(-13), 'situacao': 'assinante', 'plano': 'intermediate', 'status': 'active', 'renovaEm': iso(10), 'cancelaNoFim': False, 'robo': False},
+        {'email': 'dani@bpo.com', 'nome': 'Dani', 'criadoEm': iso(-25), 'ultimoLogin': iso(-12), 'ultimaAlteracao': iso(-12), 'empresas': 8, 'emailConfirmado': True, 'provedor': 'google.com', 'fimTeste': iso(-18), 'situacao': 'assinante', 'plano': 'complete', 'status': 'active', 'renovaEm': iso(5), 'cancelaNoFim': True, 'robo': False},
+        {'email': 'edu@loja.com', 'nome': '', 'criadoEm': iso(-15), 'ultimoLogin': iso(-14), 'ultimaAlteracao': None, 'empresas': 0, 'emailConfirmado': False, 'provedor': 'password', 'fimTeste': iso(-8), 'situacao': 'teste_acabou', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': False},
+        {'email': 'robo.teste.x@exemplo.com', 'nome': '', 'criadoEm': iso(0), 'ultimoLogin': iso(0), 'ultimaAlteracao': None, 'empresas': 1, 'emailConfirmado': False, 'provedor': 'password', 'fimTeste': iso(7), 'situacao': 'teste', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': True},
+    ]
+    return {'geradoEm': datetime.now(timezone.utc).isoformat(), 'hoje': hoje.isoformat(), 'contas': contas, 'dias': dias, 'precos': {'basic': 49.9, 'intermediate': 129.9, 'complete': 269.9, 'unlimited': 299.9}, 'diasDeTeste': 7}
+
 async def publicas(b):
     pg = await b.new_page(viewport={'width': 1366, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     await pg.goto(SITE + '/', wait_until='networkidle')
@@ -51,6 +71,8 @@ async def publicas(b):
     await m.screenshot(path=f'{OUT}/consultoria_cel.png', full_page=True)
     log(not errs, 'sem erros de JavaScript nas páginas públicas', errs[:2])
     s, r = rest(SITE + '/api/lembretes', None, None, 'GET'); log(s in (401, 503), 'rota de lembretes protegida por senha', s)
+    s, r = rest(SITE + '/api/admin/resumo', None, None, 'GET'); log(s in (401, 503), 'painel do administrador fechado sem login', s)
+    s, r = rest(SITE + '/api/visita', {'pagina': '/', 'origem': 'teste', 'novo': False}); log(s in (200, 202), 'contador de visitas responde', s)
     s, r = rest(SITE + '/api/webhook', {'teste': True}); log(s == 400, 'webhook do Stripe configurado (recusa aviso sem assinatura)', [s, r.get('error')])
     s, r = rest(SITE + '/api/checkout', {'planId': 'basic'}); log(s == 401, 'pagamento configurado (pede login para assinar)', [s, r.get('error')])
     s, r = rest(SITE + '/api/lembretes', {'wsId': 'x'}); log(s in (401, 503), 'teste de lembrete exige login/configuração', [s, r.get('error')])
@@ -123,6 +145,25 @@ async def painel(b):
         log(await pg.evaluate("state.settings.lembretes.avisarClientes===true"), 'lembretes salvos na empresa')
         await pg.screenshot(path=f'{OUT}/novos_lembretes.png', full_page=True)
         log(not errs, 'sem erros de JavaScript no painel', errs[:2])
+        # Painel do administrador com dados simulados (a conta de teste não é administradora)
+        log(not await pg.is_visible('text=Painel do administrador'), 'atalho do administrador escondido para cliente comum')
+        await pg.route('**/api/admin/resumo', lambda rota: rota.fulfill(status=200, content_type='application/json', body=json.dumps(resumo_exemplo())))
+        await pg.goto(SITE + '/admin', wait_until='networkidle'); await pg.wait_for_timeout(1500)
+        t = await pg.inner_text('body')
+        log('Painel do administrador' in t and 'Visitantes por dia' in t and 'De onde vieram' in t, 'painel do administrador abre', t[:120])
+        log('R$ 399,80' in t.replace('\xa0', ' '), 'receita mensal somada dos assinantes (129,90 + 269,90)', '')
+        n = await pg.evaluate("document.querySelectorAll('.ad-coluna').length"); log(n == 60, '2 gráficos de 30 dias', n)
+        log('Instagram' in t and 'LinkedIn' in t, 'tabela de origens')
+        antes = await pg.evaluate("document.querySelectorAll('.ad-contas tbody tr').length")
+        await pg.click('.ad-chip:has-text("Em teste")'); await pg.wait_for_timeout(300)
+        depois = await pg.evaluate("document.querySelectorAll('.ad-contas tbody tr').length")
+        log(antes == 5 and depois == 2, 'filtro de contas (5 → 2 em teste)', [antes, depois])
+        await pg.click('.ad-chip:has-text("Todas")')
+        await pg.screenshot(path=f'{OUT}/admin_pc.png', full_page=True)
+        await pg.set_viewport_size({'width': 390, 'height': 844}); await pg.wait_for_timeout(400)
+        w = await pg.evaluate('document.documentElement.scrollWidth'); log(w <= 392, 'painel do administrador no celular sem rolagem lateral', w)
+        await pg.screenshot(path=f'{OUT}/admin_cel.png', full_page=True)
+        await pg.set_viewport_size({'width': 1366, 'height': 900})
         await pg.wait_for_timeout(2500)
     finally:
         rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/workspaces/{uid}?updateMask.fieldPaths=data&updateMask.fieldPaths=owner', {'fields': {'data': {'stringValue': '{}'}, 'owner': {'stringValue': uid}}}, token, 'PATCH')
