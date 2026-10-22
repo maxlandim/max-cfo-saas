@@ -486,7 +486,7 @@
     var baixos = lista.filter(function (p) { return p.minimo > 0 && p.qtd <= p.minimo; });
     var comMargem = lista.filter(function (p) { return p.preco > 0 && p.custo > 0; });
     var margem = comMargem.length ? comMargem.reduce(function (a, p) { return a + (p.preco - p.custo) / p.preco; }, 0) / comMargem.length * 100 : null;
-    v.innerHTML = cabecalho('Estoque', 'Produtos com custo médio, estoque mínimo e movimentações ligadas ao financeiro', '<button class="btn-secondary" onclick="est.exportar()">⬇️ Exportar</button><button class="btn-primary" onclick="est.editar()">+ Produto</button>') +
+    v.innerHTML = cabecalho('Estoque', 'Produtos com custo médio, estoque mínimo e movimentações ligadas ao financeiro', '<button class="btn-secondary" onclick="est.exportar()">⬇️ Exportar</button><button class="btn-secondary" onclick="estNota.abrir()">📄 Entrada por nota fiscal</button><button class="btn-primary" onclick="est.editar()">+ Produto</button>') +
       kpis([
         { v: lista.length, l: 'Produtos' },
         { v: moeda(valor), l: 'Valor em estoque (a custo)', gold: true },

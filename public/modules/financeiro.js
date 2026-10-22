@@ -1538,16 +1538,17 @@
     });
     return pdfjs;
   }
-  F.analisarPdf = async function (arq) {
+  F.lerBase64 = lerBase64;
+  F.analisarPdf = async function (arq, maxPaginas) {
     var lib = await carregarPdfJs();
     var doc = await lib.getDocument({ data: new Uint8Array(await arq.arrayBuffer()) }).promise;
-    var texto = '', pags = Math.min(doc.numPages, 3);
+    var texto = '', pags = Math.min(doc.numPages, maxPaginas || 3);
     for (var i = 1; i <= pags; i++) { var pg = await doc.getPage(i); var c = await pg.getTextContent(); texto += c.items.map(function (x) { return x.str; }).join(' ') + '\n'; }
     var p1 = await doc.getPage(1), vp0 = p1.getViewport({ scale: 1 }), escala = Math.min(2.2, 1800 / Math.max(vp0.width, vp0.height)), vp = p1.getViewport({ scale: escala });
     var cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
     var ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
     await p1.render({ canvasContext: ctx, viewport: vp }).promise;
-    return { texto: texto.replace(/[ \t]+/g, ' ').trim().slice(0, 20000), imagem: cv.toDataURL('image/jpeg', 0.88).split(',')[1], paginas: doc.numPages };
+    return { texto: texto.replace(/[ \t]+/g, ' ').trim().slice(0, maxPaginas ? 45000 : 20000), imagem: cv.toDataURL('image/jpeg', 0.88).split(',')[1], paginas: doc.numPages };
   };
   // Boleto pela linha digitável: valor e vencimento sem depender da IA
   F.boletoDaLinha = function (texto) {
