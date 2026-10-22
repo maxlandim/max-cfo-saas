@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
-import { PLANOS, DIAS_DE_TESTE, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../lib/plans';
+import { PLANOS, DIAS_DE_TESTE, FUNDADOR, MESES_PAGOS_NO_ANUAL, somarMeses } from '../../../lib/plans';
 import { vagasFundador } from '../../../lib/fundadores';
 
 export const dynamic = 'force-dynamic';
@@ -22,27 +22,43 @@ export async function POST(req) {
   const plano = PLANOS[planId];
   const anual = body.periodo === 'anual';
   const meses = anual ? MESES_PAGOS_NO_ANUAL : 1;
+  // "cartao" (assinatura que renova sozinha) ou "avulso" (Pix ou boleto, paga 1 mês ou 1 ano por vez)
+  const avulso = body.forma === 'avulso' || body.forma === 'pix' || body.forma === 'boleto';
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || `https://${req.headers.get('host')}`;
 
   // Quem assina durante o teste grátis não perde os dias que faltam: o cartão é cadastrado agora
   // e a primeira cobrança acontece quando o teste acaba (só na primeira assinatura da conta).
   // O Stripe exige pelo menos 48 horas de teste; com menos que isso, cobra na hora.
-  let fimTeste = null;
+  // Quem já pagou um período por Pix ou boleto também só é cobrado no cartão quando esse período acabar.
+  let fimTeste = null, fimReal = 0, atual = {};
   try {
     const snap = await adminDb.collection('subscriptions').doc(user.uid).get();
-    if (!(snap.exists && snap.data().stripeSubscriptionId)) {
+    atual = snap.exists ? snap.data() : {};
+    const pagoAte = atual.pagoAte ? Date.parse(atual.pagoAte) : 0;
+    let fim = 0;
+    if (!atual.stripeSubscriptionId) {
       const conta = await adminAuth.getUser(user.uid);
-      const fim = new Date(conta.metadata.creationTime).getTime() + DIAS_DE_TESTE * 864e5;
-      if (fim - Date.now() > 49 * 3600 * 1000) fimTeste = fim;
+      fim = new Date(conta.metadata.creationTime).getTime() + DIAS_DE_TESTE * 864e5;
     }
+    fim = Math.max(fim, pagoAte);
+    fimReal = fim;
+    if (fim - Date.now() > 49 * 3600 * 1000) fimTeste = fim;
   } catch (e) { console.warn('Não consegui calcular o fim do teste:', e.message); }
+  if (['active', 'trialing', 'past_due'].includes(atual.status) && atual.stripeSubscriptionId) {
+    return NextResponse.json({ error: avulso
+      ? 'Você já tem uma assinatura no cartão. Para trocar para Pix ou boleto, cancele a assinatura em "Gerenciar assinatura" e pague o próximo período por aqui.'
+      : 'Você já tem uma assinatura ativa. Para mudar de plano ou de cartão, use "Gerenciar assinatura".' }, { status: 409 });
+  }
   const dataBR = (ms) => new Date(ms).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
   // Preço de fundador: enquanto houver vaga, um cupom do Stripe tira a diferença por FUNDADOR.meses
   let cupom = null;
   try {
-    if ((await vagasFundador({ semCache: true })) > 0 && plano.fundador < plano.valor) {
+    const aindaFundador = atual.fundadorAte && Date.parse(atual.fundadorAte) > Date.now();
+    if (avulso && plano.fundador < plano.valor && (aindaFundador || (await vagasFundador({ semCache: true })) > 0)) {
+      cupom = { avulso: true };
+    } else if (!avulso && (await vagasFundador({ semCache: true })) > 0 && plano.fundador < plano.valor) {
       const id = `fundador-${planId}-${anual ? 'anual' : 'mensal'}-v1`;
       cupom = await stripe.coupons.retrieve(id).catch(() => null);
       if (!cupom) {
@@ -54,6 +70,48 @@ export async function POST(req) {
     }
   } catch (e) { console.warn('Cupom de fundador:', e.message); cupom = null; }
   const meta = { uid: user.uid, planId, periodo: anual ? 'anual' : 'mensal', ...(cupom ? { fundador: '1' } : {}) };
+
+  if (avulso) {
+    // Pix ou boleto: pagamento único de 1 mês (ou 12 meses pelo preço de 10), sem renovação automática
+    const valor = (cupom ? plano.fundador : plano.valor) * meses;
+    const inicio = Math.max(Date.now(), fimReal);
+    // No Brasil o Stripe libera o Pix só por convite: se a conta ainda não tiver Pix (ou boleto), abre com o que estiver ativo
+    let ultimoErro = null;
+    for (const tipos of [['pix', 'boleto'], ['boleto'], ['pix']]) {
+    try {
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: tipos,
+        line_items: [{
+          price_data: {
+            currency: 'brl',
+            product_data: { name: `${plano.nome} · ${anual ? '12 meses' : '1 mês'}${cupom ? ' (preço de fundador)' : ''}`, images: [`${origin}/icon-512.png`] },
+            unit_amount: valor,
+          },
+          quantity: 1,
+        }],
+        client_reference_id: user.uid,
+        ...(atual.stripeCustomerId ? { customer: atual.stripeCustomerId } : { customer_email: user.email || undefined, customer_creation: 'always' }),
+        metadata: { ...meta, tipo: 'avulso' },
+        payment_intent_data: { metadata: { ...meta, tipo: 'avulso' } },
+        invoice_creation: { enabled: true, invoice_data: { description: `Acesso ao ${plano.nome} por ${anual ? '12 meses' : '1 mês'}`, metadata: { ...meta, tipo: 'avulso' } } },
+        payment_method_options: { ...(tipos.includes('pix') ? { pix: { expires_after_seconds: 3600 } } : {}), ...(tipos.includes('boleto') ? { boleto: { expires_after_days: 3 } } : {}) },
+        custom_text: { submit: { message: `Pagamento único, sem renovação automática. O acesso vale de ${dataBR(inicio)} até ${dataBR(somarMeses(inicio, anual ? 12 : 1))}.${tipos.includes('pix') ? ' O Pix libera na hora.' : ''}${tipos.includes('boleto') ? ' O boleto libera quando o banco confirmar (até 1 dia útil).' : ''}` } },
+        locale: 'pt-BR',
+        success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/pricing`,
+      });
+      return NextResponse.json({ url: session.url, tipos });
+    } catch (err) {
+      ultimoErro = err;
+      // só tenta a próxima combinação quando o erro é de forma de pagamento não ativada
+      if (!/payment method|payment_method_types|pix|boleto/i.test(err?.message || '')) break;
+    }
+    }
+    console.error('Erro no checkout Pix/boleto do Stripe:', ultimoErro);
+    const desligado = /payment method|payment_method_types|pix|boleto/i.test(ultimoErro?.message || '');
+    return NextResponse.json({ error: desligado ? 'Pix e boleto ainda não estão liberados. Use o cartão ou fale com o suporte no WhatsApp.' : 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.' }, { status: 500 });
+  }
 
   try {
     const session = await stripe.checkout.sessions.create({

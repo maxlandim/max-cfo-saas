@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
-import { statusDoUsuario, gravarAssinatura } from '../../../lib/assinatura';
+import { statusDoUsuario, gravarAssinatura, creditarAvulso } from '../../../lib/assinatura';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +47,8 @@ export async function POST(req) {
     if (session.subscription && typeof session.subscription === 'object') {
       await gravarAssinatura(user.uid, session.subscription, { plan: session.metadata?.planId || null });
     }
-    return NextResponse.json(await statusDoUsuario(user));
+    if (session.metadata?.tipo === 'avulso' && session.payment_status === 'paid') await creditarAvulso(session);
+    return NextResponse.json({ ...(await statusDoUsuario(user)), pagamento: session.metadata?.tipo === 'avulso' ? (session.payment_status === 'paid' ? 'avulso_pago' : 'avulso_pendente') : 'cartao' });
   } catch (e) {
     console.error('Erro ao confirmar checkout:', e);
     return NextResponse.json({ error: 'Não foi possível confirmar o pagamento agora.' }, { status: 500 });

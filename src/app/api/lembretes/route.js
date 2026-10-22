@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { statusDoUsuario } from '../../../lib/assinatura';
 import { config, hojeBrasil, resumoDono, avisosClientes } from '../../../lib/lembretes';
+import { STATUS_ATIVOS } from '../../../lib/plans';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -91,6 +92,41 @@ export async function GET(req) {
       resultado.erros.push(`${wsId}: ${e.message}`);
     }
   }
+  // Quem pagou por Pix ou boleto recebe aviso 5 dias antes e no último dia do período pago
+  resultado.renovacoes = 0;
+  try {
+    const agora = Date.now();
+    const subs = await adminDb.collection('subscriptions').where('pagoAte', '>', new Date(agora).toISOString()).get();
+    for (const d of subs.docs) {
+      const s = d.data();
+      if (STATUS_ATIVOS.includes(s.status)) continue; // já assina no cartão
+      const dias = Math.ceil((Date.parse(s.pagoAte) - agora) / 864e5);
+      const etapa = dias === 5 ? '5' : dias <= 1 ? '1' : null;
+      if (!etapa) continue;
+      const marca = adminDb.collection('lembretesEnviados').doc(`renovacao_${d.id}_${s.pagoAte.slice(0, 10)}_${etapa}`);
+      if ((await marca.get()).exists) continue;
+      const para = await emailDoDono(d.id);
+      if (!para) continue;
+      const data = new Date(s.pagoAte).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const link = `${site()}/pricing?utm_source=email`;
+      try {
+        await enviar({
+          para,
+          assunto: etapa === '1' ? 'Seu acesso à Landim Advisory vence amanhã' : `Seu acesso à Landim Advisory vence em ${data}`,
+          html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#0B1220;line-height:1.55;max-width:520px">
+<p>Olá!</p>
+<p>O período que você pagou por Pix ou boleto vale até <b>${data}</b>. Para não perder o acesso ao painel, renove antes dessa data.</p>
+<p><a href="${link}" style="display:inline-block;background:#C5A059;color:#0B1220;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">Renovar agora</a></p>
+<p style="color:#5B6474;font-size:13px">O Pix libera na hora. O boleto leva até 1 dia útil para compensar. Se preferir não se preocupar com isso, escolha o cartão: a renovação fica automática e a primeira cobrança só acontece quando o período pago acabar.</p>
+<p style="color:#5B6474;font-size:13px">Seus dados continuam guardados mesmo se o período vencer.</p>
+</div>`,
+        });
+        await marca.set({ uid: d.id, etapa, pagoAte: s.pagoAte, em: new Date().toISOString() });
+        resultado.renovacoes++;
+      } catch (e) { resultado.erros.push(`renovação ${d.id}: ${e.message}`); }
+    }
+  } catch (e) { resultado.erros.push('renovações: ' + e.message); }
+
   return NextResponse.json(resultado);
 }
 

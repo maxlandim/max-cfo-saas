@@ -24,6 +24,7 @@ export const INCLUSO = [
   'Funciona no computador e no celular',
   'Tema claro ou escuro',
   'Backup completo quando quiser',
+  'Cartão, Pix ou boleto',
   'Sem fidelidade: cancele quando quiser',
   '7 dias grátis com tudo liberado',
 ];
