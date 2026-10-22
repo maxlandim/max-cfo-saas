@@ -56,6 +56,9 @@ jobs:
       - run: python novos.py 2>&1 | tee -a saida_log.txt
         working-directory: tests
         continue-on-error: true
+      - run: python nota_ia.py 2>&1 | tee -a saida_log.txt
+        working-directory: tests
+        continue-on-error: true
       - name: Publica o resultado no branch resultado-e2e
         if: always()
         run: |
