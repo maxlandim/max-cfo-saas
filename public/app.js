@@ -156,6 +156,7 @@ var initMaxCfoApp = async () => {
   if (window.initGestaoModule) window.initGestaoModule();
   if (window.initRelatorioModule) window.initRelatorioModule();
   if (window.initLayoutModule) window.initLayoutModule();
+  if (window.initAcessosModule) window.initAcessosModule();
 
   updateSettingsPanel();
   renderDashboard();
@@ -350,6 +351,7 @@ function initSearch() {
     { icon:'📊', text:'Visão geral', fn: () => switchView('dashboard') },
     { icon:'📅', text:'Contas a pagar e receber', fn: () => switchView('contas') },
     { icon:'⬇️', text:'Contas a receber', fn: () => switchView('receber') },
+    { icon:'📥', text:'Importar planilha (Excel ou CSV)', fn: () => window.imp && window.imp.abrir('RECEITA') },
     { icon:'⬆️', text:'Contas a pagar', fn: () => switchView('pagar') },
     { icon:'🏦', text:'Contas financeiras (bancos, caixa, cartão)', fn: () => switchView('bancos') },
     { icon:'🎯', text:'Centros de custo', fn: () => switchView('settings') },

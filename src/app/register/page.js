@@ -67,7 +67,7 @@ export default function RegisterPage() {
     <div className="auth-container">
       <div className="auth-card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
-          <div style={{ background: '#C5A059', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 900, color: '#0B1220' }}>LA</div>
+          <img src="/logo.svg" alt="" width="32" height="32" style={{ borderRadius: 8, display: "block" }} />
           <span style={{ fontSize: '20px', fontWeight: '800', color: '#fff' }}>Landim Advisory</span>
         </div>
         <h1 style={{ textAlign: 'center' }}>Comece Grátis</h1>

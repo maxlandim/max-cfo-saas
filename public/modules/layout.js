@@ -221,6 +221,7 @@
     if (vis.indexOf('os') > -1) op.push(['🛠️', 'Ordem de serviço', se('os', "switchView('os');setTimeout(function(){os.editar()},80)")]);
     if (vis.indexOf('plans') > -1) op.push(['🔁', 'Mensalidade', se('plans', "switchView('plans');setTimeout(function(){ctr.editar()},80)")]);
     op.push(['🔄', 'Importar extrato', "switchView('reconciliation')"]);
+    op.push(['📥', 'Importar planilha', "imp.abrir('RECEITA')"]);
     F().modal('layNovo', 'O que você quer registrar?', '<div class="lay-novo">' + op.map(function (o) { return '<button onclick="fin.fechar(\'layNovo\');' + o[2] + '"><span>' + o[0] + '</span>' + o[1] + '</button>'; }).join('') + '</div>', '<button class="btn-ghost" onclick="fin.fechar(\'layNovo\')">Fechar</button>');
   }
 
