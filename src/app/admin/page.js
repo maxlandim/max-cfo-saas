@@ -7,7 +7,7 @@ import { authFetch } from '../../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { NOME_PAGINA, NOME_ORIGEM } from '../../lib/estatisticas';
 
-const NOME_PLANO = { basic: 'Básico', intermediate: 'Intermediário', complete: 'Completo', unlimited: 'Ilimitado' };
+const NOME_PLANO = { basic: 'Básico', intermediate: 'Intermediário', complete: 'Completo', unlimited: 'Escritório' };
 const SITUACAO = {
   admin: ['Administrador', 'cinza'],
   assinante: ['Assinante', 'verde'],
@@ -83,8 +83,9 @@ export default function AdminPage() {
     const comCartao = clientes.filter((c) => c.situacao === 'teste_com_cartao');
     const emTeste = clientes.filter((c) => c.situacao === 'teste');
     const acabando = clientes.filter((c) => (c.situacao === 'teste' || c.situacao === 'teste_com_cartao') && diasAte(c.fimTeste) <= 2);
-    const receita = pagantes.reduce((a, c) => a + (dados.precos[c.plano] || 0), 0);
-    const receitaFutura = comCartao.reduce((a, c) => a + (dados.precos[c.plano] || 0), 0);
+    const mensal = (c) => (typeof c.valorMensal === 'number' && c.valorMensal > 0 ? c.valorMensal : (dados.precos[c.plano] || 0));
+    const receita = pagantes.reduce((a, c) => a + mensal(c), 0);
+    const receitaFutura = comCartao.reduce((a, c) => a + mensal(c), 0);
     const novas7 = clientes.filter((c) => diasDesde(c.criadoEm) < 7).length;
     // origens e páginas somadas nos 30 dias
     const origens = {}, cadOrig = {}, paginas = {};
@@ -141,7 +142,7 @@ export default function AdminPage() {
               <div className="ad-kpi"><small>Visitantes nos últimos 7 dias</small><b>{num(r.vis7)}</b><span>{num(r.visHoje)} hoje · {num(r.visitas7)} páginas vistas</span></div>
               <div className="ad-kpi"><small>Contas criadas nos últimos 7 dias</small><b>{num(r.novas7)}</b><span>{num(r.clientes.length)} no total</span></div>
               <div className="ad-kpi"><small>Em teste grátis agora</small><b>{num(r.emTeste.length + r.comCartao.length)}</b><span className={r.acabando.length ? 'ad-alerta' : ''}>{r.acabando.length ? `${r.acabando.length} acabando em até 2 dias` : 'nenhum acabando nos próximos 2 dias'}</span></div>
-              <div className="ad-kpi ad-kpi-ouro"><small>Receita mensal (assinantes)</small><b>{moeda(r.receita)}</b><span>{num(r.pagantes.length)} {r.pagantes.length === 1 ? 'assinante' : 'assinantes'}{r.comCartao.length ? ` · + ${moeda(r.receitaFutura)} quando ${r.comCartao.length} teste(s) acabar(em)` : ''}</span></div>
+              <div className="ad-kpi ad-kpi-ouro"><small>Receita mensal (assinantes)</small><b>{moeda(r.receita)}</b><span>{num(r.pagantes.length)} {r.pagantes.length === 1 ? 'assinante' : 'assinantes'}{r.comCartao.length ? ` · + ${moeda(r.receitaFutura)} quando ${r.comCartao.length} teste(s) acabar(em)` : ''}{dados.fundador ? ` · fundadores: ${dados.fundador.usados} de ${dados.fundador.vagas}` : ''}</span></div>
             </section>
 
             <section className="ad-dois">
@@ -195,7 +196,7 @@ export default function AdminPage() {
                         <tr key={c.email + c.criadoEm}>
                           <td><b>{c.email || '(sem e-mail)'}</b>{c.nome && <div className="ad-sub">{c.nome}</div>}{!c.emailConfirmado && c.provedor === 'password' && <div className="ad-sub">e-mail não confirmado</div>}</td>
                           <td><span className={'ad-pilula ' + cor}>{rot}</span></td>
-                          <td>{c.plano ? NOME_PLANO[c.plano] || c.plano : '—'}</td>
+                          <td>{c.plano ? NOME_PLANO[c.plano] || c.plano : '—'}{c.plano && <div className="ad-sub">{c.periodo === 'anual' ? 'anual' : 'mensal'}{c.fundador ? ' · fundador' : ''}</div>}</td>
                           <td>{dataBR(c.criadoEm)}</td>
                           <td>{prazo}</td>
                           <td>{quando(c.ultimaAlteracao || c.ultimoLogin)}</td>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, adminAuth, adminDb, emailsAdmin, usuarioDaRequisicao } from '../../../../lib/firebaseAdmin';
-import { DIAS_DE_TESTE, STATUS_ATIVOS, PLANOS } from '../../../../lib/plans';
+import { DIAS_DE_TESTE, STATUS_ATIVOS, PLANOS, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../../lib/plans';
 import { hojeBrasil } from '../../../../lib/lembretes';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +56,9 @@ export async function GET(req) {
         fimTeste: new Date(fimTeste).toISOString(), situacao,
         plano: s ? s.plan || null : null, status: s ? s.status : null, renovaEm: s ? s.currentPeriodEnd || null : null,
         cancelaNoFim: !!(s && s.cancelAtPeriodEnd),
+        fundador: !!(s && s.fundador), periodo: (s && s.periodo) || 'mensal',
+        // valor que a conta paga por mês (anual dividido por 12; fundador com o preço de fundador)
+        valorMensal: s && PLANOS[s.plan] ? ((s.fundador ? PLANOS[s.plan].fundador : PLANOS[s.plan].valor) / 100) * ((s.periodo === 'anual') ? MESES_PAGOS_NO_ANUAL / 12 : 1) : 0,
         robo: /@exemplo\.com$/.test(email),
       };
     }).sort((a, b) => (a.criadoEm < b.criadoEm ? 1 : -1));
@@ -74,7 +77,8 @@ export async function GET(req) {
     }
 
     const precos = Object.fromEntries(Object.entries(PLANOS).map(([k, v]) => [k, v.valor / 100]));
-    return NextResponse.json({ geradoEm: new Date().toISOString(), hoje, contas: lista, dias, precos, diasDeTeste: DIAS_DE_TESTE });
+    const fundadores = lista.filter((c) => c.fundador).length;
+    return NextResponse.json({ geradoEm: new Date().toISOString(), hoje, contas: lista, dias, precos, diasDeTeste: DIAS_DE_TESTE, fundador: { usados: fundadores, vagas: FUNDADOR.vagas } });
   } catch (e) {
     console.error('Resumo do administrador:', e);
     return NextResponse.json({ error: 'Não consegui montar o resumo agora.' }, { status: 500 });

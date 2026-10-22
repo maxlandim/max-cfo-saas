@@ -13,7 +13,7 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
-  const handleSubscribe = async (planId) => {
+  const handleSubscribe = async (planId, periodo) => {
     setErro('');
     if (!user) {
       router.push('/register');
@@ -21,7 +21,7 @@ export default function PricingPage() {
     }
     setLoading(true);
     try {
-      const res = await authFetch('/api/checkout', { method: 'POST', body: JSON.stringify({ planId }) });
+      const res = await authFetch('/api/checkout', { method: 'POST', body: JSON.stringify({ planId, periodo }) });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;

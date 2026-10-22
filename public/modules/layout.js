@@ -39,10 +39,10 @@
   function moduloDe(id) { var m = null; SECOES.forEach(function (s) { s[2].forEach(function (i) { if (i[0] === id) m = s; }); }); return m; }
   var aberto = null, verMais = {};
 
-  // ── Planos: o que cada nível libera (1 Básico, 2 Intermediário, 3 Completo, 4 Ilimitado) ──
+  // ── Planos: o que cada nível libera (1 Básico, 2 Intermediário, 3 Completo, 4 Escritório) ──
   var NIVEL_TELA = { budget: 2, os: 2, plans: 2, crm: 2, commissions: 2, inventory: 2, nfe: 2, 'tax-audit': 2, accountant: 2, reports: 2, companies: 2,
     chat: 3, simulator: 3, tributario: 3, bpo: 3, hr: 3, assets: 3, team: 3, audit: 3 };
-  var NOME_NIVEL = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4: 'Ilimitado' };
+  var NOME_NIVEL = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4: 'Escritório' };
   function nivelAtual() { var p = window.maxcfoPlano; return p && p.nivel ? p.nivel : 4; }
   function liberado(id) { return (NIVEL_TELA[id] || 1) <= nivelAtual(); }
   function oferta(nivel, oque) {

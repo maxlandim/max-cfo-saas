@@ -27,7 +27,7 @@ function gravarCopia(wsId, c) { try { localStorage.setItem('maxcfo_copia_' + wsI
 function lerCache(chave) { try { const v = JSON.parse(localStorage.getItem(chave) || 'null'); return v && Date.now() - v.t < CACHE_ACESSO_MS ? v.dados : null; } catch { return null; } }
 function gravarCache(chave, dados) { try { localStorage.setItem(chave, JSON.stringify({ t: Date.now(), dados })); } catch {} }
 
-// Nível do plano para liberar as telas: 1 Básico, 2 Intermediário, 3 Completo, 4 Ilimitado (teste grátis usa tudo)
+// Nível do plano para liberar as telas: 1 Básico, 2 Intermediário, 3 Completo, 4 Escritório (teste grátis usa tudo)
 const NIVEIS = { basic: 1, intermediate: 2, complete: 3, unlimited: 4 };
 function nivelPlano(a) {
   // quem assinou durante o teste grátis (status "trialing") continua com tudo liberado até o teste acabar
@@ -139,7 +139,7 @@ export default function DashboardPage() {
     try { localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName || '', email: user.email || '' })); } catch {}
     window.getAuthToken = () => user.getIdToken();
     window.maxcfoSair = async () => { await salvarAgora(); await logout(); };
-    const nomesPlano = { basic: 'Plano Básico', intermediate: 'Plano Intermediário', complete: 'Plano Completo', unlimited: 'Plano Ilimitado' };
+    const nomesPlano = { basic: 'Plano Básico', intermediate: 'Plano Intermediário', complete: 'Plano Completo', unlimited: 'Plano Escritório' };
     window.maxcfoPlano = nivelPlano(acesso);
     window.maxcfoAdmin = acesso.motivo === 'admin';
     window.maxcfoPlanoTexto = acesso.motivo === 'teste' ? `Teste grátis · ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia' : 'dias'}`
@@ -281,7 +281,7 @@ export default function DashboardPage() {
     })));
 
     // Empresas do mesmo login (BPO, grupo de empresas). A principal usa o uid; as demais, "<uid>__<id>".
-    const LIMITES = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
+    const LIMITES = { basic: 1, intermediate: 3, complete: 10, unlimited: 30 };
     const limiteEmpresas = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(LIMITES[acesso.plano] || 1, 3) : (LIMITES[acesso.plano] || 1))
       : acesso.motivo === 'teste' ? 3 : 9999; // admin e modo de configuração
     const chaveAtiva = 'maxcfo_empresa_' + user.uid;
@@ -409,7 +409,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!acesso?.acesso || !window.maxcfoEmpresas) return;
-    const LIM = { basic: 1, intermediate: 3, complete: 10, unlimited: 9999 };
+    const LIM = { basic: 1, intermediate: 3, complete: 10, unlimited: 30 };
     window.maxcfoEmpresas.limite = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(LIM[acesso.plano] || 1, 3) : (LIM[acesso.plano] || 1)) : acesso.motivo === 'teste' ? 3 : 9999;
     window.maxcfoEmpresas.plano = acesso.plano || null; window.maxcfoEmpresas.motivo = acesso.motivo;
     const antes = window.maxcfoPlano && window.maxcfoPlano.nivel;

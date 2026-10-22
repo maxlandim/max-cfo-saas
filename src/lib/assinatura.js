@@ -47,6 +47,8 @@ export async function gravarAssinatura(uid, subscription, extra = {}) {
       // Versões novas da API do Stripe trazem o fim do período em cada item da assinatura
       currentPeriodEnd: (() => { const f = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end; return f ? new Date(f * 1000).toISOString() : null; })(),
       cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      fundador: subscription.metadata?.fundador === '1',
+      periodo: subscription.metadata?.periodo || 'mensal',
       updatedAt: new Date().toISOString(),
       ...extra,
     },

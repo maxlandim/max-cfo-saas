@@ -116,7 +116,7 @@ export default function ConsultoriaPage() {
           <div className="cs-sistema">
             <h2>Consultoria com sistema próprio</h2>
             <p>Os nossos clientes de consultoria têm o financeiro organizado na plataforma Landim Advisory: caixa de cada banco, contas a pagar e a receber, fluxo de caixa e o relatório mensal em PDF. Você consulta tudo pelo computador ou pelo celular, com o seu login.</p>
-            <p>Prefere fazer você mesmo? O sistema também é vendido sozinho, a partir de R$ 49,90 por mês.</p>
+            <p>Prefere fazer você mesmo? O sistema também é vendido sozinho, com planos a partir de R$ 79,90 por mês.</p>
             <Link href="/" className="cs-btn cs-btn-escuro">Conhecer o sistema</Link>
           </div>
           <div className="cs-faq">

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CardsPlanos, INCLUSO, ESTILO_PLANOS } from './components/Planos';
+import { CardsPlanos, INCLUSO, ESTILO_PLANOS, useFundadores } from './components/Planos';
 
 const WHATS = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Quero saber mais sobre a Landim Advisory.');
 
@@ -25,9 +25,11 @@ const FAQ = [
   { q: 'Serve para quem faz BPO financeiro?', a: 'Sim. Você cuida de várias empresas no mesmo login, com os dados de cada uma separados, vê o caixa e os atrasados de todas num painel e gera o relatório mensal de cada cliente com a sua marca.' },
   { q: 'O sistema emite nota fiscal?', a: 'Ainda não. Você emite a NFS-e no Emissor Nacional e registra a nota na Landim Advisory, que cria a conta a receber e soma o faturamento dos últimos 12 meses.' },
   { q: 'Onde ficam os meus dados?', a: 'Na nuvem do Google (Firebase), separados por login e por empresa. Só quem entra com a sua conta vê os dados. Você pode baixar um backup completo quando quiser.' },
-  { q: 'Meu contador pode acessar?', a: 'Sim, no plano Completo ou Ilimitado. Em Equipe e acessos você libera o e-mail do contador ou do cliente. Ele entra com login e senha próprios e vê os números da empresa em modo somente leitura.' },
+  { q: 'Meu contador pode acessar?', a: 'Sim, no plano Completo ou Escritório. Em Equipe e acessos você libera o e-mail do contador ou do cliente. Ele entra com login e senha próprios e vê os números da empresa em modo somente leitura.' },
   { q: 'Já uso planilha. Perco o que tenho?', a: 'Não. Você importa as contas a pagar e a receber direto do Excel ou CSV, e o extrato do banco em OFX ou CSV.' },
   { q: 'Vocês também fazem o financeiro por mim?', a: 'Sim. Além do sistema, a Landim Advisory oferece BPO financeiro, diagnóstico, controladoria e planejamento tributário. Veja a página de consultoria.' },
+  { q: 'Tem desconto no plano anual?', a: 'Sim. No plano anual você paga 10 mensalidades e usa os 12 meses, ou seja, ganha 2 meses.' },
+  { q: 'O que é o preço de fundador?', a: 'Os primeiros assinantes pagam um preço menor nos 12 primeiros meses. O site mostra quantas vagas ainda restam. Depois desse período, vale o preço normal do plano.' },
   { q: 'Posso mudar de plano depois?', a: 'Sim, quando quiser. Seus lançamentos continuam e os recursos do novo plano liberam na hora.' },
   { q: 'Posso cancelar quando quiser?', a: 'Sim, sem multa e sem fidelidade. O acesso continua até o fim do período já pago.' },
 ];
@@ -35,6 +37,7 @@ const FAQ = [
 export default function LandingPage() {
   const router = useRouter();
   const [aberta, setAberta] = useState(0);
+  const vagas = useFundadores();
 
   return (
     <div className="lp">
@@ -67,7 +70,7 @@ export default function LandingPage() {
               <Link href="/register" className="lp-btn lp-btn-p">Testar grátis por 7 dias</Link>
               <a href={WHATS} target="_blank" rel="noopener" className="lp-btn lp-btn-s">Falar no WhatsApp</a>
             </div>
-            <div className="lp-garantias"><span>✓ Sem cartão para testar</span><span>✓ Cancele quando quiser</span><span>✓ A partir de R$ 49,90/mês</span></div>
+            <div className="lp-garantias"><span>✓ Sem cartão para testar</span><span>✓ Cancele quando quiser</span><span>✓ {vagas > 0 ? 'Preço de fundador: a partir de R$ 49,90/mês' : 'A partir de R$ 79,90/mês'}</span></div>
           </div>
           <div className="lp-hero-tela" aria-label="Exemplo da tela inicial do sistema">
             <div className="lp-janela">

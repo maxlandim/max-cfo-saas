@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
-import { PLANOS, DIAS_DE_TESTE } from '../../../lib/plans';
+import { PLANOS, DIAS_DE_TESTE, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../lib/plans';
+import { vagasFundador } from '../../../lib/fundadores';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,8 @@ export async function POST(req) {
   try { body = await req.json(); } catch {}
   const planId = PLANOS[body.planId] ? body.planId : 'basic';
   const plano = PLANOS[planId];
+  const anual = body.periodo === 'anual';
+  const meses = anual ? MESES_PAGOS_NO_ANUAL : 1;
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || `https://${req.headers.get('host')}`;
 
@@ -36,6 +39,22 @@ export async function POST(req) {
   } catch (e) { console.warn('Não consegui calcular o fim do teste:', e.message); }
   const dataBR = (ms) => new Date(ms).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
+  // Preço de fundador: enquanto houver vaga, um cupom do Stripe tira a diferença por FUNDADOR.meses
+  let cupom = null;
+  try {
+    if ((await vagasFundador({ semCache: true })) > 0 && plano.fundador < plano.valor) {
+      const id = `fundador-${planId}-${anual ? 'anual' : 'mensal'}-v1`;
+      cupom = await stripe.coupons.retrieve(id).catch(() => null);
+      if (!cupom) {
+        cupom = await stripe.coupons.create({
+          id, name: `Preço de fundador (${FUNDADOR.meses} meses)`, currency: 'brl',
+          amount_off: (plano.valor - plano.fundador) * meses, duration: 'repeating', duration_in_months: FUNDADOR.meses,
+        });
+      }
+    }
+  } catch (e) { console.warn('Cupom de fundador:', e.message); cupom = null; }
+  const meta = { uid: user.uid, planId, periodo: anual ? 'anual' : 'mensal', ...(cupom ? { fundador: '1' } : {}) };
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -44,20 +63,21 @@ export async function POST(req) {
         {
           price_data: {
             currency: 'brl',
-            product_data: { name: plano.nome, images: [`${origin}/icon-512.png`] },
-            unit_amount: plano.valor,
-            recurring: { interval: 'month' },
+            product_data: { name: plano.nome + (anual ? ' (anual)' : ''), images: [`${origin}/icon-512.png`] },
+            unit_amount: plano.valor * meses,
+            recurring: { interval: anual ? 'year' : 'month' },
           },
           quantity: 1,
         },
       ],
       client_reference_id: user.uid,
       customer_email: user.email || undefined,
-      metadata: { uid: user.uid, planId },
-      subscription_data: { metadata: { uid: user.uid, planId }, ...(fimTeste ? { trial_end: Math.floor(fimTeste / 1000) } : {}) },
+      metadata: meta,
+      subscription_data: { metadata: meta, ...(fimTeste ? { trial_end: Math.floor(fimTeste / 1000) } : {}) },
       payment_method_collection: 'always',
       ...(fimTeste ? { custom_text: { submit: { message: `Você continua no teste grátis. A primeira cobrança será em ${dataBR(fimTeste)}, e você pode cancelar antes sem pagar nada.` } } } : {}),
-      allow_promotion_codes: true,
+      // o Stripe não aceita cupom automático junto com o campo de código promocional
+      ...(cupom ? { discounts: [{ coupon: cupom.id }] } : { allow_promotion_codes: true }),
       locale: 'pt-BR',
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/pricing`,
