@@ -71,6 +71,18 @@ async def painel(b):
             await pg.wait_for_timeout(500)
         await pg.wait_for_timeout(1500)
         if await pg.is_visible('#layBoasVindas'): await pg.click('#layBoasVindas >> text=Pular'); await pg.wait_for_timeout(400)
+        # Tutorial: abre sozinho no Início depois das boas-vindas
+        for _ in range(16):
+            if await pg.is_visible('#tutCard'): break
+            await pg.wait_for_timeout(500)
+        log(await pg.is_visible('#tutCard'), 'tutorial do Início abre sozinho', (await pg.inner_text('#tutCard'))[:80] if await pg.is_visible('#tutCard') else '')
+        await pg.screenshot(path=f'{OUT}/novos_tutorial.png')
+        if await pg.is_visible('#tutCard'):
+            await pg.click('#tutProximo'); await pg.wait_for_timeout(300)
+            log('2/' in (await pg.inner_text('#tutCard')) or await pg.is_visible('#tutCard'), 'tutorial avança para o próximo passo')
+            await pg.keyboard.press('Escape'); await pg.wait_for_timeout(300)
+        await pg.evaluate("localStorage.setItem('maxcfo_tutorial_off','1')")
+        log(await pg.is_visible('#tutBotao'), 'botão ❔ de tutorial no topo')
         log(await pg.evaluate("[...document.querySelectorAll('img')].some(i=>i.src.includes('/logo.svg') && i.naturalWidth>0)"), 'logo no menu do painel')
         # Importação de Excel
         await pg.evaluate("switchView('pagar')"); await pg.wait_for_timeout(500)

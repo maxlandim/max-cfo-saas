@@ -41,6 +41,7 @@ async def main():
         async with async_playwright() as p:
             b = await p.chromium.launch()
             ctx = await b.new_context(viewport={'width': 1366, 'height': 900}, locale='pt-BR')
+            await ctx.add_init_script("try{localStorage.setItem('maxcfo_tutorial_off','1')}catch(e){}")  # o tutorial é testado em novos.py
             pg = await ctx.new_page()
             pg.on('console', lambda m: rel['console'].append([m.type, m.text[:300]]) if m.type in ('error', 'warning') else None)
             pg.on('pageerror', lambda e: rel['console'].append(['pageerror', str(e)[:500]]))
