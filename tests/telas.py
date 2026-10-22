@@ -7,7 +7,7 @@ async def main():
         b = await p.chromium.launch()
         for nome, vp in [('pc', {'width': 1366, 'height': 900}), ('cel', {'width': 390, 'height': 844})]:
             pg = await b.new_page(viewport=vp); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
-            for rota in ['/', '/pricing', '/login']:
+            for rota in ['/', '/pricing', '/consultoria', '/login']:
                 await pg.goto(SITE + rota, wait_until='networkidle'); await pg.wait_for_timeout(600)
                 w = await pg.evaluate('document.documentElement.scrollWidth')
                 txt = await pg.inner_text('body')

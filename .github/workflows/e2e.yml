@@ -15,7 +15,7 @@ jobs:
         with: { python-version: '3.12' }
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
-      - run: pip install playwright==1.47.0 && python -m playwright install --with-deps chromium
+      - run: pip install playwright==1.47.0 openpyxl && python -m playwright install --with-deps chromium
       # Se tests/alvo.txt tiver o nome de um branch, testa esse código rodando localmente (antes de publicar)
       - id: alvo
         run: echo "ref=$(cat tests/alvo.txt 2>/dev/null | tr -d '[:space:]')" >> $GITHUB_OUTPUT
@@ -51,6 +51,9 @@ jobs:
         working-directory: tests
         continue-on-error: true
       - run: python telas.py 2>&1 | tee -a saida_log.txt
+        working-directory: tests
+        continue-on-error: true
+      - run: python novos.py 2>&1 | tee -a saida_log.txt
         working-directory: tests
         continue-on-error: true
       - name: Publica o resultado no branch resultado-e2e
