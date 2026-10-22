@@ -69,7 +69,7 @@
       (podeCriar
         ? '<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px"><div class="form-grid"><div class="form-field"><label class="form-label" for="empCnpj">CNPJ</label><input class="form-input" id="empCnpj" placeholder="Busca o nome na Receita" maxlength="18"></div><div class="form-field"><label class="form-label" for="empNome">Nome da empresa *</label><input class="form-input" id="empNome" maxlength="80"></div></div>' +
           '<button class="btn-primary" style="margin-top:10px" id="empCriarBtn" onclick="empresas.criar()">+ Adicionar empresa</button></div>'
-        : '<div class="fin-alerta gold" style="margin-top:14px">Seu plano permite ' + e.limite + (e.limite === 1 ? ' empresa' : ' empresas') + '. Para atender mais clientes, <a class="link-go" href="/pricing">mude de plano</a>.</div>') +
+        : '<div class="fin-alerta gold" style="margin-top:14px">Seu plano permite ' + e.limite + (e.limite === 1 ? ' empresa' : ' empresas') + '. ' + (e.limite >= 30 && e.limite < 9999 ? 'Para mais de 30 empresas, <a class="link-go" href="https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Preciso de mais de 30 empresas na Landim Advisory.') + '" target="_blank" rel="noopener">fale com a gente no WhatsApp</a>.' : 'Para atender mais clientes, <a class="link-go" href="/pricing">mude de plano</a>.') + '</div>') +
       (window.acessos ? window.acessos.secaoSeletor() : '') +
       '</div><div class="modal-foot"><button class="btn-ghost" onclick="closeModal(\'empModal\')">Fechar</button><button class="btn-secondary" onclick="closeModal(\'empModal\');switchView(\'bpo\')">Ver painel de todas</button></div></div>';
     if (window.openModalEl) window.openModalEl('empModal');

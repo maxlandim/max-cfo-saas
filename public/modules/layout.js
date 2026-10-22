@@ -39,10 +39,10 @@
   function moduloDe(id) { var m = null; SECOES.forEach(function (s) { s[2].forEach(function (i) { if (i[0] === id) m = s; }); }); return m; }
   var aberto = null, verMais = {};
 
-  // ── Planos: o que cada nível libera (1 Básico, 2 Intermediário, 3 Completo, 4 Ilimitado) ──
+  // ── Planos: o que cada nível libera (1 Básico, 2 Intermediário, 3 Completo, 4 Escritório) ──
   var NIVEL_TELA = { budget: 2, os: 2, plans: 2, crm: 2, commissions: 2, inventory: 2, nfe: 2, 'tax-audit': 2, accountant: 2, reports: 2, companies: 2,
     chat: 3, simulator: 3, tributario: 3, bpo: 3, hr: 3, assets: 3, team: 3, audit: 3 };
-  var NOME_NIVEL = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4: 'Ilimitado' };
+  var NOME_NIVEL = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4: 'Escritório' };
   function nivelAtual() { var p = window.maxcfoPlano; return p && p.nivel ? p.nivel : 4; }
   function liberado(id) { return (NIVEL_TELA[id] || 1) <= nivelAtual(); }
   function oferta(nivel, oque) {
@@ -105,7 +105,7 @@
         '<div class="lay-mod-itens">' + on.map(function (i) { return item(i, true); }).join('') +
         (off.length ? (verMais[sec[0]] ? off.map(function (i) { return item(i, true); }).join('') + '<button class="lay-vermais" data-mais="' + esc(sec[0]) + '">Mostrar menos</button>' : '<button class="lay-vermais" data-mais="' + esc(sec[0]) + '">+ ' + off.length + ' outra' + (off.length > 1 ? 's' : '') + '</button>') : '') + '</div></div>';
     });
-    html += '<button class="lay-btn-menu" onclick="layout.personalizar()">Personalizar menu</button>' + (window.maxcfoSair ? '<button class="lay-btn-menu" style="border-style:solid" onclick="if(confirm(\'Sair da sua conta neste aparelho?\'))window.maxcfoSair()">Sair da conta</button>' : '');
+    html += (window.maxcfoAdmin ? '<a class="lay-btn-menu" style="display:block;text-align:center;text-decoration:none;border-style:solid;border-color:var(--gold-border);color:var(--gold)" href="/admin">📊 Painel do administrador</a>' : '') + '<button class="lay-btn-menu" onclick="layout.personalizar()">Personalizar menu</button>' + (window.maxcfoSair ? '<button class="lay-btn-menu" style="border-style:solid" onclick="if(confirm(\'Sair da sua conta neste aparelho?\'))window.maxcfoSair()">Sair da conta</button>' : '');
     nav.innerHTML = html;
     nav.querySelectorAll('.nav-item').forEach(function (a) { a.addEventListener('click', function () { window.switchView(a.dataset.view); }); });
     nav.querySelectorAll('.lay-mod-h').forEach(function (h) {
