@@ -130,7 +130,7 @@
       (sessao.duplicada ? '<div class="fin-alerta red">⚠️ Esta nota já deu entrada no estoque em ' + F().dataBR(String(sessao.duplicada.em).slice(0, 10)) + '. Confirmar de novo vai somar as quantidades outra vez.</div>' : '') +
       (sessao.propria ? '<div class="fin-alerta red">⚠️ Esta nota foi emitida pela sua própria empresa (é uma venda). A entrada de estoque é para notas de compra.</div>' : '') +
       '<div class="fin-kpis" style="margin:4px 0 12px">' +
-      '<div class="fin-kpi2"><div class="v" style="font-size:16px">' + esc(n.fornecedor || '—') + '</div><div class="l">Fornecedor' + (n.cnpj ? ' · ' + esc(n.cnpj) : '') + '</div></div>' +
+      '<div class="fin-kpi2"><div class="v" style="font-size:16px">' + esc(n.fornecedor || '—') + '</div><div class="l">Fornecedor' + (n.cnpj ? ' · ' + esc(n.cnpj.length === 14 ? n.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : n.cnpj) : '') + '</div></div>' +
       '<div class="fin-kpi2"><div class="v" style="font-size:16px">NF ' + esc(n.numero || '—') + (n.serie ? '/' + esc(n.serie) : '') + '</div><div class="l">Emissão ' + F().dataBR(n.dataEmissao) + '</div></div>' +
       '<div class="fin-kpi2"><div class="v" style="font-size:16px;color:var(--gold)">' + moeda(sessao.total) + '</div><div class="l">Total da nota · ' + n.itens.length + ' itens</div></div>' +
       '</div>' +
