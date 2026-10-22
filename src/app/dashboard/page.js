@@ -141,6 +141,7 @@ export default function DashboardPage() {
     window.maxcfoSair = async () => { await salvarAgora(); await logout(); };
     const nomesPlano = { basic: 'Plano Básico', intermediate: 'Plano Intermediário', complete: 'Plano Completo', unlimited: 'Plano Ilimitado' };
     window.maxcfoPlano = nivelPlano(acesso);
+    window.maxcfoAdmin = acesso.motivo === 'admin';
     window.maxcfoPlanoTexto = acesso.motivo === 'teste' ? `Teste grátis · ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia' : 'dias'}`
       : acesso.motivo === 'admin' ? 'Administrador'
       : acesso.motivo === 'assinatura' ? (nomesPlano[acesso.plano] || 'Assinante')

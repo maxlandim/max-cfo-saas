@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, getAdditionalUserInfo } from 'firebase/auth';
+import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -64,7 +65,7 @@ export default function LoginPage() {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
       localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName, email: user.email }));
-      
+      if (getAdditionalUserInfo(userCredential)?.isNewUser) registrarCadastro();
       router.push('/dashboard');
     } catch (err) {
       console.error(err);

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
 
 export default function RegisterPage() {
@@ -28,6 +29,7 @@ export default function RegisterPage() {
         const user = userCredential.user;
         await updateProfile(user, { displayName: name });
         localStorage.setItem('maxcfo_user', JSON.stringify({ name, email, documento }));
+        registrarCadastro();
         
         router.push('/dashboard');
       } catch (err) {
@@ -54,6 +56,7 @@ export default function RegisterPage() {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
       localStorage.setItem('maxcfo_user', JSON.stringify({ name: user.displayName, email: user.email }));
+      if (getAdditionalUserInfo(userCredential)?.isNewUser) registrarCadastro();
       
       router.push('/dashboard');
     } catch (err) {
