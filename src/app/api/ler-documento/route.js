@@ -34,12 +34,15 @@ export async function POST(request) {
     let tipo = String(body.tipo || '').toLowerCase().replace('image/jpg', 'image/jpeg').replace('application/x-pdf', 'application/pdf');
     if (pelaAssinatura) tipo = pelaAssinatura;
     if (!TIPOS.includes(tipo)) return NextResponse.json({ error: 'Use foto (JPG, PNG) ou PDF.' }, { status: 400 });
-    const textoPdf = String(body.texto || '').slice(0, 20000);
+    const modoItens = body.modo === 'itens'; // nota de compra: lista os produtos para dar entrada no estoque
+    const textoPdf = String(body.texto || '').slice(0, modoItens ? 45000 : 20000);
     if (arquivo.length * 0.75 > LIMITE_BYTES) return NextResponse.json({ error: 'O arquivo precisa ter até 3 MB.' }, { status: 413 });
 
     const cats = body.categorias && typeof body.categorias === 'object' ? body.categorias : {};
     const lista = (k) => (Array.isArray(cats[k]) ? cats[k].slice(0, 40).map((c) => String(c).slice(0, 60)) : []);
     const hoje = new Date().toISOString().slice(0, 10);
+
+    if (modoItens) return await lerItens(arquivo, tipo, textoPdf);
 
     const prompt = `Você lê documentos financeiros brasileiros (boleto, nota fiscal, NFS-e, DANFE, recibo, comprovante de Pix, fatura, conta de consumo).
 Hoje é ${hoje}. Extraia os dados e responda SOMENTE com um JSON neste formato:
@@ -109,4 +112,69 @@ ${textoPdf}
     console.error('Erro ao ler documento:', e);
     return NextResponse.json({ error: 'Não foi possível ler o documento agora. Tente de novo.' }, { status: 500 });
   }
+}
+
+// ── Nota fiscal de compra (DANFE): fornecedor, parcelas e itens para a entrada no estoque ──
+function erroIA(e, tipo) {
+  const msg = String((e && e.message) || '');
+  const codigo = Number(e && e.status) || Number((msg.match(/\[(\d{3})\b/) || [])[1]) || 0;
+  const detalhe = msg.replace(/key=[^&\s]+/gi, 'key=***').slice(0, 300);
+  if (codigo === 401 || codigo === 403 || /API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)) return NextResponse.json({ error: 'A chave da IA no servidor não é válida.', detalhe }, { status: 503 });
+  if (codigo === 429 || /RESOURCE_EXHAUSTED|\bquota\b|rate limit/i.test(msg)) return NextResponse.json({ error: 'A IA atingiu o limite de uso agora. Tente de novo em 1 minuto.', detalhe }, { status: 429 });
+  if (codigo === 503 || codigo === 500) return NextResponse.json({ error: 'A IA do Google está sobrecarregada agora. Tente de novo em alguns segundos.', detalhe }, { status: 503 });
+  return NextResponse.json({ error: tipo === 'application/pdf' ? 'A IA não conseguiu abrir este PDF.' : 'A IA não conseguiu ler esta imagem. Tente uma foto mais nítida.', detalhe }, { status: 422 });
+}
+
+async function lerItens(arquivo, tipo, textoPdf) {
+  const prompt = `Você lê notas fiscais de compra brasileiras (DANFE da NF-e ou NFC-e). Extraia os dados e responda SOMENTE com um JSON:
+{
+  "fornecedor": "razão social do EMITENTE da nota",
+  "cnpj": "CNPJ ou CPF do emitente, só números",
+  "numero": "número da nota", "serie": "série",
+  "chave": "chave de acesso de 44 dígitos, só números",
+  "dataEmissao": "AAAA-MM-DD",
+  "valorProdutos": número (total dos produtos),
+  "frete": número, "seguro": número, "desconto": número, "outras": número, "ipi": número, "icmsST": número,
+  "valorTotal": número (valor total da nota),
+  "parcelas": [ { "numero": "001", "vencimento": "AAAA-MM-DD", "valor": número } ] (da seção Fatura/Duplicatas; [] se não houver),
+  "itens": [ { "codigo": "código do produto", "descricao": "descrição completa", "ncm": "só números", "unidade": "UN, CX, KG…", "quantidade": número, "valorUnitario": número, "valorTotal": número, "desconto": número } ]
+}
+Regras: liste TODOS os itens da tabela "Dados dos produtos/serviços", na ordem, em todas as páginas. Números com ponto decimal (1.234,56 vira 1234.56).
+Quantidade e valor unitário exatamente como na nota (podem ter até 4 casas). Não invente: campo ilegível fica "" ou 0.${textoPdf ? `
+
+Texto extraído do PDF (use para conferir códigos, quantidades e valores):
+---
+${textoPdf}
+---` : ''}`;
+  let texto;
+  try {
+    texto = await comModelos(async (nome) => {
+      const model = genAI.getGenerativeModel({ model: nome, generationConfig: { responseMimeType: 'application/json', temperature: 0, maxOutputTokens: 16384 } });
+      const result = await model.generateContent([{ inlineData: { data: arquivo, mimeType: tipo } }, { text: prompt }]);
+      return result.response.text();
+    });
+  } catch (e) {
+    console.error('Gemini (itens) recusou o arquivo:', tipo, e && e.message);
+    return erroIA(e, tipo);
+  }
+  let d;
+  try { d = JSON.parse(texto.replace(/^```json\s*|\s*```$/g, '')); } catch { return NextResponse.json({ error: 'Não consegui entender a nota. Se tiver o XML, use ele: é exato.' }, { status: 422 }); }
+  const n = (v) => { const x = typeof v === 'string' && v.includes(',') ? Number(v.replace(/\./g, '').replace(',', '.')) : Number(v); return Number.isFinite(x) && x > 0 ? Math.round(x * 10000) / 10000 : 0; };
+  const r2 = (v) => Math.round(n(v) * 100) / 100;
+  const data = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+  const txt = (v, m) => String(v == null ? '' : v).trim().slice(0, m);
+  const itens = (Array.isArray(d.itens) ? d.itens : []).slice(0, 300).map((i) => {
+    const qtd = n(i.quantidade), vu = n(i.valorUnitario), vt = r2(i.valorTotal) || r2(qtd * vu);
+    return { codigo: txt(i.codigo, 40), descricao: txt(i.descricao, 120), ncm: txt(i.ncm, 10).replace(/\D/g, ''), unidade: txt(i.unidade, 8).toUpperCase(), quantidade: qtd, valorUnitario: vu || (qtd ? Math.round(vt / qtd * 10000) / 10000 : 0), valorTotal: vt, desconto: r2(i.desconto) };
+  }).filter((i) => i.descricao && i.quantidade > 0);
+  if (!itens.length) return NextResponse.json({ error: 'Não encontrei os produtos nessa nota. Confira se é o DANFE (nota de produtos) ou use o XML.' }, { status: 422 });
+  return NextResponse.json({
+    nota: {
+      fornecedor: txt(d.fornecedor, 80), cnpj: txt(d.cnpj, 20).replace(/\D/g, ''), numero: txt(d.numero, 20), serie: txt(d.serie, 5),
+      chave: txt(d.chave, 60).replace(/\D/g, '').slice(0, 44), dataEmissao: data(d.dataEmissao),
+      valorProdutos: r2(d.valorProdutos), frete: r2(d.frete), seguro: r2(d.seguro), desconto: r2(d.desconto), outras: r2(d.outras), ipi: r2(d.ipi), icmsST: r2(d.icmsST), valorTotal: r2(d.valorTotal),
+      parcelas: (Array.isArray(d.parcelas) ? d.parcelas : []).slice(0, 36).map((p) => ({ numero: txt(p.numero, 10), vencimento: data(p.vencimento), valor: r2(p.valor) })).filter((p) => p.valor > 0),
+      itens, origem: 'ia',
+    },
+  });
 }
