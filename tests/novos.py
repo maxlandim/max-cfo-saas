@@ -43,18 +43,26 @@ def resumo_exemplo():
         {'email': 'admin@x.com', 'nome': 'Admin', 'criadoEm': iso(-40), 'ultimoLogin': iso(0), 'ultimaAlteracao': iso(0), 'empresas': 2, 'emailConfirmado': True, 'provedor': 'google.com', 'fimTeste': iso(-33), 'situacao': 'admin', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': False},
         {'email': 'ana@padaria.com', 'nome': 'Ana', 'criadoEm': iso(-2), 'ultimoLogin': iso(0), 'ultimaAlteracao': iso(0), 'empresas': 1, 'emailConfirmado': True, 'provedor': 'password', 'fimTeste': iso(5), 'situacao': 'teste', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': False},
         {'email': 'bruno@oficina.com', 'nome': 'Bruno', 'criadoEm': iso(-6), 'ultimoLogin': iso(-1), 'ultimaAlteracao': iso(-1), 'empresas': 1, 'emailConfirmado': False, 'provedor': 'password', 'fimTeste': iso(1), 'situacao': 'teste_com_cartao', 'plano': 'basic', 'status': 'trialing', 'renovaEm': iso(1), 'cancelaNoFim': False, 'robo': False},
-        {'email': 'carla@clinica.com', 'nome': 'Carla', 'criadoEm': iso(-20), 'ultimoLogin': iso(-3), 'ultimaAlteracao': iso(-3), 'empresas': 3, 'emailConfirmado': True, 'provedor': 'password', 'fimTeste': iso(-13), 'situacao': 'assinante', 'plano': 'intermediate', 'status': 'active', 'renovaEm': iso(10), 'cancelaNoFim': False, 'robo': False},
-        {'email': 'dani@bpo.com', 'nome': 'Dani', 'criadoEm': iso(-25), 'ultimoLogin': iso(-12), 'ultimaAlteracao': iso(-12), 'empresas': 8, 'emailConfirmado': True, 'provedor': 'google.com', 'fimTeste': iso(-18), 'situacao': 'assinante', 'plano': 'complete', 'status': 'active', 'renovaEm': iso(5), 'cancelaNoFim': True, 'robo': False},
+        {'email': 'carla@clinica.com', 'nome': 'Carla', 'criadoEm': iso(-20), 'ultimoLogin': iso(-3), 'ultimaAlteracao': iso(-3), 'empresas': 3, 'emailConfirmado': True, 'provedor': 'password', 'fimTeste': iso(-13), 'situacao': 'assinante', 'plano': 'intermediate', 'status': 'active', 'renovaEm': iso(10), 'cancelaNoFim': False, 'robo': False, 'valorMensal': 129.9, 'fundador': True, 'periodo': 'mensal'},
+        {'email': 'dani@bpo.com', 'nome': 'Dani', 'criadoEm': iso(-25), 'ultimoLogin': iso(-12), 'ultimaAlteracao': iso(-12), 'empresas': 8, 'emailConfirmado': True, 'provedor': 'google.com', 'fimTeste': iso(-18), 'situacao': 'assinante', 'plano': 'complete', 'status': 'active', 'renovaEm': iso(5), 'cancelaNoFim': True, 'robo': False, 'valorMensal': 269.9, 'fundador': True, 'periodo': 'mensal'},
         {'email': 'edu@loja.com', 'nome': '', 'criadoEm': iso(-15), 'ultimoLogin': iso(-14), 'ultimaAlteracao': None, 'empresas': 0, 'emailConfirmado': False, 'provedor': 'password', 'fimTeste': iso(-8), 'situacao': 'teste_acabou', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': False},
         {'email': 'robo.teste.x@exemplo.com', 'nome': '', 'criadoEm': iso(0), 'ultimoLogin': iso(0), 'ultimaAlteracao': None, 'empresas': 1, 'emailConfirmado': False, 'provedor': 'password', 'fimTeste': iso(7), 'situacao': 'teste', 'plano': None, 'status': None, 'renovaEm': None, 'cancelaNoFim': False, 'robo': True},
     ]
-    return {'geradoEm': datetime.now(timezone.utc).isoformat(), 'hoje': hoje.isoformat(), 'contas': contas, 'dias': dias, 'precos': {'basic': 49.9, 'intermediate': 129.9, 'complete': 269.9, 'unlimited': 299.9}, 'diasDeTeste': 7}
+    return {'geradoEm': datetime.now(timezone.utc).isoformat(), 'hoje': hoje.isoformat(), 'contas': contas, 'dias': dias, 'precos': {'basic': 79.9, 'intermediate': 149.9, 'complete': 349.9, 'unlimited': 599.9}, 'diasDeTeste': 7, 'fundador': {'usados': 2, 'vagas': 50}}
 
 async def publicas(b):
     pg = await b.new_page(viewport={'width': 1366, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     await pg.goto(SITE + '/', wait_until='networkidle')
     log(await pg.locator('a[href="/consultoria"]').count() >= 2, 'página inicial tem links para a consultoria')
     log(await pg.evaluate("[...document.images].some(i=>i.src.endsWith('/logo.svg') && i.naturalWidth>0)"), 'logo aparece na página inicial')
+    await pg.goto(SITE + '/pricing', wait_until='networkidle'); await pg.wait_for_timeout(800)
+    t = (await pg.inner_text('.pl')).replace('\xa0', ' ')
+    log('Escritório' in t and 'Até 30 empresas' in t, 'plano Escritório com até 30 empresas')
+    log(('49,90' in t and 'Preço de fundador' in t) or ('79,90' in t and 'Preço de fundador' not in t), 'preço do Básico (fundador 49,90 ou normal 79,90)', t[:160])
+    await pg.click('.pl-periodo button:has-text("Anual")'); await pg.wait_for_timeout(300)
+    t2 = (await pg.inner_text('.pl')).replace('\xa0', ' ')
+    log('/ano' in t2 and ('499,00' in t2 or '799,00' in t2), 'plano anual = 10 mensalidades', t2[:160])
+    await pg.screenshot(path=f'{OUT}/planos_anual.png', full_page=True)
     await pg.goto(SITE + '/consultoria', wait_until='networkidle')
     txt = await pg.inner_text('body')
     log(all(x in txt for x in ['BPO financeiro', 'diagnóstico financeiro', 'controladoria', 'Planejamento tributário']), 'consultoria lista os serviços')
