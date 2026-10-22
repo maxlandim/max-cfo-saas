@@ -75,10 +75,13 @@ export async function POST(req) {
     // Pix ou boleto: pagamento único de 1 mês (ou 12 meses pelo preço de 10), sem renovação automática
     const valor = (cupom ? plano.fundador : plano.valor) * meses;
     const inicio = Math.max(Date.now(), fimReal);
+    // No Brasil o Stripe libera o Pix só por convite: se a conta ainda não tiver Pix (ou boleto), abre com o que estiver ativo
+    let ultimoErro = null;
+    for (const tipos of [['pix', 'boleto'], ['boleto'], ['pix']]) {
     try {
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
-        payment_method_types: ['pix', 'boleto'],
+        payment_method_types: tipos,
         line_items: [{
           price_data: {
             currency: 'brl',
@@ -92,18 +95,22 @@ export async function POST(req) {
         metadata: { ...meta, tipo: 'avulso' },
         payment_intent_data: { metadata: { ...meta, tipo: 'avulso' } },
         invoice_creation: { enabled: true, invoice_data: { description: `Acesso ao ${plano.nome} por ${anual ? '12 meses' : '1 mês'}`, metadata: { ...meta, tipo: 'avulso' } } },
-        payment_method_options: { pix: { expires_after_seconds: 3600 }, boleto: { expires_after_days: 3 } },
-        custom_text: { submit: { message: `Pagamento único, sem renovação automática. O acesso vale de ${dataBR(inicio)} até ${dataBR(somarMeses(inicio, anual ? 12 : 1))}. O Pix libera na hora; o boleto, quando o banco confirmar (até 1 dia útil).` } },
+        payment_method_options: { ...(tipos.includes('pix') ? { pix: { expires_after_seconds: 3600 } } : {}), ...(tipos.includes('boleto') ? { boleto: { expires_after_days: 3 } } : {}) },
+        custom_text: { submit: { message: `Pagamento único, sem renovação automática. O acesso vale de ${dataBR(inicio)} até ${dataBR(somarMeses(inicio, anual ? 12 : 1))}.${tipos.includes('pix') ? ' O Pix libera na hora.' : ''}${tipos.includes('boleto') ? ' O boleto libera quando o banco confirmar (até 1 dia útil).' : ''}` } },
         locale: 'pt-BR',
         success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/pricing`,
       });
-      return NextResponse.json({ url: session.url });
+      return NextResponse.json({ url: session.url, tipos });
     } catch (err) {
-      console.error('Erro no checkout Pix/boleto do Stripe:', err);
-      const desligado = /payment method type|pix|boleto/i.test(err?.message || '');
-      return NextResponse.json({ error: desligado ? 'Pix e boleto ainda não estão liberados. Use o cartão ou fale com o suporte no WhatsApp.' : 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.' }, { status: 500 });
+      ultimoErro = err;
+      // só tenta a próxima combinação quando o erro é de forma de pagamento não ativada
+      if (!/payment method|payment_method_types|pix|boleto/i.test(err?.message || '')) break;
     }
+    }
+    console.error('Erro no checkout Pix/boleto do Stripe:', ultimoErro);
+    const desligado = /payment method|payment_method_types|pix|boleto/i.test(ultimoErro?.message || '');
+    return NextResponse.json({ error: desligado ? 'Pix e boleto ainda não estão liberados. Use o cartão ou fale com o suporte no WhatsApp.' : 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.' }, { status: 500 });
   }
 
   try {
