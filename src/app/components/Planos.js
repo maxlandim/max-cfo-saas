@@ -4,11 +4,11 @@
 // Cada plano soma recursos ao anterior e cabe mais empresas no login.
 export const PLANOS_VITRINE = [
   { id: 'basic', nome: 'Básico', preco: '49,90', empresas: '1 empresa', para: 'O financeiro da empresa em ordem.',
-    itens: ['Contas a receber e a pagar', 'Bancos, caixa e cartão', 'Fluxo de caixa de 90 dias', 'DRE e centro de custo', 'Importação do extrato do banco', 'Cobrança por Pix no WhatsApp'] },
+    itens: ['Contas a receber e a pagar', 'Bancos, caixa e cartão', 'Fluxo de caixa de 90 dias', 'DRE e centro de custo', 'Importação do extrato e de planilhas', 'Cobrança por Pix no WhatsApp', 'Lembrete de vencimento por e-mail'] },
   { id: 'intermediate', nome: 'Intermediário', preco: '129,90', empresas: 'Até 3 empresas', para: 'Para quem vende, emite nota e quer automatizar.', antes: 'Tudo do Básico, mais:',
     itens: ['Leitura de boleto e nota com IA', 'Relatório mensal em PDF', 'Orçamentos, ordens de serviço e contratos', 'Funil de vendas, comissões e estoque', 'Notas fiscais e pacote do contador'] },
   { id: 'complete', nome: 'Completo', preco: '269,90', empresas: 'Até 10 empresas', para: 'Para BPO financeiro e escritórios.', destaque: true, antes: 'Tudo do Intermediário, mais:',
-    itens: ['Painel com todas as empresas (BPO)', 'Relatório com a sua marca e logo', 'CFO com IA que responde com os números', 'Simulador de impostos e da reforma', 'Funcionários e folha, bens e equipe', 'Suporte prioritário no WhatsApp'] },
+    itens: ['Indicadores de todas as empresas (BPO)', 'Acesso de consulta para cliente e contador', 'Relatório com a sua marca e logo', 'CFO com IA que responde com os números', 'Simulador de impostos e da reforma', 'Funcionários e folha, bens e equipe', 'Suporte prioritário no WhatsApp'] },
   { id: 'unlimited', nome: 'Ilimitado', preco: '299,90', empresas: 'Empresas ilimitadas', para: 'Para escritórios e grupos com muitas empresas.', antes: 'Tudo do Completo, mais:',
     itens: ['Empresas sem limite', 'Suporte prioritário no WhatsApp'] },
 ];

@@ -17,9 +17,9 @@ window.renderTeam = function() {
     if (!tbody) return;
     // Aviso honesto: o cadastro é interno; o login de outras pessoas na mesma empresa ainda não existe
     const sub = document.querySelector('#view-team .page-subtitle');
-    if (sub) sub.textContent = 'Cadastro interno da equipe e responsáveis. O login próprio de cada membro na mesma empresa chega na próxima versão.';
+    if (sub) sub.textContent = 'Acesso de consulta para o cliente ou o contador e cadastro interno dos responsáveis.';
     const tit = document.querySelector('#view-team h1');
-    if (tit) tit.textContent = 'Equipe';
+    if (tit) tit.textContent = 'Equipe e acessos';
     
     let html = '';
     window.state.team.forEach(member => {
@@ -184,7 +184,7 @@ window.submitTeamMember = function(e) {
     
     if (window.closeModal) window.closeModal('teamModal');
     document.getElementById('teamForm').reset();
-    renderTeam();
+    window.renderTeam();
 };
 
 window.removeTeamMember = function(id) {
@@ -199,5 +199,5 @@ window.removeTeamMember = function(id) {
     window.addAuditEntry(`removeu o usuário ${member.name}`);
     
     if (window.showToast) window.showToast('Usuário removido', 'success');
-    renderTeam();
+    window.renderTeam();
 };

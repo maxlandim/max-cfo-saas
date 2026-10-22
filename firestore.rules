@@ -9,10 +9,19 @@ service cloud.firestore {
         && (wsId == request.auth.uid || wsId.matches(request.auth.uid + '__[a-z0-9]{4,24}'));
     }
 
+    function emailConfirmado() {
+      return request.auth != null && request.auth.token.email != null && request.auth.token.email_verified == true;
+    }
+    function meuEmail(email) {
+      return request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == email;
+    }
+
     match /workspaces/{wsId} {
       // A segunda condição permite ler o espaço antigo, que usava o e-mail como id, para a migração automática.
+      // A terceira libera a consulta (somente leitura) para o cliente ou contador convidado pelo dono, com e-mail confirmado.
       allow read: if donoDoEspaco(wsId)
-        || (request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == wsId);
+        || (request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == wsId)
+        || (emailConfirmado() && exists(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId)));
       allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
       // A empresa principal não pode ser apagada pelo painel
       allow delete: if donoDoEspaco(wsId) && wsId != request.auth.uid;
@@ -21,6 +30,14 @@ service cloud.firestore {
     // Lista de empresas do usuário (nomes e CNPJs), lida e gravada só por ele.
     match /perfis/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Convites de acesso somente leitura: convites/<e-mail convidado>/espacos/<id da empresa>.
+    // Só o dono da empresa cria ou altera; o convidado lê a própria lista e pode recusar (apagar).
+    match /convites/{email}/espacos/{wsId} {
+      allow read: if meuEmail(email) || donoDoEspaco(wsId);
+      allow create, update: if donoDoEspaco(wsId) && request.resource.data.dono == request.auth.uid && request.resource.data.papel == 'leitura';
+      allow delete: if donoDoEspaco(wsId) || meuEmail(email);
     }
 
     // Assinaturas: o usuário pode ler a própria, mas só o servidor (Firebase Admin) escreve.

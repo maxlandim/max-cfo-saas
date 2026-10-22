@@ -14,6 +14,9 @@ const RESOLVE = [
   { icone: '📊', titulo: 'O mês fechado sem planilha', texto: 'Resultado do mês (DRE) calculado dos lançamentos, por categoria e por centro de custo.' },
   { icone: '📄', titulo: 'Relatório em PDF com a sua marca', texto: 'Resumo do mês, gráficos, contas e previsão de caixa num PDF pronto para enviar ao cliente.' },
   { icone: '📷', titulo: 'Boleto lido pela câmera', texto: 'Tire foto do boleto ou da nota: a IA preenche valor, vencimento e fornecedor. Você só confere.' },
+  { icone: '📧', titulo: 'Lembrete automático por e-mail', texto: 'Resumo do dia para você e aviso para o cliente antes do vencimento, com o Pix copia e cola.' },
+  { icone: '📥', titulo: 'Traga a sua planilha', texto: 'Importe contas a pagar e a receber do Excel ou CSV. O sistema reconhece as colunas e evita duplicados.' },
+  { icone: '👁️', titulo: 'Acesso para o contador', texto: 'O cliente ou o contador entra com login próprio e vê os números, sem conseguir alterar nada.' },
 ];
 
 const FAQ = [
@@ -22,6 +25,9 @@ const FAQ = [
   { q: 'Serve para quem faz BPO financeiro?', a: 'Sim. Você cuida de várias empresas no mesmo login, com os dados de cada uma separados, vê o caixa e os atrasados de todas num painel e gera o relatório mensal de cada cliente com a sua marca.' },
   { q: 'O sistema emite nota fiscal?', a: 'Ainda não. Você emite a NFS-e no Emissor Nacional e registra a nota na Landim Advisory, que cria a conta a receber e soma o faturamento dos últimos 12 meses.' },
   { q: 'Onde ficam os meus dados?', a: 'Na nuvem do Google (Firebase), separados por login e por empresa. Só quem entra com a sua conta vê os dados. Você pode baixar um backup completo quando quiser.' },
+  { q: 'Meu contador pode acessar?', a: 'Sim, no plano Completo ou Ilimitado. Em Equipe e acessos você libera o e-mail do contador ou do cliente. Ele entra com login e senha próprios e vê os números da empresa em modo somente leitura.' },
+  { q: 'Já uso planilha. Perco o que tenho?', a: 'Não. Você importa as contas a pagar e a receber direto do Excel ou CSV, e o extrato do banco em OFX ou CSV.' },
+  { q: 'Vocês também fazem o financeiro por mim?', a: 'Sim. Além do sistema, a Landim Advisory oferece BPO financeiro, diagnóstico, controladoria e planejamento tributário. Veja a página de consultoria.' },
   { q: 'Posso mudar de plano depois?', a: 'Sim, quando quiser. Seus lançamentos continuam e os recursos do novo plano liberam na hora.' },
   { q: 'Posso cancelar quando quiser?', a: 'Sim, sem multa e sem fidelidade. O acesso continua até o fim do período já pago.' },
 ];
@@ -36,11 +42,12 @@ export default function LandingPage() {
 
       <header className="lp-topo">
         <div className="lp-cx lp-topo-in">
-          <Link href="/" className="lp-marca"><span className="lp-logo">LA</span>Landim Advisory</Link>
+          <Link href="/" className="lp-marca"><img src="/logo.svg" alt="" className="lp-logo" width="34" height="34" />Landim Advisory</Link>
           <nav className="lp-menu">
             <a href="#como">Como funciona</a>
             <a href="#precos">Preços</a>
             <a href="#duvidas">Dúvidas</a>
+            <Link href="/consultoria">Consultoria</Link>
           </nav>
           <div className="lp-topo-acoes">
             <Link href="/login" className="lp-entrar">Entrar</Link>
@@ -118,6 +125,7 @@ export default function LandingPage() {
               <li>Cobre clientes atrasados em um clique</li>
               <li>Mande para o contador o pacote do mês pronto</li>
               <li>Simule impostos e veja o efeito da reforma tributária</li>
+              <li>Receba todo dia o resumo do que vence</li>
             </ul>
           </div>
           <div className="lp-pq lp-pq-ouro">
@@ -125,7 +133,8 @@ export default function LandingPage() {
             <h3>Para BPO financeiro e escritórios</h3>
             <ul>
               <li>Várias empresas no mesmo login, com dados separados</li>
-              <li>Painel com caixa e atrasados de todos os clientes</li>
+              <li>Indicadores de todos os clientes: faturamento, caixa e quem está sem lançamento</li>
+              <li>Acesso de consulta para o cliente acompanhar</li>
               <li>Relatório mensal em PDF com a sua marca</li>
               <li>Conciliação do extrato que aprende as categorias</li>
             </ul>
@@ -159,6 +168,22 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Consultoria */}
+      <section className="lp-sec">
+        <div className="lp-cx">
+          <div className="lp-consult">
+            <div>
+              <div className="lp-etiqueta">Consultoria Landim Advisory</div>
+              <h2>Prefere que a gente cuide do seu financeiro?</h2>
+              <p>BPO financeiro, diagnóstico, controladoria e planejamento tributário, com o sistema incluído no trabalho e relatório todo mês.</p>
+            </div>
+            <div className="lp-ctas">
+              <Link href="/consultoria" className="lp-btn lp-btn-p">Conhecer a consultoria</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Chamada final */}
       <section className="lp-final">
         <div className="lp-cx">
@@ -173,8 +198,8 @@ export default function LandingPage() {
 
       <footer className="lp-rodape">
         <div className="lp-cx lp-rodape-in">
-          <span className="lp-marca"><span className="lp-logo">LA</span>Landim Advisory</span>
-          <nav><Link href="/pricing">Planos</Link><Link href="/termos">Termos de Uso</Link><Link href="/privacidade">Privacidade</Link><a href={WHATS} target="_blank" rel="noopener">Contato</a></nav>
+          <span className="lp-marca"><img src="/logo.svg" alt="" className="lp-logo" width="34" height="34" />Landim Advisory</span>
+          <nav><Link href="/consultoria">Consultoria</Link><Link href="/pricing">Planos</Link><Link href="/termos">Termos de Uso</Link><Link href="/privacidade">Privacidade</Link><a href={WHATS} target="_blank" rel="noopener">Contato</a></nav>
           <small>© {new Date().getFullYear()} Landim Advisory</small>
         </div>
       </footer>
@@ -189,7 +214,7 @@ const ESTILO = `
 .lp-topo{position:sticky;top:0;z-index:50;background:rgba(250,250,248,.9);backdrop-filter:blur(10px);border-bottom:1px solid #ECEEF2}
 .lp-topo-in{display:flex;align-items:center;gap:24px;height:64px}
 .lp-marca{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px;color:#0B1220;letter-spacing:-.01em}
-.lp-logo{width:34px;height:34px;border-radius:9px;background:#0B1220;color:#C5A059;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;letter-spacing:.02em}
+.lp-logo{width:34px;height:34px;border-radius:9px;display:block}
 .lp-menu{display:flex;gap:26px;margin-left:12px}
 .lp-menu a{color:#4B5565;font-size:14.5px;font-weight:600}.lp-menu a:hover{color:#0B1220}
 .lp-topo-acoes{margin-left:auto;display:flex;align-items:center;gap:14px}
@@ -253,6 +278,10 @@ const ESTILO = `
 .lp-faq-item button{width:100%;display:flex;justify-content:space-between;gap:16px;align-items:center;background:none;border:0;padding:18px 20px;font:inherit;font-weight:700;font-size:16px;color:#0B1220;cursor:pointer;text-align:left}
 .lp-faq-item button span{font-size:20px;color:#9C7616}
 .lp-faq-item p{margin:0;padding:0 20px 18px;color:#4B5565;font-size:15px}
+.lp-consult{display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap;background:#F6F1E4;border:1px solid #E8DCC0;border-radius:22px;padding:36px 40px}
+.lp-consult h2{text-align:left;font-size:30px;margin:0 0 8px}
+.lp-consult p{color:#4B5565;font-size:16.5px;margin:0;max-width:620px}
+.lp-consult .lp-etiqueta{background:#fff;margin-bottom:12px}
 .lp-final{background:#0B1220;color:#fff;text-align:center;padding:72px 0}
 .lp-final h2{color:#fff}
 .lp-final p{color:#B7C0CF;font-size:17px;margin:0 0 26px}

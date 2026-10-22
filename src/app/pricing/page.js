@@ -53,7 +53,7 @@ export default function PricingPage() {
     <div className="pr">
       <style dangerouslySetInnerHTML={{ __html: ESTILO_PLANOS + ESTILO }} />
       <header className="pr-topo">
-        <Link href="/" className="pr-marca"><span className="pr-logo">LA</span>Landim Advisory</Link>
+        <Link href="/" className="pr-marca"><img src="/logo.svg" alt="" className="pr-logo" width="34" height="34" />Landim Advisory</Link>
         {user ? <Link href="/dashboard" className="pr-link">Voltar ao painel</Link> : <Link href="/login" className="pr-link">Entrar</Link>}
       </header>
 
@@ -92,7 +92,7 @@ const ESTILO = `
 .pr a{text-decoration:none}
 .pr-topo{max-width:1160px;margin:0 auto;padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
 .pr-marca{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px;color:#0B1220}
-.pr-logo{width:34px;height:34px;border-radius:9px;background:#0B1220;color:#C5A059;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900}
+.pr-logo{width:34px;height:34px;border-radius:9px;display:block}
 .pr-main{max-width:1160px;margin:0 auto;padding:20px 20px 60px;text-align:center}
 .pr h1{font-size:40px;font-weight:900;letter-spacing:-.02em;margin:10px 0 10px}
 .pr-sub{color:#4B5565;font-size:17px;margin:0 auto 6px;max-width:620px}

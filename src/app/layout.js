@@ -15,12 +15,12 @@ export const metadata = {
   },
   icons: {
     icon: "/icon-192.png",
-    apple: "/icon-192.png"
+    apple: "/apple-touch-icon.png"
   }
 };
 
 export const viewport = {
-  themeColor: "#6366f1",
+  themeColor: "#0B1220",
 };
 
 export default function RootLayout({ children }) {
@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
     <html lang="pt-BR">
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className={`${inter.className} ${inter.variable}`}>
         <ClientProviders>
