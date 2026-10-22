@@ -154,22 +154,22 @@ export default function AdminPage() {
               <div className="ad-cartao">
                 <div className="ad-cartao-topo"><h2>De onde vieram</h2><span>últimos 30 dias</span></div>
                 {r.tabOrigens.length ? (
-                  <table className="ad-tab">
+                  <div className="ad-rolagem"><table className="ad-tab">
                     <thead><tr><th>Origem</th><th className="n">Visitantes</th><th className="n">Contas criadas</th><th className="n">Conversão</th></tr></thead>
                     <tbody>{r.tabOrigens.map((o) => (
                       <tr key={o.k}><td>{NOME_ORIGEM[o.k] || o.k}</td><td className="n">{num(o.visitantes)}</td><td className="n">{num(o.cadastros)}</td><td className="n">{o.visitantes ? ((o.cadastros / o.visitantes) * 100).toFixed(1).replace('.', ',') + '%' : '—'}</td></tr>
                     ))}</tbody>
-                  </table>
+                  </table></div>
                 ) : <p className="ad-vazio">Ainda sem visitas registradas. Elas aparecem aqui assim que alguém abrir o site.</p>}
                 <p className="ad-nota">Para saber de qual post veio cada visita, use links com a origem, como <code>landimadvisory.com.br/?utm_source=whatsapp</code>.</p>
               </div>
               <div className="ad-cartao">
                 <div className="ad-cartao-topo"><h2>Páginas mais vistas</h2><span>últimos 30 dias</span></div>
                 {r.tabPaginas.length ? (
-                  <table className="ad-tab">
+                  <div className="ad-rolagem"><table className="ad-tab">
                     <thead><tr><th>Página</th><th className="n">Vezes vista</th></tr></thead>
                     <tbody>{r.tabPaginas.map((p) => <tr key={p.k}><td>{NOME_PAGINA[p.k] || p.k}</td><td className="n">{num(p.v)}</td></tr>)}</tbody>
-                  </table>
+                  </table></div>
                 ) : <p className="ad-vazio">Ainda sem visitas registradas.</p>}
               </div>
             </section>
@@ -262,7 +262,7 @@ const ESTILO = `
 .ad-tab th{text-align:left;font-size:12px;color:var(--fraco);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--linha);white-space:nowrap}
 .ad-tab td{padding:10px;border-bottom:1px solid #EEF0F3;vertical-align:top}
 .ad-tab .n{text-align:right;font-variant-numeric:tabular-nums}
-.ad-rolagem{overflow-x:auto}
+.ad-rolagem{overflow-x:auto;max-width:100%}
 .ad-contas{min-width:920px}
 .ad-sub{font-size:12px;color:var(--fraco)}
 .ad-nota{font-size:12.5px;color:var(--fraco);margin:12px 0 0}.ad-nota code{background:#EEF0F3;border-radius:4px;padding:1px 5px}
@@ -277,5 +277,5 @@ const ESTILO = `
 .ad-link{color:#6E520C;font-weight:700;font-size:13px}
 .ad-robos{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--fraco)}
 @media (max-width:960px){.ad-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ad-dois{grid-template-columns:1fr}}
-@media (max-width:520px){.ad-kpis{grid-template-columns:1fr}.ad-busca{margin-left:0;width:100%}.ad-busca input{width:100%}.ad-titulo h1{font-size:25px}}
+@media (max-width:520px){.ad-cartao{padding:16px 14px}.ad-tab th,.ad-tab td{padding:8px 6px}.ad-kpis{grid-template-columns:1fr}.ad-busca{margin-left:0;width:100%}.ad-busca input{width:100%}.ad-titulo h1{font-size:25px}}
 `;
