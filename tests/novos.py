@@ -39,7 +39,7 @@ async def publicas(b):
     txt = await pg.inner_text('body')
     log(all(x in txt for x in ['BPO financeiro', 'diagnóstico financeiro', 'controladoria', 'Planejamento tributário']), 'consultoria lista os serviços')
     await pg.evaluate("window.__aberto=null; window.open=(u)=>{window.__aberto=u; return null}")
-    await pg.click('text=Pedir proposta de planejamento tributário e reforma'); await pg.wait_for_timeout(300)
+    await pg.click('.cs-card:has-text("Planejamento tributário") .cs-link'); await pg.wait_for_timeout(300)
     await pg.fill('.cs-form input >> nth=0', 'Robô Teste'); await pg.fill('.cs-form input >> nth=1', 'Empresa XPTO')
     await pg.click('.cs-form button[type=submit]'); await pg.wait_for_timeout(300)
     u = await pg.evaluate('window.__aberto') or ''
