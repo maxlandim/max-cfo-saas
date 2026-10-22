@@ -3,7 +3,7 @@ e funcionalidades do menu, lança uma conta e confere se ficou salva. Apaga a co
 import asyncio, json, os, time, random, string, urllib.request
 from playwright.async_api import async_playwright
 
-SITE = os.environ.get('SITE', 'https://max-cfo-saas.vercel.app')
+SITE = os.environ.get('SITE', 'https://landimadvisory.com.br')
 KEY = 'AIzaSyAsQS2b0oYMHJ_BExiXH0xgD49j68pwZ6M'  # chave Web pública do Firebase (a mesma do site)
 OUT = 'saida'; os.makedirs(OUT, exist_ok=True)
 rel = {'passos': [], 'falhas': [], 'console': [], 'tempos': {}}

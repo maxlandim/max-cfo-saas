@@ -1,7 +1,7 @@
 """Fotos das páginas públicas (início, preços, login) no computador e no celular, com checagens simples."""
 import asyncio, os
 from playwright.async_api import async_playwright
-SITE = os.environ.get('SITE', 'https://max-cfo-saas.vercel.app'); OUT = 'saida'; os.makedirs(OUT, exist_ok=True)
+SITE = os.environ.get('SITE', 'https://landimadvisory.com.br'); OUT = 'saida'; os.makedirs(OUT, exist_ok=True)
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()

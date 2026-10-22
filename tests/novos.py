@@ -5,7 +5,7 @@ from playwright.async_api import async_playwright
 from openpyxl import Workbook
 from datetime import date, timedelta
 
-SITE = os.environ.get('SITE', 'https://max-cfo-saas.vercel.app')
+SITE = os.environ.get('SITE', 'https://landimadvisory.com.br')
 KEY = 'AIzaSyAsQS2b0oYMHJ_BExiXH0xgD49j68pwZ6M'  # chave Web pública do Firebase (a mesma do site)
 OUT = 'saida'; os.makedirs(OUT, exist_ok=True)
 falhas = []
