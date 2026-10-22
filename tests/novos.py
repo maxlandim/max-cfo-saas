@@ -51,6 +51,8 @@ async def publicas(b):
     await m.screenshot(path=f'{OUT}/consultoria_cel.png', full_page=True)
     log(not errs, 'sem erros de JavaScript nas páginas públicas', errs[:2])
     s, r = rest(SITE + '/api/lembretes', None, None, 'GET'); log(s in (401, 503), 'rota de lembretes protegida por senha', s)
+    s, r = rest(SITE + '/api/webhook', {'teste': True}); log(s == 400, 'webhook do Stripe configurado (recusa aviso sem assinatura)', [s, r.get('error')])
+    s, r = rest(SITE + '/api/checkout', {'planId': 'basic'}); log(s == 401, 'pagamento configurado (pede login para assinar)', [s, r.get('error')])
     s, r = rest(SITE + '/api/lembretes', {'wsId': 'x'}); log(s in (401, 503), 'teste de lembrete exige login/configuração', [s, r.get('error')])
 
 async def painel(b):
