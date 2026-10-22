@@ -17,7 +17,7 @@ export default function PrivacidadePage() {
       <ul>
         <li>Cadastro: nome, e-mail, CPF ou CNPJ e senha (guardada de forma criptografada pelo Google Firebase).</li>
         <li>Uso do painel: os dados financeiros e cadastrais que você inserir ou importar (extratos OFX/CSV, planilhas, anexos).</li>
-        <li>Pagamento: o Stripe processa o cartão; nós recebemos só o status da assinatura, nunca o número completo do cartão.</li>
+        <li>Pagamento: o Stripe processa o cartão, o Pix e o boleto (inclusive o CPF ou CNPJ pedido no boleto); nós recebemos só o status do pagamento e da assinatura, nunca o número completo do cartão.</li>
         <li>Dados técnicos: registros de acesso, aparelho e navegador, para segurança e correção de erros.</li>
       </ul>
 
