@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { app, db, authFetch } from '../../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore/lite';
+import { lerDadosDoEspaco, gravarDadosDoEspaco, apagarPartesDoEspaco } from '../../lib/espaco';
 import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 
 // Campos do estado do painel que não devem ir para a nuvem (são temporários da tela)
 const CAMPOS_TEMPORARIOS = ['currentModal', 'isListening', 'voiceRec', 'txFilter', 'txSort', 'notifSeen'];
-const LIMITE_DOC = 900 * 1024; // o Firestore aceita até 1 MB por documento
 
 // Versão dos scripts do painel: muda a cada publicação, então o navegador pode guardá-los em cache sem medo
 const VERSAO = 'v=' + (process.env.NEXT_PUBLIC_BUILD_ID || '9');
@@ -162,17 +162,22 @@ export default function DashboardPage() {
       gravarCopia(wsId, { ...copia, t: Date.now(), pendente: true, dados: json });
       if (!nuvemLida) return;
       try {
-        if (json.length > LIMITE_DOC) {
-          if (!aviso && window.showToast) window.showToast('Seus dados estão perto do limite de armazenamento. Exporte um backup em Configurações.', 'error');
+        const quando = new Date().toISOString();
+        // Grava comprimido (e em partes, se precisar): sem o limite de 1 MB por documento
+        const r = await comPrazo(gravarDadosDoEspaco(db, wsId, json, user.uid, quando), 30000);
+        if (r && r.bytes > 7 * 1024 * 1024 && !aviso && window.showToast) {
+          window.showToast('Esta empresa tem muitos dados. Exporte um backup em Configurações e fale com o suporte.', 'error');
           aviso = true;
         }
-        const quando = new Date().toISOString();
-        await comPrazo(setDoc(doc(db, 'workspaces', wsId), { data: json, owner: user.uid, updatedAt: quando }, { merge: true }), 20000);
         const atual = lerCopia(wsId) || {};
         if (atual.dados === json) gravarCopia(wsId, { ...atual, pendente: false, nuvem: quando });
         avisoNuvem = false;
       } catch (e) {
         console.error('Erro ao salvar na nuvem:', e);
+        if (e && (e.code === 'grande-demais' || e.code === 'permission-denied') && !aviso && window.showToast) {
+          window.showToast(e.code === 'grande-demais' ? 'Esta empresa passou do limite de armazenamento. Exporte um backup em Configurações e fale com o suporte.' : 'A nuvem recusou a gravação. Publique as regras novas do Firestore (firestore.rules) ou fale com o suporte.', 'error');
+          aviso = true; avisoNuvem = true;
+        }
         if (!avisoNuvem && window.showToast) window.showToast('Sem conexão com a nuvem agora. Suas alterações ficam guardadas neste aparelho e sobem quando a conexão voltar.', 'error');
         avisoNuvem = true;
         clearTimeout(timer); timer = setTimeout(() => { if (window.state) gravar(wsId, window.state); }, 30000);
@@ -192,7 +197,8 @@ export default function DashboardPage() {
     // Lê a nuvem (com prazo). Se a cópia do aparelho tiver alterações que ainda não subiram, ela vale.
     const lerNuvem = async (wsId, pre) => {
       const snap = (pre && await comPrazo(pre, 15000)) || await comPrazo(getDoc(doc(db, 'workspaces', wsId)), 15000);
-      if (snap.exists() && snap.data().data) return { dados: snap.data().data, quando: snap.data().updatedAt || '' };
+      const texto = await comPrazo(lerDadosDoEspaco(db, wsId, snap), 30000);
+      if (texto) return { dados: texto, quando: snap.data().updatedAt || '' };
       if (emailLegado && wsId === user.uid) {
         // Migração: versões antigas guardavam os dados com o e-mail como identificador (só na empresa principal)
         const antigo = await comPrazo(getDoc(doc(db, 'workspaces', emailLegado)), 10000).catch(() => null);
@@ -304,7 +310,7 @@ export default function DashboardPage() {
       empresas.lista.push(item);
       await salvarPerfil();
       // Cria o espaço já com o nome da empresa nas configurações
-      await setDoc(doc(db, 'workspaces', empresas.espacoDe(item.id)), { data: JSON.stringify({ transactions: [], settings: { company: item.nome, cnpj: item.cnpj } }), owner: user.uid, updatedAt: new Date().toISOString() }, { merge: true });
+      await gravarDadosDoEspaco(db, empresas.espacoDe(item.id), JSON.stringify({ transactions: [], settings: { company: item.nome, cnpj: item.cnpj } }), user.uid, new Date().toISOString());
       return { item };
     };
     empresas.renomear = async (id, nome) => {
@@ -316,7 +322,7 @@ export default function DashboardPage() {
       if (!id) return;
       empresas.lista = empresas.lista.filter((x) => x.id !== id);
       await salvarPerfil();
-      try { await deleteDoc(doc(db, 'workspaces', empresas.espacoDe(id))); } catch (e) { console.warn(e); }
+      try { await apagarPartesDoEspaco(db, empresas.espacoDe(id)); await deleteDoc(doc(db, 'workspaces', empresas.espacoDe(id))); } catch (e) { console.warn(e); }
       if (empresas.ativa === id) await empresas.trocar('');
     };
     // Lê os dados de todas as empresas (painel do BPO)
@@ -324,8 +330,10 @@ export default function DashboardPage() {
       const todas = [{ id: '', nome: empresas.principal || 'Empresa principal' }].concat(empresas.lista);
       return Promise.all(todas.map(async (e) => {
         try {
-          const snap = await comPrazo(getDoc(doc(db, 'workspaces', empresas.espacoDe(e.id))), 20000);
-          return { ...e, estado: snap.exists() && snap.data().data ? JSON.parse(snap.data().data) : { transactions: [] }, atualizadoEm: snap.exists() ? snap.data().updatedAt : null };
+          const wsE = empresas.espacoDe(e.id);
+          const snap = await comPrazo(getDoc(doc(db, 'workspaces', wsE)), 20000);
+          const texto = await comPrazo(lerDadosDoEspaco(db, wsE, snap), 30000);
+          return { ...e, estado: texto ? JSON.parse(texto) : { transactions: [] }, atualizadoEm: snap.exists() ? snap.data().updatedAt : null };
         } catch (err) { return { ...e, estado: { transactions: [] }, erro: true }; }
       }));
     };

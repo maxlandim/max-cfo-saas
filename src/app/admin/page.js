@@ -51,6 +51,54 @@ function Barras({ titulo, dados, campo, total }) {
   );
 }
 
+// Backups diários das empresas: procura por e-mail da conta e restaura uma cópia
+function Backups({ ultimo }) {
+  const [email, setEmail] = useState('');
+  const [lista, setLista] = useState(null);
+  const [msg, setMsg] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const buscar = async (e) => {
+    e.preventDefault(); setMsg(''); setLista(null); setOcupado(true);
+    try {
+      const r = await authFetch('/api/admin/backup?email=' + encodeURIComponent(email.trim()));
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) setMsg(d.error || 'Não consegui buscar.'); else setLista(d.backups || []);
+    } catch { setMsg('Sem conexão.'); }
+    setOcupado(false);
+  };
+  const restaurar = async (b) => {
+    if (!window.confirm(`Restaurar a empresa com os dados de ${dataBR(b.criadoEm)}?\n\nOs dados atuais ficam guardados como um backup "antes da restauração". Peça ao cliente para fechar o painel antes.`)) return;
+    setOcupado(true); setMsg('');
+    try {
+      const r = await authFetch('/api/admin/backup', { method: 'POST', body: JSON.stringify({ id: b.id }) });
+      const d = await r.json().catch(() => ({}));
+      setMsg(r.ok ? 'Restaurado. O cliente vê os dados ao abrir o painel de novo.' : d.error || 'Não consegui restaurar.');
+    } catch { setMsg('Sem conexão.'); }
+    setOcupado(false);
+  };
+  return (
+    <section className="ad-cartao">
+      <div className="ad-cartao-topo"><h2>Backups das empresas</h2><span>{ultimo ? `último: ${diaBR(ultimo)}` : 'nenhum backup ainda'}</span></div>
+      <form className="ad-filtros" onSubmit={buscar}>
+        <label className="ad-busca"><span className="ad-sr">E-mail da conta</span><input type="email" placeholder="E-mail da conta" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+        <button type="submit" className="ad-btn ad-btn-claro" disabled={ocupado}>{ocupado ? 'Buscando…' : 'Ver backups'}</button>
+      </form>
+      {msg && <p className="ad-vazio" role="status">{msg}</p>}
+      {lista && (lista.length ? (
+        <div className="ad-rolagem">
+          <table className="ad-tab">
+            <thead><tr><th>Data</th><th>Empresa</th><th>Tipo</th><th className="n">Tamanho</th><th></th></tr></thead>
+            <tbody>{lista.map((b) => (
+              <tr key={b.id}><td>{dataBR(b.criadoEm)}</td><td className="ad-sub">{b.wsId.includes('__') ? 'empresa ' + b.wsId.split('__')[1] : 'principal'}</td><td>{b.motivo === 'diario' ? 'diário' : b.motivo}</td><td className="n">{num(Math.round((b.bytes || 0) / 1024))} KB</td>
+                <td><button type="button" className="ad-link ad-link-btn" disabled={ocupado} onClick={() => restaurar(b)}>Restaurar</button></td></tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ) : <p className="ad-vazio">Nenhum backup desta conta ainda.</p>)}
+    </section>
+  );
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -210,6 +258,26 @@ export default function AdminPage() {
               ) : <p className="ad-vazio">Nenhuma conta neste filtro.</p>}
               <label className="ad-robos"><input id="adRobos" type="checkbox" checked={verRobos} onChange={(e) => setVerRobos(e.target.checked)} /> Mostrar as contas dos testes automáticos</label>
             </section>
+
+            <section className="ad-cartao">
+              <div className="ad-cartao-topo"><h2>Erros no navegador dos clientes</h2><span>últimos 7 dias</span></div>
+              {(dados.erros || []).length ? (
+                <div className="ad-rolagem">
+                  <table className="ad-tab ad-erros">
+                    <thead><tr><th>Erro</th><th>Página</th><th className="n">Vezes</th><th>Último</th><th>Navegador</th></tr></thead>
+                    <tbody>{dados.erros.map((e, i) => (
+                      <tr key={i}>
+                        <td><b>{e.mensagem}</b>{e.pilha && <details><summary className="ad-sub">detalhes</summary><pre className="ad-pilha">{e.pilha}</pre></details>}</td>
+                        <td>{e.pagina || '—'}</td><td className="n">{num(e.vezes)}</td><td>{quando(e.ultimaVez)}</td>
+                        <td className="ad-sub">{Object.entries(e.navegadores || {}).map(([n, v]) => `${n} (${v})`).join(', ')}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              ) : <p className="ad-vazio">Nenhum erro registrado nos últimos 7 dias.</p>}
+            </section>
+
+            <Backups ultimo={dados.ultimoBackup} />
           </>
         )}
       </main>
@@ -264,6 +332,9 @@ const ESTILO = `
 .ad-tab .n{text-align:right;font-variant-numeric:tabular-nums}
 .ad-rolagem{overflow-x:auto;max-width:100%}
 .ad-contas{min-width:920px}
+.ad-erros{min-width:720px}.ad-pilha{white-space:pre-wrap;font-size:11.5px;color:var(--sub);margin:6px 0 0;max-width:560px}
+.ad-btn-claro{border-color:var(--linha);color:var(--tinta);background:#fff}
+.ad-link-btn{background:none;border:0;padding:0;font:inherit;font-weight:700;cursor:pointer;color:var(--ouro)}
 .ad-sub{font-size:12px;color:var(--fraco)}
 .ad-nota{font-size:12.5px;color:var(--fraco);margin:12px 0 0}.ad-nota code{background:#EEF0F3;border-radius:4px;padding:1px 5px}
 .ad-filtros{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:10px}

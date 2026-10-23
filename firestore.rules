@@ -25,6 +25,15 @@ service cloud.firestore {
       allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
       // A empresa principal não pode ser apagada pelo painel
       allow delete: if donoDoEspaco(wsId) && wsId != request.auth.uid;
+
+      // Empresas com muitos dados: o conteúdo comprimido é dividido em partes (src/lib/espaco.js).
+      // Quem pode ler a empresa lê as partes; só o dono grava ou apaga.
+      match /partes/{parte} {
+        allow read: if donoDoEspaco(wsId)
+          || (emailConfirmado() && exists(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId)));
+        allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
+        allow delete: if donoDoEspaco(wsId);
+      }
     }
 
     // Lista de empresas do usuário (nomes e CNPJs), lida e gravada só por ele.

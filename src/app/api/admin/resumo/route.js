@@ -87,9 +87,22 @@ export async function GET(req) {
       dias.push({ dia, visitas: x.visitas || 0, visitantes: x.visitantes || 0, cadastros: x.cadastros || 0, paginas: x.paginas || {}, origens: x.origens || {}, cadastrosPorOrigem: x.cadastrosPorOrigem || {} });
     }
 
+    // Erros no navegador dos clientes (últimos 7 dias) e último backup
+    const ini7 = new Date(Date.parse(hoje + 'T12:00:00Z') - 6 * 864e5).toISOString().slice(0, 10);
+    let erros = [], ultimoBackup = null;
+    try {
+      const e = await adminDb.collection('errosCliente').where('dia', '>=', ini7).get();
+      erros = e.docs.map((d) => d.data()).sort((a, b) => (b.vezes || 0) - (a.vezes || 0)).slice(0, 50)
+        .map((x) => ({ dia: x.dia, mensagem: x.mensagem, pagina: x.pagina, vezes: x.vezes || 0, ultimaVez: x.ultimaVez, navegadores: x.navegadores || {}, pilha: (x.pilha || '').slice(0, 600) }));
+    } catch (e) { console.warn('Erros do navegador:', e.message); }
+    try {
+      const b = await adminDb.collection('backupsIndice').orderBy('ultimoDia', 'desc').limit(1).get();
+      ultimoBackup = b.empty ? null : b.docs[0].data().ultimoDia;
+    } catch (e) { console.warn('Último backup:', e.message); }
+
     const precos = Object.fromEntries(Object.entries(PLANOS).map(([k, v]) => [k, v.valor / 100]));
     const fundadores = lista.filter((c) => c.fundador).length;
-    return NextResponse.json({ geradoEm: new Date().toISOString(), hoje, contas: lista, dias, precos, diasDeTeste: DIAS_DE_TESTE, fundador: { usados: fundadores, vagas: FUNDADOR.vagas } });
+    return NextResponse.json({ geradoEm: new Date().toISOString(), hoje, contas: lista, dias, precos, erros, ultimoBackup, diasDeTeste: DIAS_DE_TESTE, fundador: { usados: fundadores, vagas: FUNDADOR.vagas } });
   } catch (e) {
     console.error('Resumo do administrador:', e);
     return NextResponse.json({ error: 'Não consegui montar o resumo agora.' }, { status: 500 });
