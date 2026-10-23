@@ -3,6 +3,7 @@ import { adminConfigurado, adminDb } from '../../../lib/firebaseAdmin';
 import { PLANOS, MESES_PAGOS_NO_ANUAL } from '../../../lib/plans';
 import { asaas, asaasConfigurado, lerRef, msDaData } from '../../../lib/asaas';
 import { uidDoAsaas, registrarAssinatura, aplicarPagamento, guardarFatura, limparFatura, sincronizarAssinatura } from '../../../lib/assinatura';
+import { pagamentoDeIndicado } from '../../../lib/indicacao';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,7 @@ async function processar(ev) {
     const daAtual = !atual.asaasSubscriptionId || atual.asaasSubscriptionId === p.subscription;
     if (tipo === 'PAYMENT_CONFIRMED' || tipo === 'PAYMENT_RECEIVED') {
       await aplicarPagamento(uid, p, atual.periodo === 'anual' ? 'YEARLY' : 'MONTHLY');
+      try { await pagamentoDeIndicado(uid); } catch (e) { console.error('Recompensa de indicação:', e.message); }
       return;
     }
     if (!daAtual) return;

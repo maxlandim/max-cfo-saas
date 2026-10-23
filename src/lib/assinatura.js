@@ -99,6 +99,10 @@ export async function registrarAssinatura(uid, assinatura, extra = {}) {
     plano: planId, periodo, forma,
     proximoVencimento: assinatura.nextDueDate || null,
     checkoutPendente: null,
+    ...(atual.checkoutPendente && atual.checkoutPendente.mesesGratis ? {
+      mesesGratis: Math.max(0, (atual.mesesGratis || 0) - atual.checkoutPendente.mesesGratis),
+      pagoAte: new Date(Math.max(atual.pagoAte ? Date.parse(atual.pagoAte) : 0, msDaData(assinatura.nextDueDate || new Date().toISOString()))).toISOString(),
+    } : {}),
     updatedAt: new Date().toISOString(),
     ...(fundador ? { fundador: true, fundadorAte: atual.fundadorAte || new Date(somarMeses(msDaData(assinatura.nextDueDate || new Date().toISOString()), 12)).toISOString() } : {}),
     ...(atual.faturaPendente && atual.asaasSubscriptionId !== assinatura.id ? { faturaPendente: null } : {}),

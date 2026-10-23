@@ -49,6 +49,8 @@ export function registrarCadastro() {
 export default function Visitas() {
   const caminho = usePathname();
   useEffect(() => {
+    // Código de indicação (?ref=CODIGO): fica guardado até a conta ser criada
+    try { const ref = new URL(window.location.href).searchParams.get('ref'); if (ref && /^[A-Za-z2-9]{6}$/.test(ref)) gravar('la_ref', ref.toUpperCase()); } catch {}
     if (!caminho || /^\/(dashboard|admin|success|assinatura|api)/.test(caminho)) return;
     const origemAgora = descobrirOrigem();
     if (!ler('la_origem') || origemAgora !== 'direto') gravar('la_origem', origemAgora);

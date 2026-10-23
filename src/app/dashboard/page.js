@@ -433,6 +433,12 @@ export default function DashboardPage() {
       try { if (typeof window.initMaxCfoApp === 'function') await window.initMaxCfoApp(); }
       catch (e) { console.error('Erro ao iniciar o painel:', e); }
       setPronto(true);
+      // Indicação: liga a conta nova a quem indicou (o código veio no link ?ref=)
+      if (!window.maxcfoDemo) {
+        let ref = '';
+        try { ref = localStorage.getItem('la_ref') || ''; } catch {}
+        if (ref) authFetch('/api/indicacao', { method: 'POST', body: JSON.stringify({ codigo: ref }) }).then((r) => { if (r.ok) { try { localStorage.removeItem('la_ref'); } catch {} } }).catch(() => {});
+      }
     })();
 
     return () => window.removeEventListener('pagehide', salvarAgora);
