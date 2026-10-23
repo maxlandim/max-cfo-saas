@@ -72,6 +72,7 @@ export default function MinhaAssinatura() {
                   <div className="ma-linha"><span>Próximo vencimento</span><b>{dataBR(d.proximoVencimento)}</b></div>
                   {d.pagoAte && <div className="ma-linha"><span>Pago até</span><b>{dataBR(d.pagoAte)}</b></div>}
                   {d.fundador && d.fundadorAte && <div className="ma-linha"><span>Preço de fundador até</span><b>{dataBR(d.fundadorAte)}</b></div>}
+                  <div className="ma-linha"><span>Empresas</span><b>{(d.empresasIncluidas || 1) + (d.empresasExtras || 0)} liberadas{d.empresasExtras ? ` (${d.empresasExtras} adicional${d.empresasExtras > 1 ? 'is' : ''} × R$ ${((d.valorEmpresaExtra || 2990) / 100).toFixed(2).replace('.', ',')}/mês)` : ''}</b></div>
                 </>
               ) : (
                 <p className="ma-sub" style={{ margin: 0 }}>

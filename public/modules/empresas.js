@@ -53,10 +53,12 @@
   function abrir() {
     var e = E(); if (!e) return;
     var todas = [{ id: '', nome: e.principal || (window.state.settings || {}).company || 'Empresa principal', cnpj: (window.state.settings || {}).cnpj || '' }].concat(e.lista);
-    var podeCriar = total() < e.limite;
+    var noLimite = total() >= e.limite, podeCriar = !noLimite || e.podeContratar;
+    var extraTxt = 'R$ ' + ((e.valorExtra || 2990) / 100).toFixed(2).replace('.', ',');
+    var resumo = e.limite >= 9999 ? total() + ' empresas' : total() + ' de ' + e.limite + ' liberadas' + (e.extras ? ' (' + e.incluidas + ' do plano + ' + e.extras + ' adicional' + (e.extras > 1 ? 'is' : '') + ')' : '');
     var m = el('empModal');
     if (!m) { m = document.createElement('div'); m.className = 'modal-overlay'; m.id = 'empModal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); document.body.appendChild(m); m.addEventListener('click', function (ev) { if (ev.target === m) window.closeModal('empModal'); }); }
-    m.innerHTML = '<div class="modal-box" style="max-width:620px"><div class="modal-head"><div><h2 class="modal-title">🏢 Suas empresas</h2><p class="modal-subtitle">' + total() + ' de ' + (e.limite >= 9999 ? 'ilimitadas' : e.limite) + ' no seu plano · cada empresa tem dados separados</p></div><button class="modal-x" aria-label="Fechar" onclick="closeModal(\'empModal\')">✕</button></div>' +
+    m.innerHTML = '<div class="modal-box" style="max-width:620px"><div class="modal-head"><div><h2 class="modal-title">🏢 Suas empresas</h2><p class="modal-subtitle">' + resumo + ' · cada empresa tem dados separados</p></div><button class="modal-x" aria-label="Fechar" onclick="closeModal(\'empModal\')">✕</button></div>' +
       '<div style="padding:0 24px 8px"><div style="display:flex;flex-direction:column;gap:8px">' +
       todas.map(function (x) {
         var ativa = !window.maxcfoLeitura && (x.id || '') === (e.ativa || '');
@@ -68,8 +70,9 @@
       }).join('') + '</div>' +
       (podeCriar
         ? '<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px"><div class="form-grid"><div class="form-field"><label class="form-label" for="empCnpj">CNPJ</label><input class="form-input" id="empCnpj" placeholder="Busca o nome na Receita" maxlength="18"></div><div class="form-field"><label class="form-label" for="empNome">Nome da empresa *</label><input class="form-input" id="empNome" maxlength="80"></div></div>' +
-          '<button class="btn-primary" style="margin-top:10px" id="empCriarBtn" onclick="empresas.criar()">+ Adicionar empresa</button></div>'
-        : '<div class="fin-alerta gold" style="margin-top:14px">Seu plano permite ' + e.limite + (e.limite === 1 ? ' empresa' : ' empresas') + '. ' + (e.limite >= 30 && e.limite < 9999 ? 'Para mais de 30 empresas, <a class="link-go" href="https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Preciso de mais de 30 empresas na Landim Advisory.') + '" target="_blank" rel="noopener">fale com a gente no WhatsApp</a>.' : 'Para atender mais clientes, <a class="link-go" href="/pricing">mude de plano</a>.') + '</div>') +
+          (noLimite ? '<div class="fin-sub" style="margin-top:8px">Você já usou as ' + e.limite + ' empresas liberadas. Esta será uma <b>empresa adicional: ' + extraTxt + ' por mês</b>, somados à sua assinatura a partir da próxima cobrança. Se excluir a empresa depois, a cobrança sai.</div>' : '') +
+          '<button class="btn-primary" style="margin-top:10px" id="empCriarBtn" onclick="empresas.criar()">' + (noLimite ? '+ Adicionar empresa (' + extraTxt + '/mês)' : '+ Adicionar empresa') + '</button></div>'
+        : '<div class="fin-alerta gold" style="margin-top:14px">Você já tem ' + e.limite + (e.limite === 1 ? ' empresa' : ' empresas') + ' cadastradas. ' + (e.motivo === 'assinatura' || e.motivo === 'teste' ? 'Depois de <a class="link-go" href="/pricing">assinar</a>, cada empresa a mais custa ' + extraTxt + ' por mês, em qualquer plano.' : '') + '</div>') +
       (window.acessos ? window.acessos.secaoSeletor() : '') +
       '</div><div class="modal-foot"><button class="btn-ghost" onclick="closeModal(\'empModal\')">Fechar</button><button class="btn-secondary" onclick="closeModal(\'empModal\');switchView(\'bpo\')">Ver painel de todas</button></div></div>';
     if (window.openModalEl) window.openModalEl('empModal');
@@ -171,6 +174,10 @@
       if (!nome.trim()) return toast('Informe o nome da empresa.', 'error');
       var b = el('empCriarBtn'); if (b) { b.disabled = true; b.textContent = 'Criando…'; }
       var r = await E().criar(nome, cnpj);
+      if (r.confirmar) {
+        if (!confirm('Esta é uma empresa adicional: ' + r.valor + ' por mês, somados à sua assinatura a partir da próxima cobrança. Confirmar?')) { if (b) { b.disabled = false; b.textContent = '+ Adicionar empresa'; } return; }
+        r = await E().criar(nome, cnpj, true);
+      }
       if (r.erro) { toast(r.erro, 'error'); if (b) { b.disabled = false; b.textContent = '+ Adicionar empresa'; } return; }
       toast('Empresa criada. Abrindo…');
       E().trocar(r.item.id);

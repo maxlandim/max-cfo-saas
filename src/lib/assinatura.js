@@ -11,7 +11,7 @@
 //   proximoVencimento, faturaPendente { id, url, vencimento, valor, situacao }
 //   fundador, fundadorAte, checkoutPendente { planId, periodo, fundador, em }
 import { adminAuth, adminDb, emailsAdmin } from './firebaseAdmin';
-import { DIAS_DE_TESTE, PLANOS, somarMeses, CARENCIA_DIAS, MESES_PAGOS_NO_ANUAL } from './plans';
+import { DIAS_DE_TESTE, PLANOS, somarMeses, CARENCIA_DIAS, MESES_PAGOS_NO_ANUAL, EMPRESA_EXTRA, MAX_EMPRESAS, empresasIncluidas } from './plans';
 import { asaas, lerRef, montarRef, msDaData } from './asaas';
 
 export async function fimDoTeste(uid) {
@@ -36,7 +36,7 @@ export async function statusDoUsuario(decoded) {
   const fatura = sub.faturaPendente && sub.faturaPendente.url ? sub.faturaPendente : null;
   const vencFatura = fatura ? msDaData(fatura.vencimento) : 0;
   const base = {
-    forma: sub.forma || null, plano: sub.plano || null, periodo: sub.periodo || 'mensal',
+    forma: sub.forma || null, plano: sub.plano || null, periodo: sub.periodo || 'mensal', empresasExtras: Math.max(0, Number(sub.empresasExtras) || 0),
     renovaEm: ativa ? (sub.proximoVencimento || null) : null, pagoAte: sub.pagoAte || null, cancelada: !ativa && Boolean(sub.asaasSubscriptionId),
     ...(fatura ? { faturaPendente: { url: fatura.url, vencimento: fatura.vencimento, valor: fatura.valor, diasParaVencer: Math.ceil((vencFatura - agora) / 864e5) } } : {}),
   };
@@ -68,10 +68,30 @@ export async function statusDoUsuario(decoded) {
   };
 }
 
-// Valor de cada cobrança (centavos) de um plano
-export function valorDoPlano(planId, periodo, fundador) {
+// Valor de cada cobrança (centavos) de um plano, com as empresas adicionais
+export function valorDoPlano(planId, periodo, fundador, extras = 0) {
   const p = PLANOS[planId] || PLANOS.basic;
-  return (fundador ? p.fundador : p.valor) * (periodo === 'anual' ? MESES_PAGOS_NO_ANUAL : 1);
+  const mensal = (fundador ? p.fundador : p.valor) + Math.max(0, Math.floor(Number(extras) || 0)) * EMPRESA_EXTRA;
+  return mensal * (periodo === 'anual' ? MESES_PAGOS_NO_ANUAL : 1);
+}
+// Empresas adicionais necessárias para a quantidade de empresas cadastradas (perfis/{uid}.empresas + a principal)
+export async function empresasCadastradas(uid) {
+  try { const p = (await adminDb.collection('perfis').doc(uid).get()).data() || {}; return 1 + (Array.isArray(p.empresas) ? p.empresas.length : 0); } catch { return 1; }
+}
+export function extrasNecessarias(planId, total) { return Math.max(0, total - empresasIncluidas(planId)); }
+// Ajusta a assinatura do Asaas para cobrar as empresas adicionais (a partir das próximas cobranças)
+export async function ajustarEmpresasExtras(uid, extras) {
+  const ref = adminDb.collection('subscriptions').doc(uid);
+  const sub = (await ref.get()).data() || {};
+  extras = Math.max(0, Math.min(MAX_EMPRESAS, Math.floor(Number(extras) || 0)));
+  const ativa = sub.asaasSubscriptionId && sub.statusAsaas === 'ACTIVE';
+  const fundador = Boolean(sub.fundador && sub.fundadorAte && Date.parse(sub.fundadorAte) > Date.now());
+  const valor = valorDoPlano(sub.plano || 'basic', sub.periodo || 'mensal', fundador, extras);
+  if (ativa && (sub.empresasExtras || 0) !== extras) {
+    await asaas('PUT', `/subscriptions/${sub.asaasSubscriptionId}`, { value: valor / 100, updatePendingPayments: true });
+  }
+  await ref.set({ empresasExtras: extras, updatedAt: new Date().toISOString() }, { merge: true });
+  return { extras, valor, ativa: Boolean(ativa) };
 }
 
 // Liga uma assinatura do Asaas à conta: grava plano/forma e cancela uma assinatura antiga da mesma conta.
