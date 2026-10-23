@@ -6,6 +6,19 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
+# Motor de leitura de fotos (OCR Tesseract, roda no navegador do cliente): arquivos servidos pelo próprio site.
+# Se a instalação falhar, a imagem é gerada mesmo assim e o navegador usa a CDN.
+FROM node:24-alpine AS ocr
+WORKDIR /ocr
+RUN mkdir -p out/lang; \
+  if npm install --no-audit --no-fund --no-save tesseract.js@6 @tesseract.js-data/por > /tmp/ocr.log 2>&1; then \
+    cp node_modules/tesseract.js/dist/tesseract.min.js node_modules/tesseract.js/dist/worker.min.js out/ 2>/dev/null; \
+    cp node_modules/tesseract.js-core/tesseract-core*.js out/ 2>/dev/null; cp node_modules/tesseract.js-core/tesseract-core*.wasm out/ 2>/dev/null; \
+    L=$(find node_modules/@tesseract.js-data/por -name por.traineddata.gz | grep best_int | head -1); [ -n "$L" ] || L=$(find node_modules/@tesseract.js-data/por -name por.traineddata.gz | head -1); \
+    [ -n "$L" ] && cp "$L" out/lang/; \
+  else echo "OCR local indisponível; o navegador vai usar a CDN"; tail -5 /tmp/ocr.log; fi; \
+  ls -la out out/lang; true
+
 FROM node:24-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -21,6 +34,7 @@ WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build /app/public ./public
+COPY --from=ocr /ocr/out ./public/vendor/ocr
 COPY --from=build --chown=app:app /app/.next/standalone ./
 COPY --from=build --chown=app:app /app/.next/static ./.next/static
 USER app

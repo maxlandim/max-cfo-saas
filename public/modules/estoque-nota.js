@@ -107,8 +107,9 @@
     var novos = sessao.linhas.filter(function (l) { return l.destino === 'novo'; }).length, ign = sessao.linhas.filter(function (l) { return l.destino === 'ignorar'; }).length;
     var parcelas = n.parcelas && n.parcelas.length ? n.parcelas : null;
     var corpo = '' +
-      (n.origem === 'leitor' && n.conferido ? '<div class="fin-alerta green">Lido do PDF: a chave de acesso e a soma dos itens conferem com o total da nota. Com o XML vêm também lote e validade.</div>' : '') +
-      (n.origem === 'leitor' && !n.conferido ? '<div class="fin-alerta gold">⚠️ Lido do PDF, mas a soma dos itens não bateu com o total dos produtos da nota (' + moeda(n.valorProdutos || 0) + '). Confira quantidades e valores com a nota antes de confirmar, ou use o XML, que é exato.</div>' : '') +
+      (n.origem === 'leitor' && n.conferido ? '<div class="fin-alerta green">Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ': a chave de acesso e a soma dos itens conferem com o total da nota. Com o XML vêm também lote e validade.</div>' : '') +
+      (n.origem === 'leitor' && !n.conferido && n.linhasConferem ? '<div class="fin-alerta gold">Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ': em cada produto a quantidade × o valor unitário confere com o total da linha, mas não consegui confirmar o total dos produtos da nota. Confira se não faltou nenhum item.</div>' : '') +
+      (n.origem === 'leitor' && !n.conferido && !n.linhasConferem ? '<div class="fin-alerta gold">⚠️ Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ', mas a soma dos itens não bateu com o total dos produtos da nota (' + moeda(n.valorProdutos || 0) + '). Confira quantidades e valores com a nota antes de confirmar, ou use o XML, que é exato.</div>' : '') +
       (sessao.duplicada ? '<div class="fin-alerta red">⚠️ Esta nota já deu entrada no estoque em ' + F().dataBR(String(sessao.duplicada.em).slice(0, 10)) + '. Confirmar de novo vai somar as quantidades outra vez.</div>' : '') +
       (sessao.propria ? '<div class="fin-alerta red">⚠️ Esta nota foi emitida pela sua própria empresa (é uma venda). A entrada de estoque é para notas de compra.</div>' : '') +
       '<div class="fin-kpis" style="margin:4px 0 12px">' +
@@ -148,10 +149,10 @@
       F().modal('enModal', '📄 Entrada de estoque pela nota fiscal',
         '<p style="line-height:1.6;margin-bottom:12px">Envie a nota de compra do fornecedor. Os produtos entram no estoque com quantidade e custo, e a compra vai para Contas a pagar.</p>' +
         '<div class="drop-zone" id="enDrop" style="padding:28px;text-align:center;border:2px dashed var(--border);border-radius:12px;cursor:pointer" onclick="document.getElementById(\'enArq\').click()">' +
-        '<div style="font-size:30px">📄</div><b>Clique ou arraste o arquivo aqui</b><div class="fin-sub" style="margin-top:4px">XML da NF-e ou PDF da nota (DANFE)</div></div>' +
-        '<input type="file" id="enArq" accept=".xml,text/xml,application/xml,.pdf,application/pdf" style="display:none" onchange="estNota.arquivo(this.files[0])">' +
+        '<div style="font-size:30px">📄</div><b>Clique ou arraste o arquivo aqui</b><div class="fin-sub" style="margin-top:4px">XML da NF-e, PDF da nota (DANFE) ou foto</div></div>' +
+        '<input type="file" id="enArq" accept=".xml,text/xml,application/xml,.pdf,application/pdf,image/*" style="display:none" onchange="estNota.arquivo(this.files[0])">' +
         '<div id="enStatus" style="margin-top:12px"></div>' +
-        '<ul class="fin-sub" style="margin:10px 0 0 18px;line-height:1.7"><li><b>XML</b>: leitura exata, na hora, com lote e validade. O fornecedor envia por e-mail junto com a nota.</li><li><b>PDF (DANFE)</b>: o sistema lê a tabela de produtos e confere com o total da nota.</li></ul>',
+        '<ul class="fin-sub" style="margin:10px 0 0 18px;line-height:1.7"><li><b>XML</b>: leitura exata, na hora, com lote e validade. O fornecedor envia por e-mail junto com a nota.</li><li><b>PDF (DANFE)</b>: o sistema lê a tabela de produtos e confere com o total da nota.</li><li><b>Foto</b>: o sistema lê o texto da nota; confira os itens antes de confirmar.</li></ul>',
         '<button class="btn-ghost" onclick="fin.fechar(\'enModal\')">Fechar</button>');
       var d = el('enDrop');
       if (d) {
@@ -170,15 +171,22 @@
           nota = lerXml(await arq.text());
         } else {
           var tipo = F().tipoArquivo(arq);
-          if (/^image\//.test(tipo)) return aviso('Pela foto não dá para ler a tabela de produtos com segurança. Use o XML da nota (vem no e-mail do fornecedor) ou o PDF (DANFE).', 'red');
-          if (tipo !== 'application/pdf') return aviso('Use o XML ou o PDF da nota.', 'red');
+          if (tipo !== 'application/pdf' && !/^image\//.test(tipo)) return aviso('Use o XML, o PDF ou uma foto da nota.', 'red');
           if (arq.size > 15 * 1024 * 1024) return aviso('Arquivo grande demais (máximo 15 MB).', 'red');
-          aviso('⏳ Lendo a nota…');
-          var pl = null;
-          try { pl = await F().analisarPdf(arq, 10); } catch (e) { console.warn('PDF:', e); }
-          if (!pl) return aviso('Não consegui abrir este PDF (pode estar protegido por senha). Use o XML da nota.', 'red');
-          nota = window.leitor ? window.leitor.danfePdf(pl) : null;
-          if (!nota) return aviso('Este PDF não parece um DANFE (nota fiscal de produtos) ou é uma imagem escaneada. Use o XML da nota, que é exato.', 'red');
+          if (!window.leitor) return aviso('O leitor não carregou. Atualize a página e tente de novo.', 'red');
+          if (/^image\//.test(tipo)) {
+            try { nota = await window.leitor.notaDaImagem(arq, function (t) { aviso(esc(t)); }); } catch (e) { console.warn('OCR:', e); }
+            if (!nota) return aviso('Não consegui ler a nota nesta foto. Tire outra foto reta, com boa luz e a nota inteira na tela, ou use o XML (vem no e-mail do fornecedor), que é exato.', 'red');
+          } else {
+            aviso('⏳ Lendo a nota…');
+            var pl = null;
+            try { pl = await F().analisarPdf(arq, 10); } catch (e) { console.warn('PDF:', e); }
+            if (!pl) return aviso('Não consegui abrir este PDF (pode estar protegido por senha). Use o XML da nota.', 'red');
+            nota = window.leitor.danfePdf(pl);
+            // PDF escaneado: lê a imagem da 1ª página
+            if (!nota && pl.imagem && !(pl.texto || '').trim()) { try { var bi = atob(pl.imagem), u = new Uint8Array(bi.length); for (var q = 0; q < bi.length; q++) u[q] = bi.charCodeAt(q); nota = await window.leitor.notaDaImagem(new File([u], 'pagina.jpg', { type: 'image/jpeg' }), function (t) { aviso(esc(t)); }); } catch (e) { console.warn('OCR:', e); } }
+            if (!nota) return aviso('Este PDF não parece um DANFE (nota fiscal de produtos). Use o XML da nota, que é exato.', 'red');
+          }
           if (!nota.itens.length) return aviso('Achei a nota ' + esc(nota.numero || '') + (nota.fornecedor ? ' de ' + esc(nota.fornecedor) : '') + ', mas não consegui ler a tabela de produtos deste modelo de PDF. Use o XML da nota, que é exato.', 'red');
         }
       } catch (e) { return aviso(esc(e.message || 'Não foi possível ler a nota.'), 'red'); }

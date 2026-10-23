@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/fi
 import { lerDadosDoEspaco, gravarDadosDoEspaco, apagarPartesDoEspaco } from '../../lib/espaco';
 import { estadoDemo, USUARIO_DEMO } from '../../lib/demo';
 import { mesclarEstados, mesmoEstado } from '../../lib/mesclar';
+import { limiteDeEmpresas, EMPRESA_EXTRA, empresasIncluidas } from '../../lib/plans';
 import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 
@@ -351,12 +352,14 @@ export default function DashboardPage() {
     })));
 
     // Empresas do mesmo login (BPO, grupo de empresas). A principal usa o uid; as demais, "<uid>__<id>".
-    const LIMITES = { basic: 1, intermediate: 3, complete: 10, unlimited: 30 };
-    const limiteEmpresas = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(LIMITES[acesso.plano] || 1, 3) : (LIMITES[acesso.plano] || 1))
+    // Básico inclui 1 empresa e os demais planos 3; cada empresa a mais é cobrada à parte (EMPRESA_EXTRA por mês)
+    const limiteEmpresas = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(limiteDeEmpresas(acesso.plano, acesso.empresasExtras), 3) : limiteDeEmpresas(acesso.plano, acesso.empresasExtras))
       : acesso.motivo === 'teste' ? 3 : 9999; // admin e modo de configuração
     const chaveAtiva = 'maxcfo_empresa_' + user.uid;
     const perfilRef = doc(db, 'perfis', user.uid);
-    const empresas = { lista: [], ativa: '', limite: limiteEmpresas, plano: acesso.plano || null, motivo: acesso.motivo };
+    const empresas = { lista: [], ativa: '', limite: limiteEmpresas, plano: acesso.plano || null, motivo: acesso.motivo,
+      // quem tem assinatura ativa pode contratar empresas a mais direto no app
+      podeContratar: acesso.motivo === 'assinatura' && Boolean(acesso.renovaEm), valorExtra: EMPRESA_EXTRA, incluidas: acesso.plano ? empresasIncluidas(acesso.plano) : 3, extras: Number(acesso.empresasExtras) || 0 };
     const novoIdEmpresa = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, '0');
     const salvarPerfil = () => window.maxcfoDemo ? Promise.resolve() : setDoc(perfilRef, { empresas: empresas.lista, principal: empresas.principal || '', updatedAt: new Date().toISOString() }, { merge: true });
     empresas.espacoDe = (id) => (id ? `${user.uid}__${id}` : user.uid);
@@ -366,9 +369,20 @@ export default function DashboardPage() {
       try { if (id) localStorage.setItem(chaveAtiva, id); else localStorage.removeItem(chaveAtiva); localStorage.removeItem(chaveCompart); } catch {}
       window.location.reload();
     };
-    empresas.criar = async (nome, cnpj) => {
+    const valorExtraTxt = 'R$ ' + (EMPRESA_EXTRA / 100).toFixed(2).replace('.', ',');
+    empresas.criar = async (nome, cnpj, confirmado) => {
       if (1 + empresas.lista.length >= empresas.limite) { // a principal conta como uma
-        return { erro: `Seu plano permite ${empresas.limite} ${empresas.limite === 1 ? 'empresa' : 'empresas'}. Mude de plano para cadastrar mais.` };
+        if (!empresas.podeContratar) {
+          return { erro: acesso.motivo === 'assinatura' || acesso.motivo === 'teste' ? `Você já tem ${empresas.limite} ${empresas.limite === 1 ? 'empresa' : 'empresas'}. Depois de assinar, cada empresa a mais custa ${valorExtraTxt} por mês.` : `Seu acesso permite ${empresas.limite} empresas.` };
+        }
+        if (!confirmado) return { confirmar: true, valor: valorExtraTxt };
+        try {
+          const r = await authFetch('/api/assinatura', { method: 'POST', body: JSON.stringify({ acao: 'empresas', modo: 'adicionar' }) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) return { erro: d.error || 'Não consegui incluir a empresa na assinatura.' };
+          empresas.limite = d.limite; empresas.extras = d.extras;
+          try { localStorage.removeItem('maxcfo_acesso_' + user.uid); } catch {}
+        } catch { return { erro: 'Sem conexão. Tente de novo.' }; }
       }
       const item = { id: novoIdEmpresa(), nome: String(nome || '').trim().slice(0, 80) || 'Nova empresa', cnpj: String(cnpj || '').replace(/\D/g, '').slice(0, 14), criadaEm: new Date().toISOString() };
       empresas.lista.push(item);
@@ -387,6 +401,14 @@ export default function DashboardPage() {
       empresas.lista = empresas.lista.filter((x) => x.id !== id);
       await salvarPerfil();
       try { await apagarPartesDoEspaco(db, empresas.espacoDe(id)); await deleteDoc(doc(db, 'workspaces', empresas.espacoDe(id))); } catch (e) { console.warn(e); }
+      // empresa adicional excluída: a cobrança dela sai das próximas faturas
+      if (empresas.podeContratar && empresas.extras > 0) {
+        try {
+          const r = await authFetch('/api/assinatura', { method: 'POST', body: JSON.stringify({ acao: 'empresas', modo: 'sincronizar' }) });
+          const d = await r.json().catch(() => ({}));
+          if (r.ok) { empresas.extras = d.extras; empresas.limite = d.limite; try { localStorage.removeItem('maxcfo_acesso_' + user.uid); } catch {} }
+        } catch {}
+      }
       if (empresas.ativa === id) await empresas.trocar('');
     };
     // Lê os dados de todas as empresas (painel do BPO)
