@@ -257,9 +257,11 @@
   }
   // Tabela de produtos pelas linhas de texto: código, descrição, NCM, CST, CFOP, unidade, quantidade, valor unitário e total
   function itensPorLinhas(linhas) {
-    var out = [], re = /^(\S{1,30}?)[,.;]?\s+(.+?)\s+(\d{8})\s+(\d{2,4})\s+([1-7]\d{3})\s+([A-Za-z]{1,6}\.?)\s*=?\s+(\d[\d.,]*)\s+(\d[\d.,]*)\s+(\d[\d.,]*)/, ultimo = null;
+    var out = [], re = /^(\S{1,30}?)[,.;:]?\s+(.+?)\s+(\d{8})\s+(?:(\d{2,4})\s+)?([1-7]\d{3})\s+([A-Za-z]{1,6}\.?)\s*[=|:]?\s+(\d[\d.,]*)\s+(\d[\d.,]*)\s+(\d[\d.,]*)/, ultimo = null;
+    // corrige letras lidas no lugar de números dentro de cada "palavra" numérica (O00 → 000, 51O2 → 5102, 1O,0000 → 10,0000)
+    var token = function (w) { var d = (w.match(/\d/g) || []).length; return d && d >= w.replace(/[.,]/g, '').length * 0.5 && /^[\dOoIlSBZ|.,]+$/.test(w) ? w.replace(/[Oo]/g, '0').replace(/[Il|]/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2') : w; };
     linhas.forEach(function (l) {
-      l = L.digitosOCR(String(l || '').trim()).replace(/\s+/g, ' ');
+      l = L.digitosOCR(String(l || '').trim()).replace(/\s*,\s*(?=\d)/g, ',').replace(/\s+/g, ' ').split(' ').map(token).join(' ');
       var m = l.match(re);
       if (m) {
         var q = numero(m[7]), vu = numero(m[8]), vt = numero(m[9]);
