@@ -54,7 +54,7 @@ export function montarEmailTeste(tipo, { nome, site, uid, fundador }) {
   if (tipo === 'dica') return {
     assunto: 'Dica: cobre seus clientes pelo WhatsApp com Pix',
     html: moldura({ site, uid, titulo: `${oi} Uma dica para receber mais rápido`, botao: 'Ver minhas contas a receber', link: `${site}/dashboard?${utm('dica')}`,
-      corpo: `<p>Em <b>Contas a receber</b>, toque em uma conta e escolha <b>Cobrar no WhatsApp</b>. O sistema monta a mensagem com o <b>Pix copia e cola no valor certo</b> e abre a conversa com o cliente.</p>
+      corpo: `<p>Em <b>Contas a receber</b>, toque em <b>💠 Cobrar</b> ao lado da conta. O sistema gera o <b>Pix copia e cola e o QR Code no valor certo</b> e manda a cobrança pelo WhatsApp do cliente.</p>
 <p>Também vale olhar o <b>Fluxo de caixa</b>: ele mostra, dia a dia, quanto vai sobrar ou faltar nos próximos 90 dias, para você decidir antes do aperto.</p>` }),
   };
   if (tipo === 'acabaAmanha') return {
