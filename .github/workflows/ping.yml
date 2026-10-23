@@ -5,11 +5,17 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 15
     steps:
       - run: |
-          for u in https://landimadvisory.com.br/api/saude http://200.141.22.185:8000 http://200.141.22.185:8000/api/health http://200.141.22.185 ; do
-            r=$(curl -s -o /dev/null -m 15 -w "%{http_code} %{time_total}s" "$u" || echo "falhou"); echo "::warning::$u -> $r"
+          # espera o deploy novo (motor de OCR servido pelo site) por até 12 minutos
+          for i in $(seq 1 48); do
+            c=$(curl -s -o /dev/null -m 10 -w "%{http_code}" https://landimadvisory.com.br/vendor/ocr/tesseract.min.js)
+            [ "$c" = "200" ] && break; sleep 15
           done
-          curl -s -m 15 https://landimadvisory.com.br/api/saude | while read l; do echo "::warning::saude: $l"; done
-          for p in 22 80 443 8000 6001 6002; do timeout 6 bash -c "</dev/tcp/200.141.22.185/$p" 2>/dev/null && echo "::warning::porta $p aberta" || echo "::warning::porta $p fechada"; done
+          echo "::warning::ocr tesseract.min.js -> $c (tentativa $i)"
+          echo "::warning::lang -> $(curl -s -o /dev/null -m 15 -w '%{http_code}' https://landimadvisory.com.br/vendor/ocr/lang/por.traineddata.gz)"
+          echo "::warning::leitor.js -> $(curl -s -m 15 https://landimadvisory.com.br/modules/leitor.js | grep -c 'notaDaImagem')"
+          echo "::warning::planos 10 empresas -> $(curl -s -m 15 https://landimadvisory.com.br/pricing | grep -c 'Até 10 empresas')"
+          echo "::warning::saude -> $(curl -s -m 15 https://landimadvisory.com.br/api/saude)"
+          echo "::warning::chat 410 -> $(curl -s -o /dev/null -m 15 -w '%{http_code}' -X POST https://landimadvisory.com.br/api/chat)"
