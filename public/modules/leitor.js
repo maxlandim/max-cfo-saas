@@ -329,6 +329,7 @@
     opcoes.forEach(function (l) { alvos.forEach(function (a) { if (!escolhida && confere(l, a)) { escolhida = l; alvoOk = a; } }); });
     n.itens = escolhida || (porPos.length >= porTexto.length ? porPos : porTexto);
     n.conferido = !!escolhida && n.valorTotal > 0;
+    n.linhasConferem = n.itens.length > 0 && n.itens.every(function (i) { return i.descricao && Math.abs(i.quantidade * i.valorUnitario - i.valorTotal) <= Math.max(0.02, i.valorTotal * 0.005); });
     if (escolhida && Math.abs(alvoOk - n.valorProdutos) >= 0.05) n.valorProdutos = alvoOk; // total dos produtos mal lido na foto
     n.cabecalhoOk = !!(n.fornecedor && n.valorTotal > 0);
     return n;

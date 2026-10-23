@@ -108,7 +108,8 @@
     var parcelas = n.parcelas && n.parcelas.length ? n.parcelas : null;
     var corpo = '' +
       (n.origem === 'leitor' && n.conferido ? '<div class="fin-alerta green">Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ': a chave de acesso e a soma dos itens conferem com o total da nota. Com o XML vêm também lote e validade.</div>' : '') +
-      (n.origem === 'leitor' && !n.conferido ? '<div class="fin-alerta gold">⚠️ Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ', mas a soma dos itens não bateu com o total dos produtos da nota (' + moeda(n.valorProdutos || 0) + '). Confira quantidades e valores com a nota antes de confirmar, ou use o XML, que é exato.</div>' : '') +
+      (n.origem === 'leitor' && !n.conferido && n.linhasConferem ? '<div class="fin-alerta gold">Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ': em cada produto a quantidade × o valor unitário confere com o total da linha, mas não consegui confirmar o total dos produtos da nota. Confira se não faltou nenhum item.</div>' : '') +
+      (n.origem === 'leitor' && !n.conferido && !n.linhasConferem ? '<div class="fin-alerta gold">⚠️ Lido ' + (n.ocr ? 'da foto' : 'do PDF') + ', mas a soma dos itens não bateu com o total dos produtos da nota (' + moeda(n.valorProdutos || 0) + '). Confira quantidades e valores com a nota antes de confirmar, ou use o XML, que é exato.</div>' : '') +
       (sessao.duplicada ? '<div class="fin-alerta red">⚠️ Esta nota já deu entrada no estoque em ' + F().dataBR(String(sessao.duplicada.em).slice(0, 10)) + '. Confirmar de novo vai somar as quantidades outra vez.</div>' : '') +
       (sessao.propria ? '<div class="fin-alerta red">⚠️ Esta nota foi emitida pela sua própria empresa (é uma venda). A entrada de estoque é para notas de compra.</div>' : '') +
       '<div class="fin-kpis" style="margin:4px 0 12px">' +
