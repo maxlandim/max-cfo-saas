@@ -57,7 +57,7 @@ async def publicas(b):
     log(await pg.evaluate("[...document.images].some(i=>i.src.endsWith('/logo.svg') && i.naturalWidth>0)"), 'logo aparece na página inicial')
     await pg.goto(SITE + '/pricing', wait_until='networkidle'); await pg.wait_for_timeout(800)
     t = (await pg.inner_text('.pl')).replace('\xa0', ' ')
-    log('Escritório' in t and 'Até 30 empresas' in t, 'plano Escritório com até 30 empresas')
+    log('Escritório' in t and 'Até 10 empresas' in t and '29,90' in t, 'plano Escritório com 10 empresas e empresa adicional')
     log(('49,90' in t and 'Preço de fundador' in t) or ('79,90' in t and 'Preço de fundador' not in t), 'preço do Básico (fundador 49,90 ou normal 79,90)', t[:160])
     await pg.click('.pl-periodo button:has-text("Anual")'); await pg.wait_for_timeout(300)
     t2 = (await pg.inner_text('.pl')).replace('\xa0', ' ')
