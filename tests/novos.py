@@ -80,6 +80,10 @@ async def publicas(b):
     log(not errs, 'sem erros de JavaScript nas páginas públicas', errs[:2])
     s, r = rest(SITE + '/api/lembretes', None, None, 'GET'); log(s in (401, 503), 'rota de lembretes protegida por senha', s)
     s, r = rest(SITE + '/api/admin/resumo', None, None, 'GET'); log(s in (401, 503), 'painel do administrador fechado sem login', s)
+    s, r = rest(SITE + '/api/backup', None, None, 'GET'); log(s == 401, 'rota de backup protegida por senha', s)
+    s, r = rest(SITE + '/api/admin/backup?email=x@x.com', None, None, 'GET'); log(s in (401, 503), 'backups do administrador fechados sem login', s)
+    if 'localhost' in SITE:
+        s, r = rest(SITE + '/api/erro', {'mensagem': 'erro de teste automático', 'pagina': '/teste'}); log(s in (200, 202), 'registro de erros responde', s)
     s, r = rest(SITE + '/api/visita', {'pagina': '/', 'origem': 'teste', 'novo': False}); log(s in (200, 202), 'contador de visitas responde', s)
     s, r = rest(SITE + '/api/asaas', {'event': 'PAYMENT_RECEIVED'}); log(s in (401, 503), 'webhook do Asaas recusa aviso sem token', [s, r.get('error')])
     s, r = rest(SITE + '/api/checkout', {'planId': 'basic', 'forma': 'pix_boleto'}); log(s in (401, 503), 'checkout Pix/boleto pede login', [s, r.get('error')])
