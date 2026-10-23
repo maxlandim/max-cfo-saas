@@ -1351,6 +1351,10 @@ async function sendChat() {
 
   // Comandos regulares
   setTimeout(async () => {
+    // Perguntas comuns: respondidas aqui com os números da empresa, sem IA
+    let proprio = null;
+    try { proprio = window.cfoLocal ? window.cfoLocal.responder(msg) : null; } catch (e) { console.warn(e); }
+    if (proprio) { removeTyping(tid); addAIMsg(proprio); state.chatHistory.push({ role: 'ai', text: proprio }); return; }
     const ctx = getCtx();
     const resp = engine.processCommand(msg, ctx);
     
