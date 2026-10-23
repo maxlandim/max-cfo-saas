@@ -1300,6 +1300,8 @@
   // ════════════════ TELA: FLUXO DE CAIXA E BANCOS ════════════════
   var fluxoCfg = { dias: 90, atrasados: true };
   F.renderFluxo = function () {
+    // primeiros passos: marca que a pessoa já viu o fluxo de caixa
+    var sv = st().settings || (st().settings = {}); if (!sv.viuFluxo && (st().transactions || []).length) { sv.viuFluxo = true; if (window.saveStateToFirebase) window.saveStateToFirebase(window.workspaceId, st()); }
     var v = el('view-fluxo'); if (!v) return;
     F.garantirModelo();
     var pts = F.projecao(fluxoCfg.dias, fluxoCfg.atrasados);
