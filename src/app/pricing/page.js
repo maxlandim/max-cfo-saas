@@ -7,14 +7,40 @@ import { authFetch } from '../../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { CardsPlanos, INCLUSO, ESTILO_PLANOS, PLANOS_VITRINE } from '../components/Planos';
 
+const digitos = (v) => String(v || '').replace(/\D/g, '');
+// Máscara de CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)
+function mascara(v) {
+  const d = digitos(v).slice(0, 14);
+  if (d.length <= 11) return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  return d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+}
+
 export default function PricingPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
-  // Plano escolhido esperando a forma de pagamento (cartão ou Pix/boleto)
+  // Plano escolhido esperando a forma de pagamento e os dados de cobrança
   const [escolha, setEscolha] = useState(null);
+  const [forma, setForma] = useState('cartao');
+  const [nome, setNome] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [erroModal, setErroModal] = useState('');
+  const [minha, setMinha] = useState(null);
+
+  // Preenche nome e CPF/CNPJ já usados antes e descobre se já existe assinatura
+  useEffect(() => {
+    if (!user) return;
+    let vivo = true;
+    authFetch('/api/assinatura').then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (!vivo || !d) return;
+      setMinha(d);
+      if (d.nome) setNome(d.nome);
+      if (d.documento) setDocumento(mascara(d.documento));
+    }).catch(() => {});
+    return () => { vivo = false; };
+  }, [user]);
 
   const handleSubscribe = (planId, periodo) => {
     setErro('');
@@ -22,6 +48,8 @@ export default function PricingPage() {
       router.push('/register');
       return;
     }
+    if (!nome && user.displayName) setNome(user.displayName);
+    setErroModal('');
     setEscolha({ planId, periodo });
   };
 
@@ -32,38 +60,30 @@ export default function PricingPage() {
     return () => window.removeEventListener('keydown', fechar);
   }, [escolha]);
 
-  const pagar = async (forma) => {
+  const pagar = async (e) => {
+    e.preventDefault();
+    const d = digitos(documento);
+    if (nome.trim().length < 3) { setErroModal('Informe o nome completo ou a razão social.'); return; }
+    if (d.length !== 11 && d.length !== 14) { setErroModal('Informe um CPF (11 números) ou CNPJ (14 números).'); return; }
     const { planId, periodo } = escolha;
-    setEscolha(null);
+    setErroModal('');
     setLoading(true);
     try {
-      const res = await authFetch('/api/checkout', { method: 'POST', body: JSON.stringify({ planId, periodo, forma }) });
+      const res = await authFetch('/api/checkout', { method: 'POST', body: JSON.stringify({ planId, periodo, forma, nome: nome.trim(), documento: d }) });
       const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
         return;
       }
-      setErro(data.error || 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.');
+      setErroModal(data.error || 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.');
     } catch (err) {
       console.error(err);
-      setErro('Sem conexão com o servidor. Verifique a internet e tente de novo.');
+      setErroModal('Sem conexão com o servidor. Verifique a internet e tente de novo.');
     }
     setLoading(false);
   };
 
-  const abrirPortal = async () => {
-    setErro('');
-    setLoading(true);
-    try {
-      const res = await authFetch('/api/portal', { method: 'POST' });
-      const data = await res.json().catch(() => ({}));
-      if (data.url) { window.location.href = data.url; return; }
-      setErro(data.error || 'Não foi possível abrir o portal agora.');
-    } catch {
-      setErro('Sem conexão com o servidor. Verifique a internet e tente de novo.');
-    }
-    setLoading(false);
-  };
+  const plano = escolha ? PLANOS_VITRINE.find((p) => p.id === escolha.planId) || {} : {};
 
   return (
     <div className="pr">
@@ -76,27 +96,43 @@ export default function PricingPage() {
       <main className="pr-main">
         <h1>Escolha o seu plano</h1>
         <p className="pr-sub">Cada plano soma recursos ao anterior. No teste grátis você usa tudo para conhecer.</p>
-        <p className="pr-teste">{user ? 'Pague no cartão, no Pix ou no boleto. Assinando durante o teste, você não perde os dias grátis: o período pago só começa quando os 7 dias acabarem.' : '7 dias grátis, sem cartão. Cancele quando quiser.'}</p>
+        <p className="pr-teste">{user ? 'Pague no cartão, no Pix ou no boleto. Assinando durante o teste, você não perde os dias grátis: a primeira cobrança só vence quando os 7 dias acabarem.' : '7 dias grátis, sem cartão. Cancele quando quiser.'}</p>
+        {minha && minha.ativa && <div className="pr-aviso">Você já tem uma assinatura. Escolher outro plano ou outra forma de pagamento troca a assinatura atual, sem perder o período já pago. <Link href="/assinatura">Ver minha assinatura</Link></div>}
         {erro && <div role="alert" className="pr-erro">{erro}</div>}
 
         <CardsPlanos onEscolher={handleSubscribe} carregando={loading} textoBotao={(p) => (user ? 'Assinar ' + p.nome : 'Começar grátis')} />
 
         {escolha && (
           <div className="pr-modal" role="dialog" aria-modal="true" aria-labelledby="pr-modal-t" onClick={(e) => { if (e.target === e.currentTarget) setEscolha(null); }}>
-            <div className="pr-modal-caixa">
+            <form className="pr-modal-caixa" onSubmit={pagar} noValidate>
               <button type="button" className="pr-modal-x" aria-label="Fechar" onClick={() => setEscolha(null)}>×</button>
               <h2 id="pr-modal-t">Como prefere pagar?</h2>
-              <p className="pr-modal-sub">Plano {(PLANOS_VITRINE.find((p) => p.id === escolha.planId) || {}).nome} · {escolha.periodo === 'anual' ? 'anual (12 meses pelo preço de 10)' : 'mensal'}</p>
-              <button type="button" className="pr-forma" onClick={() => pagar('cartao')}>
-                <span className="pr-forma-ic" aria-hidden="true">💳</span>
-                <span><b>Cartão de crédito</b><small>Renova sozinho {escolha.periodo === 'anual' ? 'todo ano' : 'todo mês'}. Assinando no teste grátis, a 1ª cobrança só acontece quando ele acabar. Cancele quando quiser.</small></span>
-              </button>
-              <button type="button" className="pr-forma" onClick={() => pagar('avulso')}>
-                <span className="pr-forma-ic" aria-hidden="true">⚡</span>
-                <span><b>Pix ou boleto</b><small>Você paga {escolha.periodo === 'anual' ? '12 meses' : '1 mês'} de uma vez, sem renovação automática. Avisamos antes de vencer para renovar. Pago no teste grátis, o período só começa quando ele acabar.</small></span>
-              </button>
-              <p className="pr-modal-nota">O Pix libera na hora. O boleto libera quando o banco confirmar, em até 1 dia útil.</p>
-            </div>
+              <p className="pr-modal-sub">Plano {plano.nome} · {escolha.periodo === 'anual' ? 'anual (12 meses pelo preço de 10)' : 'mensal'}</p>
+              <div role="radiogroup" aria-label="Forma de pagamento">
+                <label className={'pr-forma' + (forma === 'cartao' ? ' on' : '')}>
+                  <input type="radio" name="forma" value="cartao" checked={forma === 'cartao'} onChange={() => setForma('cartao')} />
+                  <span className="pr-forma-ic" aria-hidden="true">💳</span>
+                  <span><b>Cartão de crédito</b><small>Cobrança automática {escolha.periodo === 'anual' ? 'todo ano' : 'todo mês'}. Assinando no teste grátis, a 1ª cobrança só acontece quando ele acabar.</small></span>
+                </label>
+                <label className={'pr-forma' + (forma === 'pix_boleto' ? ' on' : '')}>
+                  <input type="radio" name="forma" value="pix_boleto" checked={forma === 'pix_boleto'} onChange={() => setForma('pix_boleto')} />
+                  <span className="pr-forma-ic" aria-hidden="true">⚡</span>
+                  <span><b>Pix ou boleto</b><small>Todo {escolha.periodo === 'anual' ? 'ano' : 'mês'} você recebe a cobrança por e-mail e paga com Pix ou boleto. A 1ª vence quando o teste grátis acabar.</small></span>
+                </label>
+              </div>
+              <div className="pr-campos">
+                <label>Nome completo ou razão social
+                  <input type="text" autoComplete="name" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                </label>
+                <label>CPF ou CNPJ
+                  <input type="text" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" value={documento} onChange={(e) => setDocumento(mascara(e.target.value))} required />
+                </label>
+                <small>Usados na cobrança e na nota fiscal. Cancele quando quiser.</small>
+              </div>
+              {erroModal && <div role="alert" className="pr-erro pr-erro-modal">{erroModal}</div>}
+              <button type="submit" className="pl-btn pl-btn-ouro" disabled={loading}>{loading ? 'Abrindo…' : forma === 'cartao' ? 'Continuar para o cartão' : 'Gerar cobrança Pix ou boleto'}</button>
+              <p className="pr-modal-nota">Pagamento processado pelo Asaas, com segurança.</p>
+            </form>
           </div>
         )}
 
@@ -107,15 +143,11 @@ export default function PricingPage() {
 
         <div className="pr-acoes">
           {user && <Link href="/dashboard" className="pr-link">Continuar no teste grátis</Link>}
-          {user && (
-            <button type="button" onClick={abrirPortal} disabled={loading} className="pr-link pr-botao-link">
-              Já sou assinante: gerenciar assinatura
-            </button>
-          )}
-          <a href="https://wa.me/5561992105889?text=Ol%C3%A1!%20Tenho%20uma%20d%C3%BAvida%20sobre%20os%20planos%20do%20MAX%20CFO%20AI." target="_blank" rel="noopener" className="pr-link">Dúvidas? Fale no WhatsApp</a>
+          {user && <Link href="/assinatura" className="pr-link">Já sou assinante: minha assinatura</Link>}
+          <a href="https://wa.me/5561992105889?text=Ol%C3%A1!%20Tenho%20uma%20d%C3%BAvida%20sobre%20os%20planos%20da%20Landim%20Advisory." target="_blank" rel="noopener" className="pr-link">Dúvidas? Fale no WhatsApp</a>
         </div>
         <p className="pr-legal">
-          Ao assinar, você concorda com os <Link href="/termos">Termos de Uso</Link> e a <Link href="/privacidade">Política de Privacidade</Link>. Pagamento pelo Stripe: no cartão, com renovação automática e cancelamento a qualquer momento, sem multa; ou no Pix e no boleto, por período, sem renovação automática.
+          Ao assinar, você concorda com os <Link href="/termos">Termos de Uso</Link> e a <Link href="/privacidade">Política de Privacidade</Link>. Pagamento pelo Asaas, no cartão de crédito, Pix ou boleto, com renovação a cada período e cancelamento a qualquer momento, sem multa.
         </p>
       </main>
     </div>
@@ -153,6 +185,20 @@ const ESTILO = `
 .pr-forma b{display:block;font-size:16px;margin-bottom:3px}
 .pr-forma small{display:block;color:#4B5565;font-size:13.5px;line-height:1.45}
 .pr-forma-ic{font-size:24px;line-height:1.2}
-.pr-modal-nota{margin:6px 0 0;color:#6B7486;font-size:12.5px}
+.pr-modal-nota{margin:10px 0 0;color:#6B7486;font-size:12.5px;text-align:center}
+.pr-forma{position:relative}
+.pr-forma input[type=radio]{position:absolute;opacity:0;pointer-events:none}
+.pr-forma.on{border-color:#C5A059;background:#FBF8F1;box-shadow:0 0 0 1px #C5A059}
+.pr-forma:focus-within{outline:3px solid #C5A059;outline-offset:2px}
+.pr-campos{display:flex;flex-direction:column;gap:10px;margin:6px 0 12px}
+.pr-campos label{display:flex;flex-direction:column;gap:5px;font-size:13.5px;font-weight:700;color:#1E2533}
+.pr-campos input{font:inherit;font-weight:500;font-size:16px;padding:11px 12px;border:1.5px solid #D5D9E0;border-radius:10px;min-height:44px}
+.pr-campos input:focus{outline:none;border-color:#C5A059;box-shadow:0 0 0 3px rgba(197,160,89,.25)}
+.pr-campos small{color:#6B7486;font-size:12.5px}
+.pr-erro-modal{margin:0 0 12px;max-width:none}
+.pr-aviso{background:#F6F1E4;border:1px solid #E8DCC0;color:#5C440B;border-radius:12px;padding:12px 16px;max-width:720px;margin:0 auto 24px;font-size:14px}
+.pr-aviso a{color:#5C440B;font-weight:800;text-decoration:underline}
+.pr-modal{overflow-y:auto}
+.pr-modal-caixa{max-height:calc(100vh - 32px);overflow-y:auto}
 @media (max-width:640px){.pr h1{font-size:30px}}
 `;
