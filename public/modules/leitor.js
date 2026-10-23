@@ -261,7 +261,7 @@
     // corrige letras lidas no lugar de números dentro de cada "palavra" numérica (O00 → 000, 51O2 → 5102, 1O,0000 → 10,0000)
     var token = function (w) { var d = (w.match(/\d/g) || []).length; return d && d >= w.replace(/[.,]/g, '').length * 0.5 && /^[\dOoIlSBZ|.,]+$/.test(w) ? w.replace(/[Oo]/g, '0').replace(/[Il|]/g, '1').replace(/S/g, '5').replace(/B/g, '8').replace(/Z/g, '2') : w; };
     linhas.forEach(function (l) {
-      l = L.digitosOCR(String(l || '').trim()).replace(/\s*,\s*(?=\d)/g, ',').replace(/\s+/g, ' ').split(' ').map(token).join(' ');
+      l = String(l || '').replace(/[—–|¦]/g, ' ').replace(/\s-\s/g, ' ').trim().replace(/\s*,\s*(?=\d)/g, ',').replace(/\s+/g, ' ').split(' ').map(token).join(' ');
       var m = l.match(re);
       if (m) {
         var q = numero(m[7]), vu = numero(m[8]), vt = numero(m[9]);
@@ -547,5 +547,6 @@
     var doc = await L.ocr(arq, function (p) { aviso('⏳ Lendo a foto da nota… ' + Math.round(p * 100) + '%'); });
     return L.danfePdf(doc);
   };
+  L._itensPorLinhas = itensPorLinhas;
   window.leitor = L;
 })();
