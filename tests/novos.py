@@ -81,6 +81,32 @@ async def publicas(b):
     s, r = rest(SITE + '/api/lembretes', None, None, 'GET'); log(s in (401, 503), 'rota de lembretes protegida por senha', s)
     s, r = rest(SITE + '/api/admin/resumo', None, None, 'GET'); log(s in (401, 503), 'painel do administrador fechado sem login', s)
     s, r = rest(SITE + '/api/backup', None, None, 'GET'); log(s == 401, 'rota de backup protegida por senha', s)
+    s, r = rest(SITE + '/api/rotina', None, None, 'GET'); log(s == 401, 'tarefa diária protegida por senha', s)
+    s, r = rest(SITE + '/api/cobrancas?wsId=x', None, None, 'GET'); log(s in (401, 503), 'cobrança pelo Asaas exige login', s)
+    s, r = rest(SITE + '/api/cobrancas/webhook?ws=x', {'event': 'PAYMENT_RECEIVED'}); log(s in (401, 503), 'webhook das cobranças recusa sem token', s)
+    s, r = rest(SITE + '/api/indicacao', None, None, 'GET'); log(s in (401, 503), 'indicação exige login', s)
+    # Demonstração sem login
+    d = await b.new_context(viewport={'width': 1366, 'height': 900}, locale='pt-BR'); dp = await d.new_page(); derr = []
+    dp.on('pageerror', lambda e: derr.append(str(e)))
+    await dp.goto(SITE + '/', wait_until='networkidle')
+    log(await dp.is_visible('a:has-text("Ver demonstração")'), 'botão Ver demonstração na página inicial')
+    await dp.goto(SITE + '/?ref=ABC234', wait_until='networkidle'); await dp.wait_for_timeout(600)
+    log(await dp.evaluate("localStorage.getItem('la_ref')") == 'ABC234', 'código de indicação do link fica guardado')
+    await dp.goto(SITE + '/dashboard?demo=1', wait_until='networkidle')
+    for _ in range(80):
+        if await dp.evaluate("!!(window.__maxcfoIniciado && window.state && document.querySelector('.lay-mod'))"): break
+        await dp.wait_for_timeout(500)
+    await dp.wait_for_timeout(2500)
+    n = await dp.evaluate("(window.state && state.transactions || []).length")
+    t = await dp.inner_text('body')
+    log('/dashboard' in dp.url and n > 100 and 'Pão Dourado' in t and 'Demonstração com uma empresa fictícia' in t, 'demonstração abre sem login com empresa fictícia', [dp.url[-30:], n])
+    await dp.screenshot(path=f'{OUT}/demo_inicio.png')
+    await dp.evaluate("switchView('fluxo')"); await dp.wait_for_timeout(1200)
+    await dp.screenshot(path=f'{OUT}/demo_fluxo.png')
+    await dp.evaluate("switchView('dre')"); await dp.wait_for_timeout(1200)
+    log('Resultado' in await dp.inner_text('#view-dre'), 'demonstração mostra o DRE')
+    log(not derr, 'demonstração sem erros de JavaScript', derr[:2])
+    await d.close()
     s, r = rest(SITE + '/api/admin/backup?email=x@x.com', None, None, 'GET'); log(s in (401, 503), 'backups do administrador fechados sem login', s)
     if 'localhost' in SITE:
         s, r = rest(SITE + '/api/erro', {'mensagem': 'erro de teste automático', 'pagina': '/teste'}); log(s in (200, 202), 'registro de erros responde', s)
@@ -158,6 +184,53 @@ async def painel(b):
         await pg.check('#lemClientes'); await pg.click('#lembretesCartao >> text=💾 Salvar'); await pg.wait_for_timeout(400)
         log(await pg.evaluate("state.settings.lembretes.avisarClientes===true"), 'lembretes salvos na empresa')
         await pg.screenshot(path=f'{OUT}/novos_lembretes.png', full_page=True)
+        # Cobrança dos clientes pelo Asaas (respostas do servidor simuladas)
+        estado_cob = {'pago': False}
+        async def falso_cob(rota):
+            req = rota.request
+            if req.method == 'GET': return await rota.fulfill(status=200, content_type='application/json', body=json.dumps({'conectado': True, 'conta': {'nome': 'Empresa Teste'}, 'sandbox': True}))
+            corpo = json.loads(req.post_data or '{}')
+            if corpo.get('acao') == 'gerar': return await rota.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'cobranca': {'id': 'pay_teste1', 'url': 'https://sandbox.asaas.com/i/teste1', 'status': 'PENDING', 'vencimento': '2099-01-10', 'valor': 250, 'criadaEm': '2026-10-23T12:00:00Z'}}))
+            await rota.fulfill(status=200, content_type='application/json', body='{"ok":true}')
+        async def falso_eventos(rota):
+            if rota.request.method == 'GET':
+                ev = [{'id': 'pay_teste1', 'txId': 'cobteste1', 'evento': 'PAYMENT_RECEIVED', 'status': 'RECEIVED', 'valor': 250, 'pagoEm': '2026-10-23', 'forma': 'PIX'}] if estado_cob['pago'] else []
+                return await rota.fulfill(status=200, content_type='application/json', body=json.dumps({'eventos': ev}))
+            await rota.fulfill(status=200, content_type='application/json', body='{"ok":true}')
+        await pg.route('**/api/cobrancas/eventos**', falso_eventos)
+        await pg.route(lambda u: '/api/cobrancas' in u and '/eventos' not in u, falso_cob)
+        await pg.evaluate("state.transactions.push({id:'cobteste1',type:'RECEITA',desc:'Consultoria outubro',contato:'Cliente Teste',amount:250,date:'2026-10-23',vencimento:'2099-01-10',status:'pendente',category:'Consultoria'}); fin.cobrar('cobteste1')")
+        for _ in range(20):
+            if await pg.is_visible('#cobGerarBtn'): break
+            await pg.wait_for_timeout(300)
+        log(await pg.is_visible('#cobGerarBtn'), 'tela Cobrar oferece cobrança pelo Asaas com baixa automática')
+        await pg.fill('#cobDoc', '52998224725'); await pg.click('#cobGerarBtn'); await pg.wait_for_timeout(1500)
+        url_cob = await pg.evaluate("(fin.tx('cobteste1').cobranca||{}).url")
+        log(url_cob == 'https://sandbox.asaas.com/i/teste1' and await pg.is_visible('#cobLink'), 'cobrança gerada e link mostrado', url_cob)
+        await pg.screenshot(path=f'{OUT}/cobranca_asaas.png')
+        await pg.evaluate("fin.fechar('finCobrancaModal')")
+        estado_cob['pago'] = True
+        await pg.evaluate("cobranca.sincronizar()"); await pg.wait_for_timeout(1500)
+        st_cob = await pg.evaluate("[fin.tx('cobteste1').status, fin.tx('cobteste1').forma, (fin.tx('cobteste1').cobranca||{}).status]")
+        log(st_cob[0] == 'pago' and st_cob[1] == 'Pix' and st_cob[2] == 'paga', 'pagamento avisado pelo Asaas dá baixa sozinho', st_cob)
+        await pg.unroute('**/api/cobrancas/eventos**')
+        await pg.evaluate("state.transactions = state.transactions.filter(t => t.id !== 'cobteste1')")
+        # Aprovação de contas a pagar (papel de analista simulado na tela)
+        await pg.evaluate("state.transactions.push({id:'aprteste1',type:'DESPESA',desc:'Fornecedor teste',amount:90,date:'2026-10-23',vencimento:'2099-01-10',status:'pendente',category:'Fornecedores',aprovacao:'pendente',lancadoPor:'analista@exemplo.com'}); window.maxcfoPapel='analista'; switchView('pagar')")
+        await pg.wait_for_timeout(800)
+        linha = await pg.evaluate("[...document.querySelectorAll('#view-pagar tr')].find(r=>r.innerText.includes('Fornecedor teste'))?.innerText || ''")
+        log('Aguardando aprovação' in linha and 'Pagar' not in linha and 'Aprovar' not in linha, 'analista vê a conta aguardando aprovação, sem pagar', linha[:120])
+        await pg.evaluate("window.maxcfoPapel=''; fin.atualizarTudo()"); await pg.wait_for_timeout(600)
+        linha = await pg.evaluate("[...document.querySelectorAll('#view-pagar tr')].find(r=>r.innerText.includes('Fornecedor teste'))?.innerText || ''")
+        log('Aprovar' in linha, 'dono vê o botão Aprovar', linha[:120])
+        await pg.evaluate("fin.aprovar('aprteste1')"); await pg.wait_for_timeout(400)
+        log(await pg.evaluate("fin.tx('aprteste1').aprovacao") == 'aprovada', 'aprovação registrada')
+        await pg.screenshot(path=f'{OUT}/aprovacao.png')
+        await pg.evaluate("state.transactions = state.transactions.filter(t => t.id !== 'aprteste1'); saveStateToFirebase(workspaceId, state)")
+        # Equipe: papel na tela de convites
+        await pg.evaluate("switchView('team')"); await pg.wait_for_timeout(600)
+        log(await pg.is_visible('#acessoPapel') and 'Analista' in await pg.inner_text('#acessoPapel'), 'convite com escolha de papel (consulta, analista, gestor)')
+
         # Volume: 15 mil lançamentos (mais de 1 MB) gravam e voltam depois de recarregar
         tam = await pg.evaluate("""() => { for (let i = 0; i < 15000; i++) state.transactions.push({ id: 'vol' + i, type: i % 3 ? 'DESPESA' : 'RECEITA', desc: 'Teste de volume ' + (i % 50), amount: 10 + (i % 300), vencimento: '2026-11-' + String(1 + (i % 28)).padStart(2, '0'), status: 'pendente', categoria: 'Teste' }); saveStateToFirebase(workspaceId, state); return JSON.stringify(state).length; }""")
         await pg.wait_for_timeout(9000)
@@ -231,7 +304,9 @@ async def painel(b):
         # Minha assinatura (dados simulados)
         await pg.unroute('**/api/assinatura')
         await pg.route('**/api/assinatura', lambda rota: rota.fulfill(status=200, content_type='application/json', body=json.dumps({'nome': 'X', 'documento': '52998224725', 'ativa': True, 'plano': 'complete', 'periodo': 'mensal', 'forma': 'pix_boleto', 'proximoVencimento': '2099-01-10', 'pagoAte': '2099-01-10T15:00:00Z', 'fundador': True, 'fundadorAte': '2099-10-10T15:00:00Z', 'status': {'motivo': 'assinatura', 'faturaPendente': {'url': 'https://exemplo.com/fatura', 'vencimento': '2099-01-10', 'valor': 26990}}, 'cobrancas': [{'vencimento': '2098-12-10', 'valor': 26990, 'situacao': 'RECEIVED', 'forma': 'PIX', 'recibo': 'https://exemplo.com/r'}, {'vencimento': '2099-01-10', 'valor': 26990, 'situacao': 'PENDING', 'forma': 'UNDEFINED', 'url': 'https://exemplo.com/fatura'}]})))
+        await pg.route('**/api/indicacao', lambda rota: rota.fulfill(status=200, content_type='application/json', body=json.dumps({'codigo': 'ABC234', 'link': 'https://landimadvisory.com.br/?ref=ABC234', 'indicados': 2, 'pagos': 1, 'mesesGanhos': 1, 'mesesGuardados': 0})))
         await pg.goto(SITE + '/assinatura', wait_until='networkidle'); await pg.wait_for_timeout(1500)
+        log('Indique e ganhe' in await pg.inner_text('body') and await pg.input_value('.ma-link-ind input') == 'https://landimadvisory.com.br/?ref=ABC234', 'indique e ganhe com link próprio na Minha assinatura')
         t = (await pg.inner_text('body')).replace('\xa0', ' ')
         log('Minha assinatura' in t and 'Completo' in t and 'Pix ou boleto' in t and 'R$ 269,90' in t and 'Paga' in t and 'Cancelar assinatura' in t, 'página Minha assinatura', t[:160])
         w = await pg.evaluate('document.documentElement.scrollWidth'); log(w <= 392, 'Minha assinatura no celular sem rolagem lateral', w)
