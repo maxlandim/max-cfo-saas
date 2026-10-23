@@ -46,7 +46,7 @@
     var box = el('cobAsaas');
     if (!box) { box = document.createElement('div'); box.id = 'cobAsaas'; box.className = 'fin-alerta gold'; box.style.cssText = 'margin-bottom:14px;display:block'; pix.parentNode.insertBefore(box, pix); }
     box.innerHTML = '<span class="fin-sub">Verificando a cobrança pelo Asaas…</span>';
-    var s = await carregarStatus();
+    var s = await carregarStatus(!status.conectado); // confere de novo se ainda não estava conectada (pode ter conectado em outra aba)
     if (!el('cobAsaas')) return;
     if (t.cobranca && t.cobranca.url) {
       box.innerHTML = '<b>🔗 Cobrança pelo Asaas: ' + esc(SIT[t.cobranca.status] || t.cobranca.status || '') + '</b>' +
