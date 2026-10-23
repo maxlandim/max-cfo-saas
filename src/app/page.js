@@ -69,7 +69,7 @@ export default function LandingPage() {
             <p className="lp-sub">Contas a pagar e a receber, fluxo de caixa, cobrança por Pix e um relatório mensal pronto para enviar. Simples para quem não é da área financeira.</p>
             <div className="lp-ctas">
               <Link href="/register" className="lp-btn lp-btn-p">Testar grátis por 7 dias</Link>
-              <a href={WHATS} target="_blank" rel="noopener" className="lp-btn lp-btn-s">Falar no WhatsApp</a>
+              <a href="/dashboard?demo=1" className="lp-btn lp-btn-s">Ver demonstração</a>
             </div>
             <div className="lp-garantias"><span>✓ Sem cartão para testar</span><span>✓ Cancele quando quiser</span><span>✓ {vagas > 0 ? 'Preço de fundador: a partir de R$ 49,90/mês' : 'A partir de R$ 79,90/mês'}</span></div>
           </div>
@@ -195,6 +195,7 @@ export default function LandingPage() {
           <p>Em 5 minutos sua empresa está cadastrada e você já vê o caixa dos próximos 90 dias.</p>
           <div className="lp-ctas lp-ctas-c">
             <Link href="/register" className="lp-btn lp-btn-p">Criar conta grátis</Link>
+            <a href="/dashboard?demo=1" className="lp-btn lp-btn-claro">Ver demonstração</a>
             <a href={WHATS} target="_blank" rel="noopener" className="lp-btn lp-btn-claro">Tirar dúvidas no WhatsApp</a>
           </div>
         </div>

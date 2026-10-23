@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { app, db, authFetch } from '../../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore/lite';
 import { lerDadosDoEspaco, gravarDadosDoEspaco, apagarPartesDoEspaco } from '../../lib/espaco';
+import { estadoDemo, USUARIO_DEMO } from '../../lib/demo';
 import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 
@@ -45,7 +46,13 @@ function limparEstado(estado) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const auth = useAuth();
+  // Demonstração: /dashboard?demo=1 sem login abre uma empresa fictícia; nada é gravado
+  const [demo] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1');
+  const emDemo = demo && !auth.loading && !auth.user;
+  const user = emDemo ? USUARIO_DEMO : auth.user;
+  const loading = auth.loading;
+  const logout = emDemo ? async () => { window.location.href = '/register?origem=demo'; } : auth.logout;
   const [acesso, setAcesso] = useState(null); // resposta de /api/subscription
   const [pronto, setPronto] = useState(false);
   const [etapa, setEtapa] = useState('');
@@ -73,13 +80,20 @@ export default function DashboardPage() {
 
   // 1) Sem login, volta para a tela de entrada
   useEffect(() => {
-    if (!loading && !user) router.replace('/login');
+    if (!loading && !user && !demo) router.replace('/login');
   }, [loading, user, router]);
 
   // 2) Verifica a assinatura no servidor. Quem já entrou antes abre na hora com a última resposta,
   //    e a verificação roda em paralelo: se o acesso tiver acabado, o painel é bloqueado.
   useEffect(() => {
     if (!user) return;
+    if (user === USUARIO_DEMO) {
+      window.maxcfoDemo = true;
+      leituras.current = { perfil: Promise.resolve(null), wsId: 'demonstracao', espaco: Promise.resolve(null), convites: Promise.resolve([]) };
+      setConvites([]);
+      setAcesso({ acesso: true, motivo: 'demo', plano: 'unlimited' });
+      return;
+    }
     let vivo = true;
     const chave = 'maxcfo_acesso_' + user.uid;
     const anterior = lerCache(chave);
@@ -145,6 +159,7 @@ export default function DashboardPage() {
     window.maxcfoPlanoTexto = acesso.motivo === 'teste' ? `Teste grátis · ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia' : 'dias'}`
       : acesso.motivo === 'admin' ? 'Administrador'
       : acesso.motivo === 'assinatura' ? (nomesPlano[acesso.plano] || 'Assinante')
+      : acesso.motivo === 'demo' ? 'Demonstração'
       : '';
 
     let timer = null, pendente = null, aviso = false, avisoNuvem = false;
@@ -155,7 +170,13 @@ export default function DashboardPage() {
       if (Date.now() - avisoLeitura > 6000 && window.showToast) window.showToast('Acesso somente leitura: alterações não são salvas.', 'info');
       avisoLeitura = Date.now();
     };
+    let avisoDemo = Date.now() + 5000; // não avisa no carregamento, só quando a pessoa mexer
     const gravar = async (wsId, estado) => {
+      if (window.maxcfoDemo) {
+        if (Date.now() - avisoDemo > 20000 && window.showToast) window.showToast('Na demonstração nada é salvo. Crie sua conta grátis para usar com os seus dados.', 'info');
+        avisoDemo = Date.now();
+        return;
+      }
       if (window.maxcfoLeitura) return; // empresa de outra pessoa, aberta só para consulta
       const json = JSON.stringify(limparEstado(estado));
       const copia = lerCopia(wsId) || {};
@@ -207,6 +228,7 @@ export default function DashboardPage() {
       return { dados: null, quando: '' };
     };
     window.loadStateFromFirebase = async (wsId) => {
+      if (window.maxcfoDemo) return estadoDemo();
       if (!wsId) return null;
       setEtapa('Lendo os dados da empresa…');
       const pre = leituras.current && leituras.current.wsId === wsId ? leituras.current.espaco : null;
@@ -294,7 +316,7 @@ export default function DashboardPage() {
     const perfilRef = doc(db, 'perfis', user.uid);
     const empresas = { lista: [], ativa: '', limite: limiteEmpresas, plano: acesso.plano || null, motivo: acesso.motivo };
     const novoIdEmpresa = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, '0');
-    const salvarPerfil = () => setDoc(perfilRef, { empresas: empresas.lista, principal: empresas.principal || '', updatedAt: new Date().toISOString() }, { merge: true });
+    const salvarPerfil = () => window.maxcfoDemo ? Promise.resolve() : setDoc(perfilRef, { empresas: empresas.lista, principal: empresas.principal || '', updatedAt: new Date().toISOString() }, { merge: true });
     empresas.espacoDe = (id) => (id ? `${user.uid}__${id}` : user.uid);
     const chaveCompart = 'maxcfo_compart_' + user.uid;
     empresas.trocar = async (id) => {
@@ -327,6 +349,7 @@ export default function DashboardPage() {
     };
     // Lê os dados de todas as empresas (painel do BPO)
     empresas.carregarTodas = async () => {
+      if (window.maxcfoDemo) return [{ id: '', nome: 'Padaria Pão Dourado (demonstração)', estado: estadoDemo(), atualizadoEm: new Date().toISOString() }];
       const todas = [{ id: '', nome: empresas.principal || 'Empresa principal' }].concat(empresas.lista);
       return Promise.all(todas.map(async (e) => {
         try {
@@ -487,6 +510,12 @@ export default function DashboardPage() {
               Recarregar
             </button>
           )}
+        </div>
+      )}
+      {acesso?.motivo === 'demo' && pronto && (
+        <div className="maxcfo-banner" style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, background: '#131d30', border: '1px solid rgba(197,160,89,.6)', color: '#E8EFF8', borderRadius: 999, padding: '8px 8px 8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', maxWidth: 'calc(100% - 32px)' }}>
+          <span>Demonstração com uma empresa fictícia. Nada é salvo.</span>
+          <a href="/register?origem=demo" style={{ background: '#C5A059', color: '#0B1220', borderRadius: 999, padding: '6px 12px', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>Criar conta grátis</a>
         </div>
       )}
       {acesso?.acesso && acesso.faturaPendente && acesso.faturaPendente.url && (acesso.status === 'past_due' || (acesso.forma === 'pix_boleto' && acesso.faturaPendente.diasParaVencer <= 5)) && (
