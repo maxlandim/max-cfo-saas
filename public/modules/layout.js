@@ -295,7 +295,7 @@
     barraCelular();
     window.quickAdd = novo;
     var ler = F().abrirLeitura;
-    if (ler && !ler.__plano) { F().abrirLeitura = function () { if (nivelAtual() < 2) return oferta(2, 'Leitura de boleto e nota com IA'); return ler.apply(this, arguments); }; F().abrirLeitura.__plano = true; }
+    if (ler && !ler.__plano) { F().abrirLeitura = function () { if (nivelAtual() < 2) return oferta(2, 'Leitura automática de boleto e nota'); return ler.apply(this, arguments); }; F().abrirLeitura.__plano = true; }
     // marca o atalho do celular e o menu na troca de tela
     var trocar = window.switchView;
     if (trocar && !trocar.__lay) {

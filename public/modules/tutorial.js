@@ -49,7 +49,7 @@
     ],
     pagar: [
       { sel: cab('pagar'), t: 'Contas a pagar', x: 'Fornecedores, aluguel, impostos, folha: tudo o que a empresa deve, com vencimento. Assim nada vence sem você ver.' },
-      { sel: b('pagar', 'Ler boleto'), t: 'Boleto pela câmera ou PDF', x: 'Tire foto do boleto ou envie o PDF: a IA preenche valor, vencimento e fornecedor. Você só confere e salva.' },
+      { sel: b('pagar', 'Ler boleto'), t: 'Boleto pela câmera ou PDF', x: 'Envie o PDF do boleto ou da nota, a foto do código de barras ou cole a linha digitável: o sistema preenche valor, vencimento e fornecedor. Você só confere e salva.' },
       { sel: b('pagar', 'Nova conta'), t: 'Lançar à mão', x: 'Para contas sem boleto. Dá para parcelar ou repetir todo mês (aluguel, internet, contador).' },
       { sel: kpis('pagar'), t: 'Resumo', x: 'O que está em aberto, o que venceu e o que vence nos próximos 30 dias.' },
       { sel: lista('pagar'), t: 'Paguei', x: 'Quando pagar, clique em <b>Paguei</b> e escolha de qual banco saiu. Juros e multa podem ser informados na baixa.' }

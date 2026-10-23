@@ -36,7 +36,7 @@ export default function PrivacidadePage() {
         <li><b>Resend:</b> envio dos lembretes por e-mail que você ligar em Configurações (resumo do dia para você e aviso de vencimento para os seus clientes, com nome, valor, vencimento e Pix).</li>
         <li><b>Pessoas que você autorizar:</b> quem você liberar em Equipe e acessos (o seu cliente ou contador, por exemplo) vê os dados daquela empresa em modo somente leitura, até você remover o acesso.</li>
         <li><b>Asaas:</b> processamento de pagamentos (cartão, Pix e boleto) e envio das cobranças.</li>
-        <li><b>Google Gemini:</b> quando você envia um boleto ou nota para leitura, o arquivo é enviado para extrair os dados; quando você usa o CFO IA Chat, a pergunta e um resumo dos números (receitas, despesas, saldo e quantidade de lançamentos) são enviados para gerar a resposta.</li>
+        <li><b>Leitura de documentos e CFO:</b> a leitura de boletos e notas e as respostas do CFO são feitas no seu próprio navegador, pelo sistema. Os arquivos e as perguntas não são enviados a serviços de inteligência artificial de terceiros.</li>
         <li><b>BrasilAPI / Minha Receita:</b> quando você consulta um CNPJ, o número é enviado para buscar os dados públicos da Receita Federal.</li>
       </ul>
       <p>Alguns desses fornecedores guardam dados fora do Brasil, com cláusulas de proteção compatíveis com a LGPD (art. 33). Não vendemos dados pessoais.</p>

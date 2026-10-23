@@ -1,6 +1,7 @@
 /**
  * Landim Advisory — Entrada de estoque pela nota fiscal de compra
- * XML da NF-e: lido aqui no navegador, exato e sem IA. PDF (DANFE) ou foto: lido pela IA em /api/ler-documento.
+ * XML da NF-e: lido aqui no navegador, exato. PDF (DANFE): lido pelo leitor do sistema (leitor.js), sem IA externa,
+ * conferindo a soma dos itens com o total da nota.
  * Antes de gravar, mostra cada item com o produto do estoque correspondente (ou "criar novo"), o custo com frete e
  * impostos rateados e as parcelas para Contas a pagar. Lembra o vínculo código do fornecedor → produto.
  */
@@ -49,32 +50,6 @@
       valorProdutos: numero(v(tot, 'vProd')), frete: numero(v(tot, 'vFrete')), seguro: numero(v(tot, 'vSeg')), desconto: numero(v(tot, 'vDesc')), outras: numero(v(tot, 'vOutro')),
       ipi: numero(v(tot, 'vIPI')), icmsST: numero(v(tot, 'vST')), valorTotal: numero(v(tot, 'vNF')), parcelas: parcelas, itens: itens, origem: 'xml'
     };
-  }
-
-  // ── Leitura do PDF ou da foto pela IA ──
-  async function lerComIA(arq, aviso) {
-    var tipo = F().tipoArquivo(arq), texto = '', base64 = '', pdf = null;
-    if (tipo === 'application/pdf') {
-      try { pdf = await F().analisarPdf(arq, 10); texto = pdf.texto; } catch (e) { console.warn('Leitura local do PDF:', e); }
-      if (arq.size <= 2.9 * 1024 * 1024) base64 = await F().lerBase64(arq);
-      else if (pdf && pdf.imagem) { base64 = pdf.imagem; tipo = 'image/jpeg'; }
-      else throw new Error('O PDF precisa ter até 3 MB.');
-    } else {
-      var prep = await F().prepararArquivo(arq); base64 = prep.base64; tipo = prep.tipo || tipo;
-    }
-    var enviar = async function (b64, tp) {
-      var token = window.getAuthToken ? await window.getAuthToken() : '';
-      var r = await fetch('/api/ler-documento', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token ? 'Bearer ' + token : '' }, body: JSON.stringify({ modo: 'itens', arquivo: b64, tipo: tp, texto: texto }) });
-      var d = await r.json().catch(function () { return {}; });
-      if (!r.ok || !d.nota) { var e = new Error(d.error || 'Não foi possível ler a nota.'); e.status = r.status; throw e; }
-      return d.nota;
-    };
-    try { return await enviar(base64, tipo); }
-    catch (e) {
-      // Plano B: a IA não abriu o PDF → tenta a imagem da 1ª página
-      if (tipo === 'application/pdf' && pdf && pdf.imagem && [401, 403, 429, 503].indexOf(e.status) < 0) { aviso('⏳ Tentando pela imagem da primeira página…'); return enviar(pdf.imagem, 'image/jpeg'); }
-      throw e;
-    }
   }
 
   // ── Produto do estoque que corresponde ao item da nota ──
@@ -132,7 +107,8 @@
     var novos = sessao.linhas.filter(function (l) { return l.destino === 'novo'; }).length, ign = sessao.linhas.filter(function (l) { return l.destino === 'ignorar'; }).length;
     var parcelas = n.parcelas && n.parcelas.length ? n.parcelas : null;
     var corpo = '' +
-      (n.origem === 'ia' ? '<div class="fin-alerta gold">Lido pela IA a partir do PDF. Confira quantidades e valores com a nota antes de confirmar. Com o XML a leitura é exata.</div>' : '') +
+      (n.origem === 'leitor' && n.conferido ? '<div class="fin-alerta green">Lido do PDF: a chave de acesso e a soma dos itens conferem com o total da nota. Com o XML vêm também lote e validade.</div>' : '') +
+      (n.origem === 'leitor' && !n.conferido ? '<div class="fin-alerta gold">⚠️ Lido do PDF, mas a soma dos itens não bateu com o total dos produtos da nota (' + moeda(n.valorProdutos || 0) + '). Confira quantidades e valores com a nota antes de confirmar, ou use o XML, que é exato.</div>' : '') +
       (sessao.duplicada ? '<div class="fin-alerta red">⚠️ Esta nota já deu entrada no estoque em ' + F().dataBR(String(sessao.duplicada.em).slice(0, 10)) + '. Confirmar de novo vai somar as quantidades outra vez.</div>' : '') +
       (sessao.propria ? '<div class="fin-alerta red">⚠️ Esta nota foi emitida pela sua própria empresa (é uma venda). A entrada de estoque é para notas de compra.</div>' : '') +
       '<div class="fin-kpis" style="margin:4px 0 12px">' +
@@ -172,10 +148,10 @@
       F().modal('enModal', '📄 Entrada de estoque pela nota fiscal',
         '<p style="line-height:1.6;margin-bottom:12px">Envie a nota de compra do fornecedor. Os produtos entram no estoque com quantidade e custo, e a compra vai para Contas a pagar.</p>' +
         '<div class="drop-zone" id="enDrop" style="padding:28px;text-align:center;border:2px dashed var(--border);border-radius:12px;cursor:pointer" onclick="document.getElementById(\'enArq\').click()">' +
-        '<div style="font-size:30px">📄</div><b>Clique ou arraste o arquivo aqui</b><div class="fin-sub" style="margin-top:4px">XML da NF-e, PDF da nota (DANFE) ou foto</div></div>' +
-        '<input type="file" id="enArq" accept=".xml,text/xml,application/xml,.pdf,application/pdf,image/*" style="display:none" onchange="estNota.arquivo(this.files[0])">' +
+        '<div style="font-size:30px">📄</div><b>Clique ou arraste o arquivo aqui</b><div class="fin-sub" style="margin-top:4px">XML da NF-e ou PDF da nota (DANFE)</div></div>' +
+        '<input type="file" id="enArq" accept=".xml,text/xml,application/xml,.pdf,application/pdf" style="display:none" onchange="estNota.arquivo(this.files[0])">' +
         '<div id="enStatus" style="margin-top:12px"></div>' +
-        '<ul class="fin-sub" style="margin:10px 0 0 18px;line-height:1.7"><li><b>XML</b>: leitura exata, na hora. O fornecedor envia por e-mail junto com a nota.</li><li><b>PDF ou foto</b>: lido pela IA (plano Intermediário ou superior). Confira antes de confirmar.</li></ul>',
+        '<ul class="fin-sub" style="margin:10px 0 0 18px;line-height:1.7"><li><b>XML</b>: leitura exata, na hora, com lote e validade. O fornecedor envia por e-mail junto com a nota.</li><li><b>PDF (DANFE)</b>: o sistema lê a tabela de produtos e confere com o total da nota.</li></ul>',
         '<button class="btn-ghost" onclick="fin.fechar(\'enModal\')">Fechar</button>');
       var d = el('enDrop');
       if (d) {
@@ -194,11 +170,16 @@
           nota = lerXml(await arq.text());
         } else {
           var tipo = F().tipoArquivo(arq);
-          if (tipo !== 'application/pdf' && !/^image\//.test(tipo)) return aviso('Use o XML, o PDF da nota ou uma foto.', 'red');
+          if (/^image\//.test(tipo)) return aviso('Pela foto não dá para ler a tabela de produtos com segurança. Use o XML da nota (vem no e-mail do fornecedor) ou o PDF (DANFE).', 'red');
+          if (tipo !== 'application/pdf') return aviso('Use o XML ou o PDF da nota.', 'red');
           if (arq.size > 15 * 1024 * 1024) return aviso('Arquivo grande demais (máximo 15 MB).', 'red');
-          if (window.layout && window.layout.nivel && window.layout.nivel() < 2) { F().fechar('enModal'); return window.layout.oferta(2, 'Leitura de nota fiscal com IA'); }
-          aviso('⏳ A IA está lendo os produtos da nota. Notas grandes levam até 1 minuto…');
-          nota = await lerComIA(arq, aviso);
+          aviso('⏳ Lendo a nota…');
+          var pl = null;
+          try { pl = await F().analisarPdf(arq, 10); } catch (e) { console.warn('PDF:', e); }
+          if (!pl) return aviso('Não consegui abrir este PDF (pode estar protegido por senha). Use o XML da nota.', 'red');
+          nota = window.leitor ? window.leitor.danfePdf(pl) : null;
+          if (!nota) return aviso('Este PDF não parece um DANFE (nota fiscal de produtos) ou é uma imagem escaneada. Use o XML da nota, que é exato.', 'red');
+          if (!nota.itens.length) return aviso('Achei a nota ' + esc(nota.numero || '') + (nota.fornecedor ? ' de ' + esc(nota.fornecedor) : '') + ', mas não consegui ler a tabela de produtos deste modelo de PDF. Use o XML da nota, que é exato.', 'red');
         }
       } catch (e) { return aviso(esc(e.message || 'Não foi possível ler a nota.'), 'red'); }
       if (!nota || !nota.itens || !nota.itens.length) return aviso('Não encontrei produtos nessa nota.', 'red');

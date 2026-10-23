@@ -1287,7 +1287,7 @@ function initChat() {
   addAIMsg(engine.getGreeting());
 
   // O chat em tempo real depende do servidor Python; só conecta se ele estiver configurado
-  if (window.MAXCFO_WS_URL) try {
+  if (false && window.MAXCFO_WS_URL) try { // chat externo desligado: o CFO responde no próprio navegador
       // Connect to WebSocket backend
       const wsUrl = window.MAXCFO_WS_URL;
       window.chatSocket = new WebSocket(`${wsUrl}?token=${localStorage.getItem('maxcfo_jwt') || 'demo_token'}`);
@@ -1351,37 +1351,21 @@ async function sendChat() {
 
   // Comandos regulares
   setTimeout(async () => {
+    // Perguntas comuns: respondidas aqui com os números da empresa, sem IA
+    let proprio = null;
+    try { proprio = window.cfoLocal ? window.cfoLocal.responder(msg) : null; } catch (e) { console.warn(e); }
+    if (proprio) { removeTyping(tid); addAIMsg(proprio); state.chatHistory.push({ role: 'ai', text: proprio }); return; }
     const ctx = getCtx();
-    const resp = engine.processCommand(msg, ctx);
+    let resp = engine.processCommand(msg, ctx);
+    // Respostas genéricas do motor antigo viram a lista do que o CFO sabe responder com os números
+    if (/^(Entendi sua intenção|Essa é uma excelente pergunta)/.test(resp) && window.cfoLocal && window.cfoLocal.ajuda) resp = window.cfoLocal.ajuda(msg);
     
     if (resp === "Desculpe, não entendi. Pode reformular?") {
-       // Fallback: Tenta WebSocket, se não, API /api/chat
-       if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
-           window.chatSocket.send(msg);
-           // A resposta será tratada no onmessage do websocket
-       } else {
-           try {
-               const ctx = getCtx();
-               const headers = {'Content-Type': 'application/json'};
-               if (window.getAuthToken) { try { headers['Authorization'] = 'Bearer ' + await window.getAuthToken(); } catch(e) {} }
-               const res = await fetch('/api/chat', { 
-                   method: 'POST', 
-                   headers, 
-                   body: JSON.stringify({message: msg, context: Object.assign({ receitas: ctx.receitas, despesas: ctx.despesas, saldo: ctx.saldo, txCount: ctx.txCount, empresa: state.settings.company || '', setor: state.settings.sector || '' }, window.fin ? window.fin.contextoIA() : {}), historico: (state.chatHistory || []).slice(-8)}) 
-               });
-               removeTyping(tid);
-               const data = await res.json().catch(() => ({}));
-               if (res.ok) {
-                   addAIMsg(data.reply || "Resposta recebida do servidor.");
-                   state.chatHistory.push({ role: 'ai', text: data.reply || '' });
-               } else {
-                   addAIMsg(data.reply || "Não consegui responder agora. Tente de novo em instantes.");
-               }
-           } catch(e) {
-               removeTyping(tid);
-               addAIMsg("O servidor está indisponível e não consegui interpretar o comando localmente.");
-           }
-       }
+       // Tudo é respondido aqui, com os números da empresa (sem IA externa)
+       removeTyping(tid);
+       const ajuda = window.cfoLocal && window.cfoLocal.ajuda ? window.cfoLocal.ajuda(msg) : 'Não entendi a pergunta. Tente: "quem me deve?", "onde estou gastando mais?" ou "vai faltar caixa?".';
+       addAIMsg(ajuda);
+       state.chatHistory.push({ role: 'ai', text: ajuda });
     } else {
        removeTyping(tid);
        addAIMsg(resp);
