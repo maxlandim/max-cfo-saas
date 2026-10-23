@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { statusDoUsuario } from '../../../lib/assinatura';
 import { config, hojeBrasil, resumoDono, avisosClientes } from '../../../lib/lembretes';
+import { estadoDoEspaco, temDados } from '../../../lib/espacoServidor';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -65,14 +66,14 @@ export async function GET(req) {
   for (const d of espacos.docs) {
     const wsId = d.id, dados = d.data() || {};
     const dono = dados.owner;
-    if (!dono || !donoDoEspaco(dono, wsId) || !dados.data) continue;
+    if (!dono || !donoDoEspaco(dono, wsId) || !temDados(dados)) continue;
     resultado.empresas++;
     // Uma rodada por empresa por dia, mesmo que a tarefa rode duas vezes
     const marca = adminDb.collection('lembretesEnviados').doc(`${wsId}_${hoje}`);
     try {
       if ((await marca.get()).exists) { resultado.puladas++; continue; }
       if (!(await temAcesso(dono))) { resultado.puladas++; continue; }
-      const estado = JSON.parse(dados.data);
+      const estado = (await estadoDoEspaco(adminDb, wsId, dados)) || {};
       const cfg = config(estado);
       const emailDono = (cfg.email || (await emailDoDono(dono)) || '').trim();
       let resumos = 0, avisos = 0;
@@ -104,8 +105,8 @@ export async function POST(req) {
   const wsId = String(body.wsId || '');
   if (!donoDoEspaco(user.uid, wsId)) return NextResponse.json({ error: 'Só o dono da empresa pode enviar o teste.' }, { status: 403 });
   const snap = await adminDb.collection('workspaces').doc(wsId).get();
-  if (!snap.exists || !snap.data().data) return NextResponse.json({ error: 'Salve algum lançamento antes de testar.' }, { status: 400 });
-  const estado = JSON.parse(snap.data().data);
+  if (!snap.exists || !temDados(snap.data())) return NextResponse.json({ error: 'Salve algum lançamento antes de testar.' }, { status: 400 });
+  const estado = (await estadoDoEspaco(adminDb, wsId, snap.data())) || {};
   const cfg = config(estado);
   const para = (cfg.email || user.email || '').trim();
   if (!para) return NextResponse.json({ error: 'Informe o e-mail que recebe o resumo.' }, { status: 400 });
