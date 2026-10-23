@@ -162,6 +162,8 @@ async def publicas(b):
         log(r.get('valor') == 1234.56 and r.get('vencimento') == '2026-11-25' and 'Sol' in (r.get('contato') or ''), 'OCR: boleto pela foto (sem código de barras)', x)
         x = await foto('recibo_foto.jpg', 'lerImagem'); r = x.get('r') or {}
         log(r.get('valor') == 450 and 'Frio' in (r.get('contato') or ''), 'OCR: recibo pela foto', x)
+        dbg = await foto('danfe_foto.jpg', 'ocr'); tx = ((dbg.get('r') or {}).get('texto') or '')
+        i0 = tx.find('DADOS DO PRODUTO'); print('OCR-DANFE-TEXTO:', json.dumps(tx[i0 - 200 if i0 > 200 else 0:i0 + 1500], ensure_ascii=False), flush=True)
         x = await foto('danfe_foto.jpg', 'notaDaImagem'); r = x.get('r') or {}
         log(r.get('valorTotal') == 2030.3 and len(r.get('itens') or []) == 5, 'OCR: nota fiscal pela foto com itens', {'ms': x.get('ms'), 'erro': x.get('erro'), 'total': r.get('valorTotal'), 'conferido': r.get('conferido'), 'itens': [[i.get('codigo'), i.get('quantidade'), i.get('valorTotal')] for i in (r.get('itens') or [])], 'parc': r.get('parcelas')})
     except Exception as e:
