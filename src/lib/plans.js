@@ -4,7 +4,7 @@ export const PLANOS = {
   basic: { nome: 'Landim Advisory - Básico', valor: 7990, fundador: 4990, empresas: 1 },
   intermediate: { nome: 'Landim Advisory - Intermediário', valor: 14990, fundador: 12990, empresas: 3 },
   complete: { nome: 'Landim Advisory - Completo', valor: 34990, fundador: 26990, empresas: 3 },
-  unlimited: { nome: 'Landim Advisory - Escritório', valor: 59990, fundador: 29990, empresas: 3 },
+  unlimited: { nome: 'Landim Advisory - Escritório', valor: 59990, fundador: 29990, empresas: 10 },
 };
 // Empresa adicional (além das incluídas no plano), em qualquer plano: valor por mês, em centavos
 export const EMPRESA_EXTRA = 2990;
@@ -18,7 +18,7 @@ export const MESES_PAGOS_NO_ANUAL = 10;
 
 // Nível de cada plano: 1 Básico (financeiro), 2 Intermediário (+ vendas, fiscal, leitura com IA, relatório),
 // 3 Completo (+ CFO, impostos, painel BPO, marca no relatório, RH), 4 Escritório (+ suporte prioritário).
-// Empresas: Básico inclui 1, os demais 3; cada empresa a mais custa EMPRESA_EXTRA por mês, em qualquer plano.
+// Empresas: Básico inclui 1, Intermediário e Completo 3, Escritório 10; cada empresa a mais custa EMPRESA_EXTRA por mês, em qualquer plano.
 export const NIVEL_PLANO = { basic: 1, intermediate: 2, complete: 3, unlimited: 4 };
 export const NOME_PLANO = { 1: 'Básico', 2: 'Intermediário', 3: 'Completo', 4: 'Escritório' };
 // Teste grátis, administrador e modo de configuração usam tudo

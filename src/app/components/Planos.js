@@ -12,8 +12,8 @@ export const PLANOS_VITRINE = [
     itens: ['Leitura automática de boleto e nota', 'Estoque pela nota fiscal (XML ou PDF)', 'Relatório mensal em PDF', 'Orçamentos, ordens de serviço e contratos', 'Funil de vendas, comissões e estoque', 'Notas fiscais e pacote do contador'] },
   { id: 'complete', nome: 'Completo', valor: 34990, fundador: 26990, empresas: 'Até 3 empresas', para: 'Para BPO financeiro e escritórios.', destaque: true, antes: 'Tudo do Intermediário, mais:',
     itens: ['Indicadores de todas as empresas (BPO)', 'Acesso de consulta para cliente e contador', 'Relatório com a sua marca e logo', 'CFO que responde com os seus números', 'Simulador de impostos e da reforma', 'Funcionários e folha, bens e equipe'] },
-  { id: 'unlimited', nome: 'Escritório', valor: 59990, fundador: 29990, empresas: 'Até 3 empresas', para: 'Para escritórios e BPOs com muitas empresas.', antes: 'Tudo do Completo, mais:',
-    itens: ['Suporte prioritário no WhatsApp', 'Empresas adicionais por R$ 29,90/mês cada'] },
+  { id: 'unlimited', nome: 'Escritório', valor: 59990, fundador: 29990, empresas: 'Até 10 empresas', para: 'Para escritórios e BPOs com muitas empresas.', antes: 'Tudo do Completo, mais:',
+    itens: ['10 empresas no mesmo login', 'Suporte prioritário no WhatsApp', 'Empresas adicionais por R$ 29,90/mês cada'] },
 ];
 export const MESES_PAGOS_NO_ANUAL = 10;
 // Cada empresa a mais (além das incluídas no plano), em qualquer plano — igual a EMPRESA_EXTRA em src/lib/plans.js
