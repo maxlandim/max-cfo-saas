@@ -5,7 +5,7 @@
  * - Foto do boleto: lê o código de barras (Interleaved 2 of 5, 44 dígitos) e confere o dígito verificador.
  * - DANFE (PDF da NF-e): chave de acesso (confere o DV), fornecedor, totais, duplicatas e a tabela de produtos,
  *   conferindo quantidade × valor unitário e a soma dos itens com o total da nota.
- * Quando o leitor não tem certeza, quem chama usa a IA como reserva.
+ * Tudo roda no navegador: nenhum documento é enviado para IA externa.
  */
 (function () {
   'use strict';

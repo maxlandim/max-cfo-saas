@@ -133,8 +133,45 @@
     return txt;
   };
 
+  // ── Conhecimento de gestão: respostas com os números da empresa quando dá ──
+  function percentuais() {
+    var f = F(), hoje = f.hoje(), meses = [f.mes(f.addMeses(hoje, -1)), f.mes(f.addMeses(hoje, -2)), f.mes(f.addMeses(hoje, -3))];
+    var pm = f.porMes(meses, 'competencia'), rec = 0, imp = 0, fixas = 0, custos = 0;
+    meses.forEach(function (ym) { var d = f.dreDoMes(pm[ym]); rec += d.bruta; imp += d.deducoes; custos += d.custos; fixas += d.pessoal + d.operacionais; });
+    return rec > 0 ? { imp: imp / rec * 100, fixas: fixas / rec * 100, custos: custos / rec * 100, rec: rec / 3 } : null;
+  }
+  R.preco = function () {
+    var p = semDados() ? null : percentuais(), f = function (v) { return v.toFixed(1).replace('.', ','); };
+    var txt = '**Como formar o preço de venda (markup)**\nPreço = custo do produto ÷ (1 − impostos% − despesas fixas% − lucro desejado%)';
+    if (p && p.imp + p.fixas < 90) {
+      var lucro = 15, div = 1 - (p.imp + p.fixas + lucro) / 100;
+      txt += '\n\nCom os números dos últimos 3 meses da empresa:\n• Impostos sobre a venda: ' + f(p.imp) + '% do faturamento\n• Despesas fixas (pessoal e dia a dia): ' + f(p.fixas) + '% do faturamento\n• Lucro desejado (exemplo): ' + lucro + '%';
+      txt += div > 0.05 ? '\n\nMarkup = 1 ÷ ' + div.toFixed(3).replace('.', ',') + ' = **' + (1 / div).toFixed(2).replace('.', ',') + '**. Um produto que custa R$ 10,00 deve sair por **' + m(10 / div) + '**.' : '\n\nAs despesas fixas e os impostos já passam de 85% do faturamento: antes de mexer no preço, é preciso reduzir as fixas ou vender mais volume.';
+    } else txt += '\n\nExemplo: impostos 8%, despesas fixas 30% e lucro 15% → markup = 1 ÷ 0,47 = 2,13. Um produto de R$ 10,00 sai por R$ 21,28. Lance alguns meses de receitas e despesas e eu faço a conta com os seus números.';
+    txt += '\n\nDepois compare com o preço da concorrência: se o seu ficar muito acima, o caminho é negociar o custo com o fornecedor ou diluir as despesas fixas com mais vendas.';
+    return txt;
+  };
+  R.prolabore = function () {
+    return '**Pró-labore** é a remuneração dos sócios que trabalham na empresa. Ele é diferente da distribuição de lucros:\n• Pró-labore: valor fixo mensal, com INSS (11% do sócio; no Simples, em geral sem a parte patronal nos anexos I a III) e IR na tabela progressiva.\n• Distribuição de lucros: o que sobra depois de pagar tudo; isenta de IR para o sócio, desde que a contabilidade comprove o lucro.\n\nNa prática: defina um pró-labore que caiba no caixa todo mês e retire o restante como lucro só quando o resultado e o caixa permitirem. Confirme os percentuais com o seu contador para o seu anexo do Simples.';
+  };
+  R.reforma = function () {
+    return '**Reforma tributária (IBS e CBS) — cronograma**\n• 2026: fase de teste, com CBS de 0,9% e IBS de 0,1% destacados na nota, compensáveis com PIS/Cofins.\n• 2027: a CBS passa a valer de vez e PIS e Cofins acabam.\n• 2029 a 2032: ICMS e ISS diminuem aos poucos e o IBS aumenta.\n• 2033: só IBS, CBS e o Imposto Seletivo.\n\nQuem está no Simples Nacional continua no Simples e, a partir de 2027, pode optar por recolher IBS/CBS por fora para gerar crédito aos clientes empresas. Use o Simulador de impostos e da reforma, no menu, para ver o efeito na sua empresa.';
+  };
+  R.cobrar = function () {
+    var txt = R.receber();
+    return txt + '\n\n**Como reduzir a inadimplência:**\n• Mande o lembrete 3 dias antes e no dia do vencimento (dá para ligar o aviso automático por e-mail nas configurações).\n• Ofereça Pix copia e cola: o cliente paga na hora.\n• No primeiro atraso, contato rápido e cordial; depois de 15 dias, proponha parcelar o valor em atraso.\n• Para clientes que atrasam sempre, peça pagamento antecipado ou entrada.';
+  };
+
+  window.cfoLocalAjuda = function (msg) {
+    return 'Não tenho uma resposta pronta para "' + String(msg || '').trim().slice(0, 80) + '". Eu respondo na hora, com os números da sua empresa, perguntas como:\n• "Quanto tenho hoje?"\n• "Quem me deve?"\n• "O que vence esta semana?"\n• "Estou tendo lucro?"\n• "Onde estou gastando mais?"\n• "Quanto gastei com aluguel?"\n• "Vai faltar caixa nos próximos 90 dias?"\n• "Quantos meses eu aguento?"\n• "Qual meu faturamento?" e "Quais meus maiores clientes?"\n• "Como formar o preço de venda?"\n• "O que preciso repor no estoque?"\n\nTambém gero DRE, diagnóstico, ponto de equilíbrio, capital de giro e planejamento tributário: é só pedir.';
+  };
+
   // Ordem importa: o primeiro que casa responde
   var INTENCOES = [
+    [/(formar|calcular|definir|como (eu )?(coloco|faco|defino|calculo)) (o )?preco|precifica|markup|preco de venda/, R.preco],
+    [/pro.?labore|retirada dos socios|quanto (posso|devo) (retirar|tirar)|distribui(r|cao) (de )?lucro/, R.prolabore],
+    [/reforma tributaria|\bibs\b|\bcbs\b|imposto seletivo|split payment/, R.reforma],
+    [/como (eu )?(cobro|cobrar)|reduzir (a )?inadimpl|cliente (nao paga|atrasa)/, R.cobrar],
     [/quanto (eu )?gastei com (.+)|gastos? com (.+)|quanto (eu )?paguei de (.+)|despesas? com (.+)/, function (x) { return R.gastoCom(x[2] || x[3] || x[5] || x[6] || ''); }],
     [/(onde|com o que|em que|no que).{0,25}gast|maiores (despesas|gastos)|gastando (muito|mais)|despesas? por categoria|(cortar|reduzir) (gasto|custo|despesa)/, R.gastos],
     [/vai faltar|vou ter (caixa|dinheiro)|ficar (no )?negativo|caixa (do|no|para o) (mes que vem|proximo mes)|proximos (30|60|90) dias|previsao de caixa|fluxo de caixa|caixa futuro|projecao/, R.caixa],
@@ -156,11 +193,12 @@
       for (var i = 0; i < INTENCOES.length; i++) {
         var x = t.match(INTENCOES[i][0]);
         if (!x) continue;
-        if (semDados() && INTENCOES[i][1] !== R.estoque) return SEM;
+        if (semDados() && [R.estoque, R.preco, R.prolabore, R.reforma].indexOf(INTENCOES[i][1]) < 0) return SEM;
         try { var r = INTENCOES[i][1](x); if (r) return r; } catch (e) { console.warn('CFO local:', e); return null; }
       }
       return null;
     },
+    ajuda: function (msg) { return window.cfoLocalAjuda(msg); },
     _R: R
   };
 })();

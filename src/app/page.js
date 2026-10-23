@@ -13,7 +13,7 @@ const RESOLVE = [
   { icone: '💠', titulo: 'Cobrança por Pix no WhatsApp', texto: 'QR Code e Pix copia e cola com o valor certo e a mensagem pronta para o cliente. Sem taxa nossa.' },
   { icone: '📊', titulo: 'O mês fechado sem planilha', texto: 'Resultado do mês (DRE) calculado dos lançamentos, por categoria e por centro de custo.' },
   { icone: '📄', titulo: 'Relatório em PDF com a sua marca', texto: 'Resumo do mês, gráficos, contas e previsão de caixa num PDF pronto para enviar ao cliente.' },
-  { icone: '📷', titulo: 'Boleto lido pela câmera', texto: 'Tire foto do boleto ou da nota: a IA preenche valor, vencimento e fornecedor. Você só confere.' },
+  { icone: '📷', titulo: 'Boleto lido pela câmera', texto: 'Envie o PDF ou a foto do código de barras: o sistema preenche valor, vencimento e fornecedor. Você só confere.' },
   { icone: '📧', titulo: 'Lembrete automático por e-mail', texto: 'Resumo do dia para você e aviso para o cliente antes do vencimento, com o Pix copia e cola.' },
   { icone: '📥', titulo: 'Traga a sua planilha', texto: 'Importe contas a pagar e a receber do Excel ou CSV. O sistema reconhece as colunas e evita duplicados.' },
   { icone: '👁️', titulo: 'Acesso para o contador', texto: 'O cliente ou o contador entra com login próprio e vê os números, sem conseguir alterar nada.' },

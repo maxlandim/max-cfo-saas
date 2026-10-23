@@ -2,7 +2,7 @@
  * Landim Advisory — Núcleo financeiro (v5)
  * Contas a pagar e receber, contas bancárias, fluxo de caixa projetado,
  * DRE gerencial (competência e caixa), cobrança por Pix com QR Code,
- * lembrete por WhatsApp, categorização que aprende e leitura de documentos com IA.
+ * lembrete por WhatsApp, categorização que aprende e leitura automática de documentos (leitor.js).
  *
  * Modelo de cada lançamento (state.transactions):
  *   id, type ('RECEITA'|'DESPESA'), desc, amount, category, notes, attachmentUrl,
@@ -462,7 +462,7 @@
     window.viewMeta.checkout = window.viewMeta.billing;
     window.viewMeta.fintech = window.viewMeta.billing;
     window.viewMeta.thermofinance = window.viewMeta.billing;
-    // Botão de leitura com IA na tela de lançamentos
+    // Botão de leitura automática na tela de lançamentos
     var acoes = document.querySelector('#view-finance .page-header-actions');
     if (acoes && !el('fin-btn-ia')) {
       var b = document.createElement('button'); b.className = 'btn-secondary'; b.id = 'fin-btn-ia'; b.textContent = '📷 Ler boleto ou nota';
@@ -1203,7 +1203,7 @@
       '<input class="search-sm" placeholder="Buscar cliente, descrição…" value="' + esc(filtro.busca) + '" oninput="fin.filtro(\'busca\',this.value,true)" aria-label="Buscar"></div></div>' +
       (lista.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th style="width:28px"><input type="checkbox" aria-label="Marcar todos" onchange="document.querySelectorAll(\'.fin-sel\').forEach(function(c){c.checked=event.target.checked})"></th><th>Data</th><th>Descrição</th><th class="fin-hide-sm">Conta</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
         '<div class="table-footer"><span class="table-count">' + lista.length + ' lançamento(s) · <a class="link-go" onclick="fin.baixarSelecionados()">dar baixa nas marcadas</a></span><span class="table-total ' + (totalLista >= 0 ? 'fin-pos' : 'fin-neg') + '">Total: ' + moeda(totalLista) + '</span></div>'
-        : '<div class="empty-block" style="padding:28px">' + (filtro.aba === 'vencidas' ? 'Nenhuma conta vencida. 👏' : 'Nada por aqui. Cadastre uma conta ' + (filtro.aba === 'pagar' ? 'a pagar' : 'a receber') + ' ou leia um boleto com IA.') + '</div>') +
+        : '<div class="empty-block" style="padding:28px">' + (filtro.aba === 'vencidas' ? 'Nenhuma conta vencida. 👏' : 'Nada por aqui. Cadastre uma conta ' + (filtro.aba === 'pagar' ? 'a pagar' : 'a receber') + ' ou leia um boleto.') + '</div>') +
       '</div>';
   };
   // ── Contas a receber / Contas a pagar (telas separadas) ──
@@ -1491,13 +1491,14 @@
     baixarArquivo('﻿' + csv, 'dre-' + F.hoje() + '.csv', 'text/csv');
   };
 
-  // ════════════════ LEITURA DE BOLETO / NOTA COM IA ════════════════
+  // ════════════════ LEITURA DE BOLETO / NOTA (leitor próprio, sem IA externa) ════════════════
   F.abrirLeitura = function () {
-    modal('finIAModal', '📷 Ler boleto, nota ou recibo',
-      '<p style="color:var(--text-muted);margin-bottom:14px">Envie a foto ou o PDF. O sistema lê valor, vencimento e fornecedor pelo código de barras e pelos dados do documento, e sugere a categoria. Se precisar, a IA completa. Você confere antes de salvar.</p>' +
+    modal('finIAModal', '📷 Ler boleto ou nota',
+      '<p style="color:var(--text-muted);margin-bottom:14px">Envie o PDF do boleto, da conta ou da nota fiscal, ou uma foto do código de barras. O sistema lê valor, vencimento e fornecedor e sugere a categoria. Você confere antes de salvar.</p>' +
       '<label class="drop-zone" style="display:block;cursor:pointer;text-align:center;padding:28px;border:2px dashed var(--gold-border);border-radius:var(--radius-sm)" id="finIADrop">' +
       '<div style="font-size:34px">🧾</div><div style="font-weight:700;margin-top:6px">Toque para escolher o arquivo</div><div class="fin-sub">Foto ou PDF até 3 MB</div>' +
       '<input type="file" id="finIAArquivo" accept="image/*,application/pdf,.pdf" style="display:none" onchange="fin.lerArquivo(this.files[0])"></label>' +
+      '<div style="margin-top:14px"><label class="form-label" for="finIALinha">Ou digite / cole a linha digitável</label><div style="display:flex;gap:8px"><input class="form-input" id="finIALinha" inputmode="numeric" placeholder="34191.79001 01043.510047 …" onkeydown="if(event.key===\'Enter\')fin.lerLinhaDigitada()"><button class="btn-secondary" onclick="fin.lerLinhaDigitada()">Ler</button></div></div>' +
       '<div id="finIAStatus" style="margin-top:12px"></div>',
       '<button class="btn-ghost" onclick="fin.fechar(\'finIAModal\')">Cancelar</button>');
     var drop = el('finIADrop');
@@ -1541,7 +1542,7 @@
   function lerBase64(arq) {
     return new Promise(function (ok, falha) { var r = new FileReader(); r.onerror = function () { falha(new Error('Não consegui abrir o arquivo.')); }; r.onload = function () { ok(String(r.result).split(',')[1] || ''); }; r.readAsDataURL(arq); });
   }
-  // PDF: extrai o texto e faz uma imagem da 1ª página (plano B quando a IA não consegue abrir o PDF)
+  // PDF: extrai o texto e faz uma imagem da 1ª página (para procurar o código de barras em PDF escaneado)
   var pdfjs = null;
   function carregarPdfJs() {
     if (pdfjs) return pdfjs;
@@ -1593,77 +1594,61 @@
     }
     return null;
   };
-  async function enviarLeitura(base64, tipo, texto) {
-    var token = window.getAuthToken ? await window.getAuthToken() : '';
-    var r = await fetch('/api/ler-documento', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token ? 'Bearer ' + token : '' }, body: JSON.stringify({ arquivo: base64, tipo: tipo, texto: texto || '', categorias: window.CATEGORIES }) });
-    var d = await r.json().catch(function () { return {}; });
-    if (!r.ok || !d.dados) { var e = new Error(d.error || (r.status === 413 ? 'O arquivo é grande demais para enviar.' : 'Não foi possível ler o documento.')); e.status = r.status; throw e; }
-    return d.dados;
+  function base64ParaArquivo(b64, nome) {
+    var bin = atob(b64), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new File([u], nome || 'pagina.jpg', { type: 'image/jpeg' });
   }
-  // Leitura: primeiro o leitor próprio (sem IA, sem custo); a IA só entra quando ele não consegue tudo
+  function semLeitura(status, motivo) {
+    status.innerHTML = '<div class="fin-alerta gold">' + esc(motivo) + '</div>' +
+      '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px"><button class="btn-primary" onclick="fin.lancarComAnexo()">Lançar à mão com este arquivo anexado</button></div>';
+  }
+  // Leitura 100% pelo leitor do sistema (no navegador, sem IA externa e sem custo)
   F.lerArquivo = async function (arq) {
     var status = el('finIAStatus'); if (!arq || !status) return;
     var tipo = F.tipoArquivo(arq), L = window.leitor;
     if (tipo !== 'application/pdf' && !/^image\//.test(tipo)) { status.innerHTML = '<div class="fin-alerta red">Use uma foto (JPG ou PNG) ou um PDF.</div>'; return; }
     if (arq.size > 15 * 1024 * 1024) { status.innerHTML = '<div class="fin-alerta red">Arquivo grande demais (máximo 15 MB).</div>'; return; }
+    if (!L) { status.innerHTML = '<div class="fin-alerta red">O leitor não carregou. Atualize a página e tente de novo.</div>'; return; }
     status.innerHTML = '<div class="fin-alerta gold">⏳ Lendo o documento…</div>';
-    var dados = null, erro = null, pdf = null, local = null;
     F._ultimaLeitura = arq;
+    var dados = null;
     try {
       if (tipo === 'application/pdf') {
-        try { pdf = await F.analisarPdf(arq); } catch (e) { console.warn('Leitura local do PDF:', e); }
-        try { local = pdf && L ? L.lerPdf(pdf) : null; } catch (e) { console.warn('Leitor próprio:', e); }
-        if (local && local.completo) dados = local;
-        else {
-          status.innerHTML = '<div class="fin-alerta gold">⏳ ' + (local ? 'Completando a leitura com a IA…' : 'Lendo o documento com a IA…') + '</div>';
-          if (arq.size <= 2.9 * 1024 * 1024) {
-            try { dados = await enviarLeitura(await lerBase64(arq), 'application/pdf', pdf && pdf.texto); } catch (e) { erro = e; }
-          }
-          // Plano B: PDF grande, protegido ou que a IA não abriu → manda a imagem da 1ª página
-          if (!dados && pdf && pdf.imagem && !(erro && [401, 429, 503].indexOf(erro.status) > -1)) {
-            status.innerHTML = '<div class="fin-alerta gold">⏳ Lendo a primeira página do PDF…</div>';
-            try { dados = await enviarLeitura(pdf.imagem, 'image/jpeg', pdf.texto); erro = null; } catch (e) { erro = e; }
-          }
-        }
+        var pdf = null;
+        try { pdf = await F.analisarPdf(arq); } catch (e) { console.warn('PDF:', e); }
+        if (!pdf) return semLeitura(status, 'Não consegui abrir este PDF (pode estar protegido por senha). Você pode lançar à mão com o arquivo anexado.');
+        dados = L.lerPdf(pdf);
+        // PDF escaneado (sem texto): procura o código de barras na imagem da 1ª página
+        if (!dados && pdf.imagem) { status.innerHTML = '<div class="fin-alerta gold">⏳ Procurando o código de barras na página…</div>'; dados = await L.boletoDaImagem(base64ParaArquivo(pdf.imagem)); }
       } else {
         status.innerHTML = '<div class="fin-alerta gold">⏳ Procurando o código de barras…</div>';
-        try { local = L ? await L.boletoDaImagem(arq) : null; } catch (e) { console.warn('Código de barras:', e); }
-        if (local) dados = local;
-        else {
-          status.innerHTML = '<div class="fin-alerta gold">⏳ Lendo a foto com a IA…</div>';
-          var prep = await F.prepararArquivo(arq);
-          if (prep.base64.length * 0.75 > 3.2 * 1024 * 1024) throw new Error('A foto precisa ter até 3 MB.');
-          dados = await enviarLeitura(prep.base64, prep.tipo || tipo, '');
-        }
+        dados = await L.boletoDaImagem(arq);
       }
-    } catch (e) { erro = e; }
-    // A IA não respondeu: fica com o que o leitor próprio conseguiu
-    if (!dados && local && local.valor > 0) dados = local;
-    if (!dados) { status.innerHTML = '<div class="fin-alerta red">' + esc((erro && erro.message) || 'Não foi possível ler o documento.') + '</div>'; return; }
-    if (local && dados !== local) { // código de barras e chave da nota são a fonte mais confiável de valor e vencimento
-      if (local.linhaDigitavel) { dados.linhaDigitavel = local.linhaDigitavel; if (local.valor > 0) dados.valor = local.valor; if (local.vencimento) dados.vencimento = local.vencimento; if (!dados.forma) dados.forma = 'Boleto'; }
-      ['contato', 'documento', 'categoria'].forEach(function (k) { if (!dados[k] && local[k]) dados[k] = local[k]; });
-    }
+    } catch (e) { console.warn('Leitor:', e); }
+    if (!dados) return semLeitura(status, 'Não achei o código de barras nem os dados do documento. Tente uma foto mais de perto, só do código de barras, reta e com boa luz; ou digite a linha digitável acima. Recibo sem código de barras: lance à mão com o arquivo anexado.');
     fechar('finIAModal');
     F.preencherComLeitura(dados);
     F.anexoPendente = arq; // o arquivo original vira o anexo do lançamento
   };
-  // Depois de uma leitura só pelo código de barras: a IA completa o que falta (fornecedor, descrição, categoria)
-  F.completarComIA = async function () {
-    var arq = F._ultimaLeitura, sub = el('txModalSubtitle'); if (!arq) return;
-    if (window.layout && window.layout.nivel && window.layout.nivel() < 2) return window.layout.oferta(2, 'Leitura de boleto e nota com IA');
-    if (sub) sub.textContent = '⏳ A IA está lendo o documento…';
-    try {
-      var tipo = F.tipoArquivo(arq), d;
-      if (tipo === 'application/pdf') d = await enviarLeitura(await lerBase64(arq), 'application/pdf', '');
-      else { var prep = await F.prepararArquivo(arq); d = await enviarLeitura(prep.base64, prep.tipo || tipo, ''); }
-      var vazio = function (id) { var x = el(id); return x && !String(x.value || '').trim(); };
-      if (d.descricao && (vazio('txDesc') || /^(Boleto|Conta|Carnê)$/.test(el('txDesc').value.trim()))) el('txDesc').value = String(d.descricao).slice(0, 120);
-      if (d.contato && el('txContato') && vazio('txContato')) el('txContato').value = d.contato;
-      var cat = d.categoria && (window.CATEGORIES[d.tipo === 'RECEITA' ? 'RECEITA' : 'DESPESA'] || []).indexOf(d.categoria) > -1 ? d.categoria : '';
-      if (cat && el('txCategory') && !el('txCategory').dataset.mexeu) el('txCategory').value = cat;
-      if (sub) sub.textContent = 'Valor e vencimento pelo código de barras; o restante lido pela IA. Confira antes de salvar.';
-    } catch (e) { if (sub) sub.textContent = 'A IA não conseguiu ler agora. Preencha a descrição e salve.'; }
+  // Linha digitável digitada ou colada (do app do banco, do e-mail, do WhatsApp)
+  F.lerLinhaDigitada = function () {
+    var campo = el('finIALinha'), status = el('finIAStatus'), L = window.leitor;
+    if (!campo || !L) return;
+    var r = L.codigoNoTexto(campo.value);
+    if (!r) { if (status) status.innerHTML = '<div class="fin-alerta red">Linha digitável inválida. Confira os números: são 47 dígitos no boleto bancário e 48 nas contas de consumo e impostos.</div>'; return; }
+    var seg = { 1: 'Prefeitura', 2: 'Água e esgoto', 3: 'Energia elétrica e gás', 4: 'Telefone e internet', 5: 'Órgão público', 6: 'Carnê', 7: 'Multa de trânsito' };
+    var d = { tipo: 'DESPESA', forma: 'Boleto', linhaDigitavel: r.linha.replace(/\D/g, ''), valor: r.valor, vencimento: r.vencimento, descricao: r.tipo === 'arrecadacao' ? (seg[r.segmento] || 'Conta') : 'Boleto', _leitor: true, _soCodigo: true,
+      categoria: r.tipo === 'arrecadacao' ? (r.segmento === 1 || r.segmento === 5 ? 'Impostos e Taxas' : r.segmento >= 2 && r.segmento <= 4 ? 'Energia e Utilidades' : '') : '' };
+    fechar('finIAModal');
+    F.preencherComLeitura(d);
+  };
+  F.lancarComAnexo = function () {
+    var arq = F._ultimaLeitura;
+    fechar('finIAModal');
+    F.novo('DESPESA', { status: 'pendente' });
+    if (arq) F.anexoPendente = arq;
+    setTimeout(function () { var sub = el('txModalSubtitle'); if (sub) sub.textContent = 'O arquivo fica anexado a este lançamento. Preencha os dados e salve.'; }, 120);
   };
   F.preencherComLeitura = function (x) {
     var tipo = x.tipo === 'RECEITA' ? 'RECEITA' : 'DESPESA';
@@ -1686,8 +1671,8 @@
       F._atualizarForm && F._atualizarForm();
       var sub = el('txModalSubtitle');
       if (sub) {
-        if (x._soCodigo) sub.innerHTML = 'Valor e vencimento lidos do código de barras. Preencha a descrição' + (window.layout && window.layout.nivel && window.layout.nivel() >= 2 ? ' ou <a href="#" class="link-go" onclick="fin.completarComIA();return false">complete com a IA</a>' : '') + '.';
-        else sub.textContent = x._leitor ? 'Lido pelo leitor do sistema (sem IA). Confira os dados antes de salvar.' : 'Lido pela IA. Confira os dados antes de salvar.';
+        if (x._soCodigo) sub.textContent = 'Valor e vencimento lidos do código de barras. Preencha o fornecedor e a descrição e salve.';
+        else sub.textContent = x.completo ? 'Lido automaticamente pelo sistema. Confira os dados antes de salvar.' : 'Lido automaticamente pelo sistema. Complete o que faltar e confira antes de salvar.';
       }
     }, 80);
   };
