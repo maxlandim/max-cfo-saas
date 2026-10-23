@@ -55,11 +55,27 @@ export function estadoDemo() {
   // Uma conta atrasada e um cliente atrasado, para os alertas aparecerem
   add({ type: 'DESPESA', desc: 'Manutenção do forno', contato: 'Frio & Forno Assistência', amount: 1250, date: iso(somaDias(hoje, -12)), vencimento: iso(somaDias(hoje, -3)), status: 'pendente', category: 'Equipamentos' });
 
+  // Estoque de insumos com validade por lote (um vencido e alguns perto de vencer, para o controle aparecer)
+  const val = (n) => iso(somaDias(hoje, n));
+  const prod = (i, nome, unidade, minimo, custo, preco, lotes) => ({ id: 'demo-prd' + i, sku: 'PRD-' + String(i).padStart(4, '0'), nome, unidade, minimo, custo, preco,
+    qtd: lotes.reduce((a, l) => a + l[2], 0), controlaValidade: lotes.some((l) => l[1] !== null),
+    lotes: lotes.filter((l) => l[1] !== null).map((l, k) => ({ id: 'demo-lt' + i + '-' + k, lote: l[0], validade: val(l[1]), qtd: l[2], entradaEm: val(Math.min(l[1], 0) - 20), origem: 'compra' })) });
+  const inventory = [
+    prod(1, 'Farinha de trigo 25 kg', 'pct', 8, 92.5, 0, [['FT2291', 74, 12], ['FT2310', 130, 10]]),
+    prod(2, 'Fermento biológico 500 g', 'pct', 10, 14.9, 0, [['FB0817', -2, 3], ['FB0902', 12, 14]]),
+    prod(3, 'Leite integral 1 l', 'l', 24, 4.79, 0, [['L5521', 4, 36], ['L5540', 9, 48]]),
+    prod(4, 'Manteiga 5 kg', 'un', 2, 189, 0, [['MT118', 26, 4]]),
+    prod(5, 'Bolo de chocolate inteiro', 'un', 3, 22, 59.9, [['', 2, 5]]),
+    prod(6, 'Embalagem para pão (cento)', 'cx', 5, 38, 0, [['', null, 18]]),
+  ];
+
   const contatos = {};
   clientes.forEach((c) => { contatos[c] = { nome: c, tipo: 'cliente' }; });
 
   return {
     transactions: tx,
+    inventory,
+    movEstoque: [],
     contas: [
       { id: 'conta-itau', nome: 'Itaú (conta empresa)', tipo: 'Conta corrente', saldoInicial: 18500, dataSaldo: iso(somaDias(hoje, -91)) },
       { id: 'conta-nubank', nome: 'Nubank PJ', tipo: 'Conta corrente', saldoInicial: 6200, dataSaldo: iso(somaDias(hoje, -91)) },

@@ -129,7 +129,8 @@
       { sel: b('inventory', 'Entrada por nota'), t: 'Entrada pela nota fiscal', x: 'Envie o XML (exato) ou o PDF da nota do fornecedor: os produtos entram com quantidade e custo, e a compra vai para Contas a pagar.' },
       { sel: b('inventory', 'Produto'), t: 'Cadastrar à mão', x: 'Para produtos sem nota ou para o estoque inicial.' },
       { sel: kpis('inventory'), t: 'Valor e reposição', x: 'Valor do estoque a custo, produtos no mínimo e a margem média. Defina o mínimo de cada produto para receber o aviso de reposição.' },
-      { sel: lista('inventory'), t: 'Entrada, saída e ajuste', x: 'Em cada produto: <b>+ Entrada</b> (compra), <b>− Saída</b> (venda, gera a conta a receber) e ⚖️ ajuste depois de contar o estoque.' }
+      { sel: lista('inventory'), t: 'Entrada, saída e ajuste', x: 'Em cada produto: <b>+ Entrada</b> (compra), <b>− Saída</b> (venda, gera a conta a receber) e ⚖️ ajuste depois de contar o estoque.' },
+      { sel: [V('inventory') + ' .est-abas'], t: 'Validade dos produtos', x: 'Em ✏️ marque <b>Controlar validade</b> no produto: as entradas pedem lote e validade (no XML da nota isso vem sozinho) e as saídas tiram primeiro o que vence antes. Em <b>🗓️ Validades</b> você vê o que venceu, o que vence em 30, 60 e 90 dias, o valor em risco, e dá baixa das perdas. Os avisos também aparecem no Início.' }
     ],
     nfe: [
       { sel: cab('nfe'), t: 'Notas fiscais', x: 'Registre as notas que a empresa emitiu. O sistema cria a conta a receber e soma o faturamento dos últimos 12 meses (o limite do Simples).' },

@@ -137,10 +137,10 @@ async function lerItens(arquivo, tipo, textoPdf) {
   "frete": número, "seguro": número, "desconto": número, "outras": número, "ipi": número, "icmsST": número,
   "valorTotal": número (valor total da nota),
   "parcelas": [ { "numero": "001", "vencimento": "AAAA-MM-DD", "valor": número } ] (da seção Fatura/Duplicatas; [] se não houver),
-  "itens": [ { "codigo": "código do produto", "descricao": "descrição completa", "ncm": "só números", "unidade": "UN, CX, KG…", "quantidade": número, "valorUnitario": número, "valorTotal": número, "desconto": número } ]
+  "itens": [ { "codigo": "código do produto", "descricao": "descrição completa", "ncm": "só números", "unidade": "UN, CX, KG…", "quantidade": número, "valorUnitario": número, "valorTotal": número, "desconto": número, "lote": "número do lote, se a nota informar", "validade": "AAAA-MM-DD, se a nota informar a validade do lote" } ]
 }
 Regras: liste TODOS os itens da tabela "Dados dos produtos/serviços", na ordem, em todas as páginas. Números com ponto decimal (1.234,56 vira 1234.56).
-Quantidade e valor unitário exatamente como na nota (podem ter até 4 casas). Não invente: campo ilegível fica "" ou 0.${textoPdf ? `
+Quantidade e valor unitário exatamente como na nota (podem ter até 4 casas). Lote e validade costumam aparecer na descrição ou nas informações adicionais do produto (ex.: "Lote: 123 Val: 10/12/2026"); se não houver, deixe "". Não invente: campo ilegível fica "" ou 0.${textoPdf ? `
 
 Texto extraído do PDF (use para conferir códigos, quantidades e valores):
 ---
@@ -165,7 +165,7 @@ ${textoPdf}
   const txt = (v, m) => String(v == null ? '' : v).trim().slice(0, m);
   const itens = (Array.isArray(d.itens) ? d.itens : []).slice(0, 300).map((i) => {
     const qtd = n(i.quantidade), vu = n(i.valorUnitario), vt = r2(i.valorTotal) || r2(qtd * vu);
-    return { codigo: txt(i.codigo, 40), descricao: txt(i.descricao, 120), ncm: txt(i.ncm, 10).replace(/\D/g, ''), unidade: txt(i.unidade, 8).toUpperCase(), quantidade: qtd, valorUnitario: vu || (qtd ? Math.round(vt / qtd * 10000) / 10000 : 0), valorTotal: vt, desconto: r2(i.desconto) };
+    return { codigo: txt(i.codigo, 40), descricao: txt(i.descricao, 120), ncm: txt(i.ncm, 10).replace(/\D/g, ''), unidade: txt(i.unidade, 8).toUpperCase(), quantidade: qtd, valorUnitario: vu || (qtd ? Math.round(vt / qtd * 10000) / 10000 : 0), valorTotal: vt, desconto: r2(i.desconto), lotes: data(i.validade) || txt(i.lote, 40) ? [{ lote: txt(i.lote, 40), qtd, validade: data(i.validade) }] : [] };
   }).filter((i) => i.descricao && i.quantidade > 0);
   if (!itens.length) return NextResponse.json({ error: 'Não encontrei os produtos nessa nota. Confira se é o DANFE (nota de produtos) ou use o XML.' }, { status: 422 });
   return NextResponse.json({

@@ -1690,6 +1690,7 @@
     if (k.runway !== null && k.runway < 3 && k.saldo > 0) lista.push({ cls: 'gold', t: '⏳ O saldo cobre ' + k.runway.toFixed(1).replace('.', ',') + ' meses de despesas. O ideal é ter pelo menos 3.', go: 'fluxo' });
     var semConta = (st().contas || []).every(function (c) { return !c.dataSaldo; });
     if (semConta && st().transactions.length) lista.push({ cls: 'blue', t: '🏦 Informe o saldo do extrato das suas contas para o caixa ficar exato.', go: 'bancos' });
+    if (window.maxcfoValidade) { try { lista = lista.concat(window.maxcfoValidade.alertas()); } catch (e) { console.warn(e); } }
     return lista;
   };
   F.atualizarTudo = function () {

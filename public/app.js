@@ -156,6 +156,7 @@ var initMaxCfoApp = async () => {
   if (window.initGestaoModule) window.initGestaoModule();
   if (window.initRelatorioModule) window.initRelatorioModule();
   if (window.initLayoutModule) window.initLayoutModule();
+  if (window.initValidadeModule) window.initValidadeModule();
   if (window.initEquipeModule) window.initEquipeModule();
   if (window.initAcessosModule) window.initAcessosModule();
   if (window.initCobrancaModule) window.initCobrancaModule();
