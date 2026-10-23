@@ -49,7 +49,7 @@ export function registrarCadastro() {
 export default function Visitas() {
   const caminho = usePathname();
   useEffect(() => {
-    if (!caminho || /^\/(dashboard|admin|success|api)/.test(caminho)) return;
+    if (!caminho || /^\/(dashboard|admin|success|assinatura|api)/.test(caminho)) return;
     const origemAgora = descobrirOrigem();
     if (!ler('la_origem') || origemAgora !== 'direto') gravar('la_origem', origemAgora);
     const dia = hoje(), novo = ler('la_visita_dia') !== dia;

@@ -1,5 +1,7 @@
 # MAX CFO AI — Guia de lançamento comercial
 
+> Pagamentos: desde 23/10/2026 o sistema usa o **Asaas** (cartão, Pix e boleto) no lugar do Stripe. O passo 4 traz a configuração atual.
+
 Este guia lista o que falta configurar para o MAX CFO AI cobrar clientes com segurança. O código desta versão (`comercial-v1`) já está pronto; os passos abaixo são configurações nos painéis da Vercel, do Firebase e do Stripe. Tempo estimado: 1 a 2 horas.
 
 ## O que mudou nesta versão
@@ -84,8 +86,8 @@ A Vercel cria uma prévia do branch automaticamente. Teste nela antes de juntar 
 | `NEXT_PUBLIC_SITE_URL` | O endereço do site, ex.: `https://max-cfo-saas.vercel.app` |
 | `FIREBASE_SERVICE_ACCOUNT` | Firebase → ⚙️ Configurações do projeto → Contas de serviço → Gerar nova chave privada. Cole o conteúdo do arquivo JSON |
 | `ADMIN_EMAILS` | Seu e-mail (acesso total sem assinatura). Vários separados por vírgula |
-| `STRIPE_SECRET_KEY` | Stripe → Desenvolvedores → Chaves de API → Chave secreta (`sk_test_…` para testar, `sk_live_…` em produção) |
-| `STRIPE_WEBHOOK_SECRET` | Passo 4 abaixo (`whsec_…`) |
+| `ASAAS_API_KEY` | Asaas → Integrações → Chaves de API (`$aact_hmlg_…` no sandbox, `$aact_prod_…` em produção). No Coolify, marque a variável como literal por causa do `$` |
+| `ASAAS_WEBHOOK_TOKEN` | Um texto aleatório de 32+ caracteres, o mesmo do passo 4 |
 | `GEMINI_API_KEY` | aistudio.google.com → Get API key (CFO IA e leitura de boletos e notas) |
 
 Enquanto `FIREBASE_SERVICE_ACCOUNT` não estiver cadastrada, o painel abre para todos com o aviso "Modo de configuração". Cadastre antes de divulgar.
@@ -99,26 +101,29 @@ Enquanto `FIREBASE_SERVICE_ACCOUNT` não estiver cadastrada, o painel abre para 
 
 Importante: publique as regras depois que a nova versão estiver no ar. Elas bloqueiam o formato antigo (dados guardados pelo e-mail para gravação).
 
-## 4. Stripe (dashboard.stripe.com)
+## 4. Asaas (www.asaas.com)
 
-> **Já feito no modo de teste (21/10/2026):** o webhook `we_1UT2Y5LruppRXkK4VmbxF2Ba` (URL `https://max-cfo-saas.vercel.app/api/webhook`, com os 6 eventos abaixo) e o portal do cliente (cancelamento no fim do período, troca de cartão, histórico de faturas, links para termos e privacidade). Falta só copiar o "Signing secret" do webhook para a Vercel. Ao passar para produção, repita os itens 2 e 3 com o modo de teste desligado.
+1. Crie a conta (CPF ou CNPJ), confirme os documentos e cadastre o site `https://landimadvisory.com.br` nos dados comerciais.
+2. Integrações → Chaves de API → gere a chave e cadastre em `ASAAS_API_KEY`.
+3. Integrações → Webhooks → Adicionar:
+   - URL: `https://landimadvisory.com.br/api/asaas`
+   - Token de autenticação: o mesmo valor de `ASAAS_WEBHOOK_TOKEN`
+   - Versão da API: v3 · Fila: sincronizada (ou não sincronizada) · Ativo
+   - Eventos: todos de **Cobranças**, todos de **Assinaturas** e todos de **Checkout**
+4. Notificações: o Asaas envia as cobranças de Pix e boleto por e-mail ao cliente. Ajuste em Configurações → Notificações (SMS e WhatsApp podem ter custo).
 
-1. Ative a conta com os dados do CNPJ e a conta bancária para receber.
-2. Desenvolvedores → Webhooks → Adicionar endpoint:
-   - URL: `https://SEU-SITE/api/webhook`
-   - Eventos: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
-   - Copie o "Signing secret" (`whsec_…`) para `STRIPE_WEBHOOK_SECRET`.
-3. Configurações → Faturamento → Portal do cliente: ative. O botão "Gerenciar assinatura" (página de planos) e "Atualizar pagamento" (painel, quando a cobrança falha) levam o cliente para lá, onde ele troca o cartão, muda de plano ou cancela.
+Como funciona: o cartão é cadastrado no checkout do Asaas e cobrado sozinho em cada vencimento; no Pix ou boleto, o Asaas gera uma cobrança por período e envia o link. Assinando no teste grátis, a 1ª cobrança vence quando o teste acaba. Cobrança vencida há mais de 5 dias suspende o painel até o pagamento. O cliente vê as cobranças, troca de plano ou cancela em `/assinatura`.
 
-Os planos (R$ 49,90, R$ 129,90, R$ 269,90 e R$ 299,90) ficam em `src/lib/plans.js`.
+Os planos (R$ 79,90, R$ 149,90, R$ 349,90 e R$ 599,90, com preço de fundador e plano anual) ficam em `src/lib/plans.js`.
 
-## 5. Teste antes de divulgar (modo de teste do Stripe)
+## 5. Teste antes de divulgar (sandbox do Asaas)
 
 - [ ] Criar conta com e-mail e senha → abre o painel com "Teste grátis: 7 dias restantes".
 - [ ] Sair e entrar de novo → o painel abre direto, sem voltar para o login.
 - [ ] Lançar uma receita, recarregar a página e abrir em outro navegador → o lançamento aparece.
-- [ ] Assinar com o cartão de teste `4242 4242 4242 4242` (qualquer validade futura e CVC) → página de sucesso → painel sem o aviso de teste.
-- [ ] No Stripe, cancelar a assinatura de teste → no Firebase, `subscriptions/{id}` fica com status `canceled`.
+- [ ] Assinar no sandbox com um cartão de teste do Asaas → página de sucesso → painel com a assinatura; em "Minha assinatura" aparece a 1ª cobrança.
+- [ ] Assinar com Pix ou boleto → abre a cobrança do Asaas; no sandbox, confirme o pagamento pelo painel do Asaas → o acesso fica "pago até".
+- [ ] Em "Minha assinatura", cancelar → no Firebase, `subscriptions/{uid}` fica com `statusAsaas: DELETED` e o acesso vale até `pagoAte`.
 - [ ] Menu → Simulador Tributário → buscar um CNPJ → os dados da empresa preenchem o simulador.
 - [ ] CFO IA Chat responde perguntas livres usando os números da empresa.
 - [ ] Contas a Pagar e Receber → "+ A receber" parcelado em 3x → aparecem 3 parcelas com vencimentos mensais.
@@ -137,7 +142,7 @@ Para conferir que ninguém consegue liberar o acesso sozinho: com uma conta de t
 - [ ] CNPJ com atividade de software (CNAE 6311-9/00 ou 6203-1/00; confirme com o contador).
 - [ ] Busca e pedido de registro da marca "MAX CFO" no INPI.
 - [ ] Domínio próprio (ex.: maxcfo.com.br) apontado para a Vercel.
-- [ ] Trocar as chaves do Stripe de teste para produção.
+- [ ] Trocar a chave do Asaas do sandbox para a de produção (e o webhook para a conta de produção).
 
 ## O servidor Python (pasta `backend/`)
 

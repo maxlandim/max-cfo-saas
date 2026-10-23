@@ -21,7 +21,7 @@ export default function TermosPage() {
       <h2>4. Teste grátis, planos e pagamento</h2>
       <ul>
         <li>Toda conta nova tem 7 dias de teste grátis, sem cartão. Ao fim do teste, o acesso ao painel exige uma assinatura.</li>
-        <li>Os planos podem ser mensais ou anuais. No cartão de crédito, a cobrança é feita pelo Stripe com renovação automática até o cancelamento. No Pix ou no boleto, o pagamento é único e libera o plano pelo período pago (1 mês ou 12 meses), sem renovação automática.</li>
+        <li>Os planos podem ser mensais ou anuais, com cobrança pelo Asaas a cada período até o cancelamento: no cartão de crédito, cobrada automaticamente; no Pix ou no boleto, enviada por e-mail para pagamento até o vencimento. Com uma cobrança vencida há mais de 5 dias, o acesso ao painel fica suspenso até o pagamento, sem perda dos dados.</li>
         <li>Você pode cancelar a qualquer momento. O acesso continua até o fim do período já pago, e não há multa nem fidelidade.</li>
         <li>Na primeira contratação, você pode desistir em até 7 dias e receber o valor de volta (art. 49 do Código de Defesa do Consumidor).</li>
         <li>Os preços podem mudar. Avisaremos com pelo menos 30 dias de antecedência, e a mudança vale a partir da renovação seguinte.</li>

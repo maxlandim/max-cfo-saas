@@ -22,7 +22,7 @@ const RESOLVE = [
 const FAQ = [
   { q: 'Preciso conectar minha conta do banco?', a: 'Não. Você importa o extrato do banco (OFX ou CSV) quando quiser. O sistema reconhece o que já foi lançado, dá baixa nas contas em aberto e sugere a categoria do resto.' },
   { q: 'Como funciona o teste grátis?', a: 'Você cria a conta e usa tudo por 7 dias, sem cadastrar cartão. Depois escolhe um plano para continuar. Seus lançamentos ficam guardados.' },
-  { q: 'Posso pagar com Pix ou boleto?', a: 'Sim. No cartão de crédito a assinatura renova sozinha. No Pix ou no boleto você paga 1 mês ou 1 ano de uma vez, sem renovação automática, e avisamos por e-mail antes de vencer. O Pix libera na hora; o boleto, em até 1 dia útil.' },
+  { q: 'Posso pagar com Pix ou boleto?', a: 'Sim. No cartão de crédito a cobrança é automática. No Pix ou no boleto, a cada mês (ou ano) você recebe a cobrança por e-mail e paga pelo link. Assinando durante o teste grátis, a primeira cobrança só vence quando os 7 dias acabarem.' },
   { q: 'Serve para quem faz BPO financeiro?', a: 'Sim. Você cuida de várias empresas no mesmo login, com os dados de cada uma separados, vê o caixa e os atrasados de todas num painel e gera o relatório mensal de cada cliente com a sua marca.' },
   { q: 'O sistema emite nota fiscal?', a: 'Ainda não. Você emite a NFS-e no Emissor Nacional e registra a nota na Landim Advisory, que cria a conta a receber e soma o faturamento dos últimos 12 meses.' },
   { q: 'Onde ficam os meus dados?', a: 'Na nuvem do Google (Firebase), separados por login e por empresa. Só quem entra com a sua conta vê os dados. Você pode baixar um backup completo quando quiser.' },

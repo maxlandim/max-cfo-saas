@@ -108,7 +108,7 @@ export default function DashboardPage() {
         if (!vivo) return;
         if (r.ok) {
           gravarCache(chave, dados);
-          if (!anterior || !dados.acesso || anterior.motivo !== dados.motivo || anterior.plano !== dados.plano || anterior.diasRestantes !== dados.diasRestantes || anterior.diasParaVencer !== dados.diasParaVencer || !!anterior.boletoPendente !== !!dados.boletoPendente) setAcesso(dados);
+          if (!anterior || !dados.acesso || anterior.motivo !== dados.motivo || anterior.plano !== dados.plano || anterior.diasRestantes !== dados.diasRestantes || anterior.diasParaVencer !== dados.diasParaVencer || JSON.stringify(anterior.faturaPendente || null) !== JSON.stringify(dados.faturaPendente || null) || anterior.status !== dados.status) setAcesso(dados);
         } else if (!anterior) setAcesso({ acesso: false, motivo: 'erro', erro: dados.error });
       } catch (e) {
         // Servidor lento ou fora: abre o painel e confere de novo em seguida (bloqueia se o acesso tiver acabado)
@@ -453,13 +453,11 @@ export default function DashboardPage() {
         }}>
           <div style={{ fontSize: '44px', marginBottom: '16px' }}>🔒</div>
           <h1 style={{ fontSize: '26px', marginBottom: '12px' }}>
-            {acesso.motivo === 'pagamento_pendente' ? 'Pagamento pendente' : acesso.motivo === 'aguardando_boleto' ? 'Aguardando o pagamento do boleto' : acesso.motivo === 'periodo_vencido' ? 'Seu período pago terminou' : acesso.motivo === 'erro' ? 'Não foi possível abrir o painel' : 'Seu teste grátis terminou'}
+            {acesso.motivo === 'pagamento_pendente' ? 'Pagamento pendente' : acesso.motivo === 'periodo_vencido' ? 'Seu período pago terminou' : acesso.motivo === 'erro' ? 'Não foi possível abrir o painel' : 'Seu teste grátis terminou'}
           </h1>
           <p style={{ color: '#8899B0', maxWidth: '420px', marginBottom: '28px', lineHeight: 1.6 }}>
             {acesso.motivo === 'pagamento_pendente'
-              ? 'A última cobrança não foi aprovada. Atualize o cartão para continuar usando a Landim Advisory. Seus dados estão guardados.'
-              : acesso.motivo === 'aguardando_boleto'
-                ? 'O painel libera sozinho assim que o banco confirmar o pagamento, em até 1 dia útil depois de pago. Se ainda não pagou, abra o boleto abaixo. Seus dados estão guardados.'
+              ? (acesso.forma === 'cartao' ? 'A cobrança no cartão não foi aprovada. Pague a cobrança pelo link abaixo (cartão, Pix ou boleto) para continuar. Seus dados estão guardados.' : 'A cobrança da assinatura venceu. Pague com Pix ou boleto pelo link abaixo para continuar; o boleto libera em até 1 dia útil. Seus dados estão guardados.')
               : acesso.motivo === 'periodo_vencido'
                 ? 'Renove com Pix, boleto ou cartão para continuar. Seus lançamentos e cadastros estão guardados e voltam assim que o pagamento for confirmado.'
               : acesso.motivo === 'erro'
@@ -467,14 +465,10 @@ export default function DashboardPage() {
                 : 'Escolha um plano para continuar. Seus lançamentos e cadastros estão guardados e voltam assim que a assinatura for ativada.'}
           </p>
           {acesso.motivo === 'pagamento_pendente' ? (
-            <button onClick={async () => { const r = await authFetch('/api/portal', { method: 'POST' }); const d = await r.json().catch(() => ({})); if (d.url) window.location.href = d.url; else router.push('/pricing'); }} style={{ padding: '14px 30px', backgroundColor: '#C5A059', color: '#0B1220', fontWeight: 700, fontSize: '16px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-              Atualizar pagamento
-            </button>
-          ) : acesso.motivo === 'aguardando_boleto' ? (
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {acesso.boletoPendente?.url && <a href={acesso.boletoPendente.url} target="_blank" rel="noopener" style={{ padding: '14px 30px', backgroundColor: '#C5A059', color: '#0B1220', fontWeight: 700, fontSize: '16px', borderRadius: '8px', textDecoration: 'none' }}>Abrir o boleto</a>}
+              {acesso.faturaPendente?.url && <a href={acesso.faturaPendente.url} target="_blank" rel="noopener" style={{ padding: '14px 30px', backgroundColor: '#C5A059', color: '#0B1220', fontWeight: 700, fontSize: '16px', borderRadius: '8px', textDecoration: 'none' }}>Pagar a cobrança</a>}
               <button onClick={() => window.location.reload()} style={{ padding: '14px 24px', background: 'transparent', color: '#E8EFF8', fontWeight: 700, fontSize: '15px', border: '1px solid rgba(232,239,248,.35)', borderRadius: '8px', cursor: 'pointer' }}>Já paguei, verificar</button>
-              <button onClick={() => router.push('/pricing')} style={{ padding: '14px 24px', background: 'transparent', color: '#E8EFF8', fontWeight: 700, fontSize: '15px', border: '1px solid rgba(232,239,248,.35)', borderRadius: '8px', cursor: 'pointer' }}>Pagar com Pix ou cartão</button>
+              <button onClick={() => router.push('/assinatura')} style={{ padding: '14px 24px', background: 'transparent', color: '#E8EFF8', fontWeight: 700, fontSize: '15px', border: '1px solid rgba(232,239,248,.35)', borderRadius: '8px', cursor: 'pointer' }}>Minha assinatura</button>
             </div>
           ) : acesso.motivo !== 'erro' ? (
             <button onClick={() => router.push('/pricing')} style={{ padding: '14px 30px', backgroundColor: '#C5A059', color: '#0B1220', fontWeight: 700, fontSize: '16px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
@@ -487,19 +481,16 @@ export default function DashboardPage() {
           )}
         </div>
       )}
-      {acesso?.acesso && (acesso.boletoPendente || (acesso.forma === 'avulso' && acesso.status !== 'trialing' && acesso.diasParaVencer <= 5)) && (
+      {acesso?.acesso && acesso.faturaPendente && acesso.faturaPendente.url && (acesso.status === 'past_due' || (acesso.forma === 'pix_boleto' && acesso.faturaPendente.diasParaVencer <= 5)) && (
         <div className="maxcfo-banner" style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, background: '#131d30', border: '1px solid rgba(197,160,89,.45)', color: '#E8EFF8', borderRadius: 999, padding: '8px 8px 8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', maxWidth: 'calc(100% - 32px)' }}>
           <span>
-            {acesso.boletoPendente
-              ? 'Boleto gerado: o acesso é liberado quando o banco confirmar o pagamento.'
-              : acesso.diasParaVencer <= 1 ? 'Seu acesso pago vence hoje.' : `Seu acesso pago vence em ${acesso.diasParaVencer} dias.`}
+            {acesso.faturaPendente.diasParaVencer < 0 ? 'Sua cobrança venceu: pague para não perder o acesso.'
+              : acesso.faturaPendente.diasParaVencer === 0 ? 'Sua cobrança vence hoje.' : `Sua cobrança vence em ${acesso.faturaPendente.diasParaVencer} ${acesso.faturaPendente.diasParaVencer === 1 ? 'dia' : 'dias'}.`}
           </span>
-          {acesso.boletoPendente?.url
-            ? <a href={acesso.boletoPendente.url} target="_blank" rel="noopener" style={{ background: '#C5A059', color: '#0B1220', borderRadius: 999, padding: '6px 12px', fontWeight: 700, textDecoration: 'none' }}>Abrir boleto</a>
-            : <button onClick={() => router.push('/pricing')} style={{ background: '#C5A059', color: '#0B1220', border: 0, borderRadius: 999, padding: '6px 12px', fontWeight: 700, cursor: 'pointer' }}>Renovar</button>}
+          <a href={acesso.faturaPendente.url} target="_blank" rel="noopener" style={{ background: '#C5A059', color: '#0B1220', borderRadius: 999, padding: '6px 12px', fontWeight: 700, textDecoration: 'none' }}>Pagar</a>
         </div>
       )}
-      {acesso?.acesso && !acesso.boletoPendente && (acesso.motivo === 'teste' || acesso.motivo === 'configuracao_pendente') && (
+      {acesso?.acesso && !(acesso.faturaPendente && acesso.forma === 'pix_boleto' && acesso.faturaPendente.diasParaVencer <= 5) && (acesso.motivo === 'teste' || acesso.motivo === 'configuracao_pendente') && (
         <div className="maxcfo-banner" style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, background: '#131d30', border: '1px solid rgba(197,160,89,.45)', color: '#E8EFF8', borderRadius: 999, padding: '8px 8px 8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 8px 30px rgba(0,0,0,.4)', maxWidth: 'calc(100% - 32px)' }}>
           <span>
             {acesso.motivo === 'teste'

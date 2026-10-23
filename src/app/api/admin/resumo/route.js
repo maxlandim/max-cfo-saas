@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, adminAuth, adminDb, emailsAdmin, usuarioDaRequisicao } from '../../../../lib/firebaseAdmin';
-import { DIAS_DE_TESTE, STATUS_ATIVOS, PLANOS, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../../lib/plans';
+import { DIAS_DE_TESTE, PLANOS, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../../lib/plans';
 import { hojeBrasil } from '../../../../lib/lembretes';
 
 export const dynamic = 'force-dynamic';
@@ -42,14 +42,16 @@ export async function GET(req) {
       const fimTeste = criado + DIAS_DE_TESTE * 864e5;
       const s = assinatura[u.uid] || null;
       let situacao;
+      const ativa = !!(s && s.asaasSubscriptionId && s.statusAsaas === 'ACTIVE');
+      const pago = !!(s && s.pagoAte && Date.parse(s.pagoAte) > agora);
+      const fatura = s && s.faturaPendente;
+      const vencida = !!(fatura && Date.parse(fatura.vencimento + 'T23:59:59-03:00') < agora);
       if (admins.includes(email)) situacao = 'admin';
-      else if (s && s.status === 'trialing') situacao = 'teste_com_cartao';
-      else if (s && STATUS_ATIVOS.includes(s.status)) situacao = 'assinante';
-      else if (s && s.pagoAte && Date.parse(s.pagoAte) > agora) situacao = agora < fimTeste ? 'teste_com_cartao' : 'assinante';
-      else if (s && s.status === 'past_due') situacao = 'pagamento_pendente';
-      else if (s && s.boletoPendente && Date.parse(s.boletoPendente.ate) > agora && agora >= fimTeste) situacao = 'pagamento_pendente';
+      else if (ativa && agora < fimTeste && !pago) situacao = 'teste_com_cartao';
+      else if (ativa && vencida && !pago) situacao = 'pagamento_pendente';
+      else if (pago || ativa) situacao = 'assinante';
       else if (agora < fimTeste) situacao = 'teste';
-      else situacao = s && s.status === 'canceled' ? 'cancelou' : 'teste_acabou';
+      else situacao = s && s.asaasSubscriptionId ? 'cancelou' : 'teste_acabou';
       return {
         email, nome: u.displayName || '', criadoEm: new Date(criado).toISOString(),
         ultimoLogin: u.metadata.lastSignInTime ? new Date(u.metadata.lastSignInTime).toISOString() : null,
@@ -57,15 +59,13 @@ export async function GET(req) {
         emailConfirmado: !!u.emailVerified, provedor: (u.providerData[0] || {}).providerId || 'password',
         fimTeste: new Date(fimTeste).toISOString(), situacao,
         ...(() => {
-          // Pix/boleto com período em vigor vale como assinatura (sem renovação automática)
-          const av = !!(s && s.pagoAte && Date.parse(s.pagoAte) > agora && !(STATUS_ATIVOS.includes(s.status)));
-          const plano = s ? (av ? s.planoAvulso : s.plan) || null : null;
-          const periodo = (s && (av ? s.periodoAvulso : s.periodo)) || 'mensal';
+          const plano = (s && s.plano) || null;
+          const periodo = (s && s.periodo) || 'mensal';
           const fundador = !!(s && s.fundador);
           return {
-            plano, periodo, fundador, forma: av ? 'pix/boleto' : s && s.stripeSubscriptionId ? 'cartão' : null,
-            status: s ? (av ? 'pago até' : s.status) : null, renovaEm: s ? (av ? s.pagoAte : s.currentPeriodEnd) || null : null,
-            cancelaNoFim: av ? true : !!(s && s.cancelAtPeriodEnd),
+            plano, periodo, fundador, forma: s && s.forma ? (s.forma === 'cartao' ? 'cartão' : 'pix/boleto') : null,
+            status: s ? s.statusAsaas || null : null, renovaEm: ativa ? s.proximoVencimento || null : (s && s.pagoAte) || null,
+            cancelaNoFim: !!(s && s.asaasSubscriptionId && !ativa),
             // valor que a conta paga por mês (anual dividido por 12; fundador com o preço de fundador)
             valorMensal: PLANOS[plano] ? ((fundador ? PLANOS[plano].fundador : PLANOS[plano].valor) / 100) * (periodo === 'anual' ? MESES_PAGOS_NO_ANUAL / 12 : 1) : 0,
           };

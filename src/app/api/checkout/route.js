@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
-import { PLANOS, DIAS_DE_TESTE, FUNDADOR, MESES_PAGOS_NO_ANUAL, somarMeses } from '../../../lib/plans';
+import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
+import { PLANOS } from '../../../lib/plans';
 import { vagasFundador } from '../../../lib/fundadores';
+import { fimDoTeste, registrarAssinatura, guardarFatura, valorDoPlano } from '../../../lib/assinatura';
+import { asaas, asaasConfigurado, linkCheckout, montarRef, dataAsaas, soDigitos, documentoValido } from '../../../lib/asaas';
 
 export const dynamic = 'force-dynamic';
 
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' }) : null;
-
+// Abre o pagamento no Asaas.
+// POST { planId, periodo: 'mensal'|'anual', forma: 'cartao'|'pix_boleto', nome, documento (CPF ou CNPJ) }
+// - cartao: checkout do Asaas que cadastra o cartão e cria a assinatura (1ª cobrança quando o teste grátis acaba)
+// - pix_boleto: assinatura em que o Asaas gera uma cobrança por período e envia o link; devolvemos o link da 1ª
 export async function POST(req) {
-  if (!stripe || !adminConfigurado) {
+  if (!asaasConfigurado() || !adminConfigurado) {
     return NextResponse.json({ error: 'Os pagamentos ainda não estão configurados. Fale com o suporte.' }, { status: 503 });
   }
-
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login para assinar.' }, { status: 401 });
 
@@ -20,129 +22,86 @@ export async function POST(req) {
   try { body = await req.json(); } catch {}
   const planId = PLANOS[body.planId] ? body.planId : 'basic';
   const plano = PLANOS[planId];
-  const anual = body.periodo === 'anual';
-  const meses = anual ? MESES_PAGOS_NO_ANUAL : 1;
-  // "cartao" (assinatura que renova sozinha) ou "avulso" (Pix ou boleto, paga 1 mês ou 1 ano por vez)
-  const avulso = body.forma === 'avulso' || body.forma === 'pix' || body.forma === 'boleto';
+  const periodo = body.periodo === 'anual' ? 'anual' : 'mensal';
+  const forma = body.forma === 'cartao' ? 'cartao' : 'pix_boleto';
+  const nome = String(body.nome || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+  const documento = soDigitos(body.documento);
+  if (nome.length < 3) return NextResponse.json({ error: 'Informe o nome completo ou a razão social.' }, { status: 400 });
+  if (!documentoValido(documento)) return NextResponse.json({ error: 'CPF ou CNPJ inválido. Confira os números.' }, { status: 400 });
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || `https://${req.headers.get('host')}`;
-
-  // Quem assina durante o teste grátis não perde os dias que faltam: o cartão é cadastrado agora
-  // e a primeira cobrança acontece quando o teste acaba (só na primeira assinatura da conta).
-  // O Stripe exige pelo menos 48 horas de teste; com menos que isso, cobra na hora.
-  // Quem já pagou um período por Pix ou boleto também só é cobrado no cartão quando esse período acabar.
-  let fimTeste = null, fimReal = 0, atual = {};
-  try {
-    const snap = await adminDb.collection('subscriptions').doc(user.uid).get();
-    atual = snap.exists ? snap.data() : {};
-    const pagoAte = atual.pagoAte ? Date.parse(atual.pagoAte) : 0;
-    let fim = 0;
-    if (!atual.stripeSubscriptionId) {
-      const conta = await adminAuth.getUser(user.uid);
-      fim = new Date(conta.metadata.creationTime).getTime() + DIAS_DE_TESTE * 864e5;
-    }
-    fim = Math.max(fim, pagoAte);
-    fimReal = fim;
-    if (fim - Date.now() > 49 * 3600 * 1000) fimTeste = fim;
-  } catch (e) { console.warn('Não consegui calcular o fim do teste:', e.message); }
-  if (['active', 'trialing', 'past_due'].includes(atual.status) && atual.stripeSubscriptionId) {
-    return NextResponse.json({ error: avulso
-      ? 'Você já tem uma assinatura no cartão. Para trocar para Pix ou boleto, cancele a assinatura em "Gerenciar assinatura" e pague o próximo período por aqui.'
-      : 'Você já tem uma assinatura ativa. Para mudar de plano ou de cartão, use "Gerenciar assinatura".' }, { status: 409 });
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || `https://${req.headers.get('host')}`).replace(/\/$/, '');
+  const ref = adminDb.collection('subscriptions').doc(user.uid);
+  const atual = (await ref.get()).data() || {};
+  const ativa = atual.asaasSubscriptionId && atual.statusAsaas === 'ACTIVE';
+  if (ativa && atual.plano === planId && atual.periodo === periodo && atual.forma === forma) {
+    return NextResponse.json({ error: 'Você já tem essa assinatura. Para ver as cobranças ou cancelar, abra "Minha assinatura".' }, { status: 409 });
   }
-  const dataBR = (ms) => new Date(ms).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 
-  // Preço de fundador: enquanto houver vaga, um cupom do Stripe tira a diferença por FUNDADOR.meses
-  let cupom = null;
+  // A 1ª cobrança fica para depois do teste grátis e de qualquer período já pago
+  let fimTeste = 0;
+  try { fimTeste = await fimDoTeste(user.uid); } catch {}
+  const pagoAte = atual.pagoAte ? Date.parse(atual.pagoAte) : 0;
+  const inicio = Math.max(Date.now(), fimTeste, pagoAte);
+  const primeiraCobranca = dataAsaas(inicio);
+
+  // Preço de fundador: para os primeiros assinantes, por 12 meses
+  let fundador = false;
   try {
     const aindaFundador = atual.fundadorAte && Date.parse(atual.fundadorAte) > Date.now();
-    if (avulso && plano.fundador < plano.valor && (aindaFundador || (await vagasFundador({ semCache: true })) > 0)) {
-      cupom = { avulso: true };
-    } else if (!avulso && (await vagasFundador({ semCache: true })) > 0 && plano.fundador < plano.valor) {
-      const id = `fundador-${planId}-${anual ? 'anual' : 'mensal'}-v1`;
-      cupom = await stripe.coupons.retrieve(id).catch(() => null);
-      if (!cupom) {
-        cupom = await stripe.coupons.create({
-          id, name: `Preço de fundador (${FUNDADOR.meses} meses)`, currency: 'brl',
-          amount_off: (plano.valor - plano.fundador) * meses, duration: 'repeating', duration_in_months: FUNDADOR.meses,
-        });
-      }
-    }
-  } catch (e) { console.warn('Cupom de fundador:', e.message); cupom = null; }
-  const meta = { uid: user.uid, planId, periodo: anual ? 'anual' : 'mensal', ...(cupom ? { fundador: '1' } : {}) };
-
-  if (avulso) {
-    // Pix ou boleto: pagamento único de 1 mês (ou 12 meses pelo preço de 10), sem renovação automática
-    const valor = (cupom ? plano.fundador : plano.valor) * meses;
-    const inicio = Math.max(Date.now(), fimReal);
-    // No Brasil o Stripe libera o Pix só por convite: se a conta ainda não tiver Pix (ou boleto), abre com o que estiver ativo
-    let ultimoErro = null;
-    for (const tipos of [['pix', 'boleto'], ['boleto'], ['pix']]) {
-    try {
-      const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        payment_method_types: tipos,
-        line_items: [{
-          price_data: {
-            currency: 'brl',
-            product_data: { name: `${plano.nome} · ${anual ? '12 meses' : '1 mês'}${cupom ? ' (preço de fundador)' : ''}`, images: [`${origin}/icon-512.png`] },
-            unit_amount: valor,
-          },
-          quantity: 1,
-        }],
-        client_reference_id: user.uid,
-        ...(atual.stripeCustomerId ? { customer: atual.stripeCustomerId } : { customer_email: user.email || undefined, customer_creation: 'always' }),
-        metadata: { ...meta, tipo: 'avulso' },
-        payment_intent_data: { metadata: { ...meta, tipo: 'avulso' } },
-        invoice_creation: { enabled: true, invoice_data: { description: `Acesso ao ${plano.nome} por ${anual ? '12 meses' : '1 mês'}`, metadata: { ...meta, tipo: 'avulso' } } },
-        payment_method_options: { ...(tipos.includes('pix') ? { pix: { expires_after_seconds: 3600 } } : {}), ...(tipos.includes('boleto') ? { boleto: { expires_after_days: 3 } } : {}) },
-        custom_text: { submit: { message: `Pagamento único, sem renovação automática. O acesso vale de ${dataBR(inicio)} até ${dataBR(somarMeses(inicio, anual ? 12 : 1))}.${tipos.includes('pix') ? ' O Pix libera na hora.' : ''}${tipos.includes('boleto') ? ' O boleto libera quando o banco confirmar (até 1 dia útil).' : ''}` } },
-        locale: 'pt-BR',
-        success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/pricing`,
-      });
-      return NextResponse.json({ url: session.url, tipos });
-    } catch (err) {
-      ultimoErro = err;
-      // só tenta a próxima combinação quando o erro é de forma de pagamento não ativada
-      if (!/payment method|payment_method_types|pix|boleto/i.test(err?.message || '')) break;
-    }
-    }
-    console.error('Erro no checkout Pix/boleto do Stripe:', ultimoErro);
-    const desligado = /payment method|payment_method_types|pix|boleto/i.test(ultimoErro?.message || '');
-    return NextResponse.json({ error: desligado ? 'Pix e boleto ainda não estão liberados. Use o cartão ou fale com o suporte no WhatsApp.' : 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.' }, { status: 500 });
-  }
+    fundador = plano.fundador < plano.valor && (aindaFundador || (await vagasFundador({ semCache: true })) > 0);
+  } catch {}
+  const valor = valorDoPlano(planId, periodo, fundador) / 100;
+  const nomeProduto = `${plano.nome}${periodo === 'anual' ? ' (anual)' : ''}`;
+  const descricao = `${nomeProduto}${fundador ? ' · preço de fundador por 12 meses' : ''}`;
+  const referencia = montarRef({ uid: user.uid, planId, periodo, fundador });
 
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'brl',
-            product_data: { name: plano.nome + (anual ? ' (anual)' : ''), images: [`${origin}/icon-512.png`] },
-            unit_amount: plano.valor * meses,
-            recurring: { interval: anual ? 'year' : 'month' },
-          },
-          quantity: 1,
-        },
-      ],
-      client_reference_id: user.uid,
-      customer_email: user.email || undefined,
-      metadata: meta,
-      subscription_data: { metadata: meta, ...(fimTeste ? { trial_end: Math.floor(fimTeste / 1000) } : {}) },
-      payment_method_collection: 'always',
-      ...(fimTeste ? { custom_text: { submit: { message: `Você continua no teste grátis. A primeira cobrança será em ${dataBR(fimTeste)}, e você pode cancelar antes sem pagar nada.` } } } : {}),
-      // o Stripe não aceita cupom automático junto com o campo de código promocional
-      ...(cupom ? { discounts: [{ coupon: cupom.id }] } : { allow_promotion_codes: true }),
-      locale: 'pt-BR',
-      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing`,
+    // Cliente no Asaas (um por conta)
+    let cliente = atual.asaasCustomerId;
+    const dadosCliente = { name: nome, cpfCnpj: documento, email: user.email || undefined, externalReference: user.uid };
+    if (cliente) {
+      try { await asaas('PUT', `/customers/${cliente}`, dadosCliente); } catch (e) { if (e.status === 404) cliente = null; else throw e; }
+    }
+    if (!cliente) cliente = (await asaas('POST', '/customers', dadosCliente)).id;
+    await adminDb.collection('asaasClientes').doc(cliente).set({ uid: user.uid, em: new Date().toISOString() });
+    await ref.set({ asaasCustomerId: cliente, nomeCobranca: nome, documento, updatedAt: new Date().toISOString() }, { merge: true });
+
+    if (forma === 'cartao') {
+      const checkout = await asaas('POST', '/checkouts', {
+        billingTypes: ['CREDIT_CARD'],
+        chargeTypes: ['RECURRENT'],
+        minutesToExpire: 60,
+        customer: cliente,
+        externalReference: referencia,
+        callback: { successUrl: `${origin}/success?forma=cartao`, cancelUrl: `${origin}/pricing`, expiredUrl: `${origin}/pricing` },
+        items: [{ name: (plano.nome.replace('Landim Advisory - ', 'Plano ') + (periodo === 'anual' ? ' anual' : '')).slice(0, 30), description: descricao.slice(0, 150), quantity: 1, value: valor }],
+        subscription: { cycle: periodo === 'anual' ? 'YEARLY' : 'MONTHLY', nextDueDate: primeiraCobranca },
+      });
+      await ref.set({ checkoutPendente: { planId, periodo, fundador, checkoutId: checkout.id, em: new Date().toISOString() } }, { merge: true });
+      return NextResponse.json({ url: linkCheckout(checkout.id), primeiraCobranca });
+    }
+
+    // Pix ou boleto: o cliente escolhe na página da cobrança (o Asaas também manda o link por e-mail)
+    const assinatura = await asaas('POST', '/subscriptions', {
+      customer: cliente,
+      billingType: 'UNDEFINED',
+      value: valor,
+      nextDueDate: primeiraCobranca,
+      cycle: periodo === 'anual' ? 'YEARLY' : 'MONTHLY',
+      description: descricao,
+      externalReference: referencia,
     });
-    return NextResponse.json({ url: session.url });
+    await registrarAssinatura(user.uid, assinatura);
+    let url = null;
+    try {
+      const lista = await asaas('GET', `/subscriptions/${assinatura.id}/payments`);
+      const pag = (lista.data || []).sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))[0];
+      if (pag) { await guardarFatura(user.uid, pag, 'aberta'); url = pag.invoiceUrl || null; }
+    } catch (e) { console.warn('Primeira cobrança da assinatura:', e.message); }
+    return NextResponse.json({ url: url || `${origin}/success?forma=pix_boleto`, primeiraCobranca });
   } catch (err) {
-    console.error('Erro no checkout do Stripe:', err);
-    return NextResponse.json({ error: 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.' }, { status: 500 });
+    console.error('Erro no pagamento do Asaas:', err.status, err.message, JSON.stringify(err.corpo || {}).slice(0, 400));
+    const msg = err.status === 400 && err.message && !/Asaas \d/.test(err.message) ? err.message : 'Não foi possível abrir o pagamento agora. Tente de novo em instantes.';
+    return NextResponse.json({ error: msg }, { status: err.status === 400 ? 400 : 500 });
   }
 }

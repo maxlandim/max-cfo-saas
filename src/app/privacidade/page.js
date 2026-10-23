@@ -17,7 +17,7 @@ export default function PrivacidadePage() {
       <ul>
         <li>Cadastro: nome, e-mail, CPF ou CNPJ e senha (guardada de forma criptografada pelo Google Firebase).</li>
         <li>Uso do painel: os dados financeiros e cadastrais que você inserir ou importar (extratos OFX/CSV, planilhas, anexos).</li>
-        <li>Pagamento: o Stripe processa o cartão, o Pix e o boleto (inclusive o CPF ou CNPJ pedido no boleto); nós recebemos só o status do pagamento e da assinatura, nunca o número completo do cartão.</li>
+        <li>Pagamento: o Asaas processa o cartão, o Pix e o boleto. Guardamos o nome e o CPF ou CNPJ informados para a cobrança e recebemos só o status das cobranças, nunca o número do cartão.</li>
         <li>Dados técnicos: registros de acesso, aparelho e navegador, para segurança e correção de erros.</li>
       </ul>
 
@@ -35,7 +35,7 @@ export default function PrivacidadePage() {
         <li><b>Hospedagem:</b> servidor contratado (Hostinger) ou Vercel, onde o site roda.</li>
         <li><b>Resend:</b> envio dos lembretes por e-mail que você ligar em Configurações (resumo do dia para você e aviso de vencimento para os seus clientes, com nome, valor, vencimento e Pix).</li>
         <li><b>Pessoas que você autorizar:</b> quem você liberar em Equipe e acessos (o seu cliente ou contador, por exemplo) vê os dados daquela empresa em modo somente leitura, até você remover o acesso.</li>
-        <li><b>Stripe:</b> processamento de pagamentos.</li>
+        <li><b>Asaas:</b> processamento de pagamentos (cartão, Pix e boleto) e envio das cobranças.</li>
         <li><b>Google Gemini:</b> quando você envia um boleto ou nota para leitura, o arquivo é enviado para extrair os dados; quando você usa o CFO IA Chat, a pergunta e um resumo dos números (receitas, despesas, saldo e quantidade de lançamentos) são enviados para gerar a resposta.</li>
         <li><b>BrasilAPI / Minha Receita:</b> quando você consulta um CNPJ, o número é enviado para buscar os dados públicos da Receita Federal.</li>
       </ul>

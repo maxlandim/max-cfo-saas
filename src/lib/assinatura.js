@@ -1,12 +1,18 @@
 // Regras de acesso pago, calculadas sempre no servidor.
-// O documento subscriptions/{uid} só é escrito pelo servidor (webhook do Stripe e confirmação do checkout);
+// O documento subscriptions/{uid} só é escrito pelo servidor (webhook do Asaas e rotas de pagamento);
 // as regras do Firestore impedem o próprio usuário de alterá-lo.
 //
-// Duas formas de pagar:
-// - Cartão: assinatura do Stripe (status, plan, stripeSubscriptionId, currentPeriodEnd...), renova sozinha.
-// - Pix ou boleto: pagamento avulso que libera o plano até "pagoAte" (planoAvulso, periodoAvulso), sem renovação.
+// Pagamentos pelo Asaas, com assinatura que gera uma cobrança por mês (ou por ano):
+// - cartão: o cartão é cadastrado no checkout do Asaas e cobrado sozinho em cada vencimento;
+// - Pix ou boleto: o Asaas gera a cobrança e manda por e-mail; o cliente paga pelo link.
+// Campos em subscriptions/{uid}:
+//   asaasCustomerId, asaasSubscriptionId, statusAsaas (ACTIVE | INACTIVE | DELETED), plano, periodo, forma (cartao | pix_boleto)
+//   pagoAte        fim do período coberto pelas cobranças já pagas
+//   proximoVencimento, faturaPendente { id, url, vencimento, valor, situacao }
+//   fundador, fundadorAte, checkoutPendente { planId, periodo, fundador, em }
 import { adminAuth, adminDb, emailsAdmin } from './firebaseAdmin';
-import { DIAS_DE_TESTE, STATUS_ATIVOS, somarMeses } from './plans';
+import { DIAS_DE_TESTE, PLANOS, somarMeses, CARENCIA_DIAS, MESES_PAGOS_NO_ANUAL } from './plans';
+import { asaas, lerRef, montarRef, msDaData } from './asaas';
 
 export async function fimDoTeste(uid) {
   const user = await adminAuth.getUser(uid);
@@ -22,25 +28,26 @@ export async function statusDoUsuario(decoded) {
   }
 
   const snap = await adminDb.collection('subscriptions').doc(uid).get();
-  const sub = snap.exists ? snap.data() : null;
-  if (sub && STATUS_ATIVOS.includes(sub.status)) {
-    return { acesso: true, motivo: 'assinatura', forma: 'cartao', plano: sub.plan || null, status: sub.status, renovaEm: sub.currentPeriodEnd || null };
-  }
-
+  const sub = snap.exists ? snap.data() : {};
   const agora = Date.now();
   const fimTeste = await fimDoTeste(uid);
-  const pagoAte = sub && sub.pagoAte ? Date.parse(sub.pagoAte) : 0;
-  const boleto = sub && sub.boletoPendente && Date.parse(sub.boletoPendente.ate) > agora ? sub.boletoPendente : null;
+  const pagoAte = sub.pagoAte ? Date.parse(sub.pagoAte) : 0;
+  const ativa = Boolean(sub.asaasSubscriptionId) && sub.statusAsaas === 'ACTIVE';
+  const fatura = sub.faturaPendente && sub.faturaPendente.url ? sub.faturaPendente : null;
+  const vencFatura = fatura ? msDaData(fatura.vencimento) : 0;
+  const base = {
+    forma: sub.forma || null, plano: sub.plano || null, periodo: sub.periodo || 'mensal',
+    renovaEm: ativa ? (sub.proximoVencimento || null) : null, pagoAte: sub.pagoAte || null, cancelada: !ativa && Boolean(sub.asaasSubscriptionId),
+    ...(fatura ? { faturaPendente: { url: fatura.url, vencimento: fatura.vencimento, valor: fatura.valor, diasParaVencer: Math.ceil((vencFatura - agora) / 864e5) } } : {}),
+  };
 
-  // Pix ou boleto pago: libera até pagoAte. Pago durante o teste grátis, o período começa quando o teste acaba
-  // e até lá a pessoa continua com tudo liberado (como no cartão, status "trialing").
-  if (pagoAte > agora) {
-    return {
-      acesso: true, motivo: 'assinatura', forma: 'avulso', plano: sub.planoAvulso || null,
-      status: agora < fimTeste ? 'trialing' : 'active', periodo: sub.periodoAvulso || 'mensal',
-      pagoAte: sub.pagoAte, renovaEm: sub.pagoAte, diasParaVencer: Math.ceil((pagoAte - agora) / 864e5),
-      ...(boleto ? { boletoPendente: boleto } : {}),
-    };
+  // Período já pago (ou teste grátis com assinatura feita): tudo certo
+  if (pagoAte > agora || (ativa && agora < fimTeste)) {
+    return { acesso: true, motivo: 'assinatura', ...base, status: agora < fimTeste ? 'trialing' : 'active', diasParaVencer: pagoAte > agora ? Math.ceil((pagoAte - agora) / 864e5) : null };
+  }
+  // Cobrança da assinatura vencida há poucos dias: continua usando enquanto paga (carência)
+  if (ativa && fatura && vencFatura + CARENCIA_DIAS * 864e5 > agora) {
+    return { acesso: true, motivo: 'assinatura', ...base, status: vencFatura < agora ? 'past_due' : 'active' };
   }
 
   // Teste grátis contado a partir da criação da conta
@@ -50,89 +57,112 @@ export async function statusDoUsuario(decoded) {
       motivo: 'teste',
       testeTerminaEm: new Date(fimTeste).toISOString(),
       diasRestantes: Math.ceil((fimTeste - agora) / 864e5),
-      status: sub?.status || null,
-      ...(boleto ? { boletoPendente: boleto } : {}),
+      ...base,
     };
   }
 
   return {
     acesso: false,
-    motivo: boleto ? 'aguardando_boleto' : sub?.status === 'past_due' ? 'pagamento_pendente' : pagoAte ? 'periodo_vencido' : 'sem_assinatura',
-    status: sub?.status || null,
-    ...(pagoAte ? { pagoAte: sub.pagoAte } : {}),
-    ...(boleto ? { boletoPendente: boleto } : {}),
+    motivo: ativa && fatura ? 'pagamento_pendente' : pagoAte ? 'periodo_vencido' : 'sem_assinatura',
+    ...base,
   };
 }
 
-// Grava/atualiza a assinatura a partir de um objeto Subscription do Stripe.
-export async function gravarAssinatura(uid, subscription, extra = {}) {
-  if (!uid || !adminDb) return;
-  await adminDb.collection('subscriptions').doc(uid).set(
-    {
-      status: subscription.status,
-      plan: subscription.metadata?.planId || extra.plan || null,
-      stripeCustomerId: typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id || null,
-      stripeSubscriptionId: subscription.id,
-      // Versões novas da API do Stripe trazem o fim do período em cada item da assinatura
-      currentPeriodEnd: (() => { const f = subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end; return f ? new Date(f * 1000).toISOString() : null; })(),
-      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
-      fundador: subscription.metadata?.fundador === '1',
-      periodo: subscription.metadata?.periodo || 'mensal',
-      updatedAt: new Date().toISOString(),
-      ...extra,
-    },
-    { merge: true }
-  );
+// Valor de cada cobrança (centavos) de um plano
+export function valorDoPlano(planId, periodo, fundador) {
+  const p = PLANOS[planId] || PLANOS.basic;
+  return (fundador ? p.fundador : p.valor) * (periodo === 'anual' ? MESES_PAGOS_NO_ANUAL : 1);
 }
 
-// Credita um pagamento avulso (Pix ou boleto) já pago: soma 1 ou 12 meses ao acesso.
-// Pode ser chamado mais de uma vez para a mesma sessão (webhook + página de sucesso): só credita uma vez.
-export async function creditarAvulso(session) {
-  if (!adminDb || !session || session.payment_status !== 'paid') return null;
-  const m = session.metadata || {};
-  const uid = session.client_reference_id || m.uid;
-  if (!uid || m.tipo !== 'avulso') return null;
-  const meses = m.periodo === 'anual' ? 12 : 1;
-  const fimTeste = await fimDoTeste(uid).catch(() => 0);
-  const refSub = adminDb.collection('subscriptions').doc(uid);
-  const refPag = adminDb.collection('pagamentosAvulsos').doc(session.id);
+// Liga uma assinatura do Asaas à conta: grava plano/forma e cancela uma assinatura antiga da mesma conta.
+export async function registrarAssinatura(uid, assinatura, extra = {}) {
+  if (!adminDb || !uid || !assinatura) return;
+  const ref = adminDb.collection('subscriptions').doc(uid);
+  const atual = (await ref.get()).data() || {};
+  const info = lerRef(assinatura.externalReference) || atual.checkoutPendente || {};
+  const planId = info.planId || atual.plano || 'basic';
+  const periodo = info.periodo || (assinatura.cycle === 'YEARLY' ? 'anual' : 'mensal');
+  const fundador = Boolean(info.fundador);
+  const forma = assinatura.billingType === 'CREDIT_CARD' ? 'cartao' : 'pix_boleto';
+  // Grava a referência na assinatura (as criadas pelo checkout do cartão nascem sem ela)
+  if (!lerRef(assinatura.externalReference)) {
+    try { await asaas('PUT', `/subscriptions/${assinatura.id}`, { externalReference: montarRef({ uid, planId, periodo, fundador }) }); } catch (e) { console.warn('Referência da assinatura:', e.message); }
+  }
+  // Troca de forma de pagamento ou de plano: a assinatura antiga é encerrada (o período já pago continua valendo)
+  if (atual.asaasSubscriptionId && atual.asaasSubscriptionId !== assinatura.id && atual.statusAsaas === 'ACTIVE') {
+    try { await asaas('DELETE', `/subscriptions/${atual.asaasSubscriptionId}`); } catch (e) { console.warn('Cancelar assinatura antiga:', e.message); }
+  }
+  const dados = {
+    asaasSubscriptionId: assinatura.id,
+    asaasCustomerId: assinatura.customer || atual.asaasCustomerId || null,
+    statusAsaas: assinatura.status || 'ACTIVE',
+    plano: planId, periodo, forma,
+    proximoVencimento: assinatura.nextDueDate || null,
+    checkoutPendente: null,
+    updatedAt: new Date().toISOString(),
+    ...(fundador ? { fundador: true, fundadorAte: atual.fundadorAte || new Date(somarMeses(msDaData(assinatura.nextDueDate || new Date().toISOString()), 12)).toISOString() } : {}),
+    ...(atual.faturaPendente && atual.asaasSubscriptionId !== assinatura.id ? { faturaPendente: null } : {}),
+    ...extra,
+  };
+  await ref.set(dados, { merge: true });
+  return dados;
+}
+
+// Descobre de quem é uma cobrança/assinatura do Asaas
+export async function uidDoAsaas({ externalReference, customer }) {
+  const r = lerRef(externalReference);
+  if (r) return r.uid;
+  if (customer) {
+    const s = await adminDb.collection('asaasClientes').doc(customer).get();
+    if (s.exists) return s.data().uid;
+  }
+  return null;
+}
+
+// Cobrança paga (Pix, boleto ou cartão): estende o acesso até o fim do período que ela cobre.
+export async function aplicarPagamento(uid, pagamento, ciclo) {
+  const ref = adminDb.collection('subscriptions').doc(uid);
   return adminDb.runTransaction(async (t) => {
-    const [pag, atual] = await Promise.all([t.get(refPag), t.get(refSub)]);
-    if (pag.exists) return pag.data();
-    const sub = atual.exists ? atual.data() : {};
-    const agora = Date.now();
-    const pagoAteAntes = sub.pagoAte ? Date.parse(sub.pagoAte) : 0;
-    const inicio = Math.max(agora, fimTeste, pagoAteAntes);
-    const pagoAte = new Date(somarMeses(inicio, meses)).toISOString();
-    const fundador = m.fundador === '1';
-    const dados = {
-      pagoAte, planoAvulso: m.planId || 'basic', periodoAvulso: m.periodo === 'anual' ? 'anual' : 'mensal',
-      formaAvulso: (session.payment_method_types || []).join(',') || 'pix',
-      stripeCustomerId: sub.stripeCustomerId || (typeof session.customer === 'string' ? session.customer : session.customer?.id) || null,
-      updatedAt: new Date().toISOString(),
-      ...(fundador ? { fundador: true, fundadorAte: sub.fundadorAte || new Date(somarMeses(agora, 12)).toISOString() } : {}),
-      ...(sub.boletoPendente && sub.boletoPendente.sessionId === session.id ? { boletoPendente: null } : {}),
-    };
-    t.set(refSub, dados, { merge: true });
-    const registro = { uid, sessionId: session.id, valor: session.amount_total, plano: dados.planoAvulso, periodo: dados.periodoAvulso, de: new Date(inicio).toISOString(), ate: pagoAte, fundador, em: new Date().toISOString() };
-    t.set(refPag, registro);
-    return registro;
+    const atual = (await t.get(ref)).data() || {};
+    const meses = ciclo === 'YEARLY' || atual.periodo === 'anual' ? 12 : 1;
+    const inicio = msDaData(pagamento.dueDate);
+    const fim = somarMeses(inicio, meses);
+    const pagoAte = Math.max(atual.pagoAte ? Date.parse(atual.pagoAte) : 0, fim);
+    const dados = { pagoAte: new Date(pagoAte).toISOString(), ultimoPagamento: { id: pagamento.id, valor: pagamento.value, em: new Date().toISOString(), forma: pagamento.billingType }, updatedAt: new Date().toISOString() };
+    if (atual.faturaPendente && atual.faturaPendente.id === pagamento.id) dados.faturaPendente = null;
+    t.set(ref, dados, { merge: true });
+    return dados;
   });
 }
 
-// Boleto gerado e ainda não pago: guarda o link para a pessoa achar o boleto no painel.
-export async function marcarBoletoPendente(uid, session, voucherUrl) {
-  if (!adminDb || !uid) return;
-  const ate = new Date(Date.now() + 4 * 864e5).toISOString(); // vence em 3 dias + 1 dia útil para compensar
-  await adminDb.collection('subscriptions').doc(uid).set({
-    boletoPendente: { sessionId: session.id, url: voucherUrl || null, plano: session.metadata?.planId || null, periodo: session.metadata?.periodo || 'mensal', valor: session.amount_total || 0, ate },
+// Nova cobrança gerada (ou vencida/recusada): guarda o link para a pessoa pagar pelo painel
+export async function guardarFatura(uid, pagamento, situacao) {
+  const ref = adminDb.collection('subscriptions').doc(uid);
+  const atual = (await ref.get()).data() || {};
+  // não troca uma fatura vencida mais antiga por uma futura
+  if (atual.faturaPendente && atual.faturaPendente.id !== pagamento.id && atual.faturaPendente.vencimento < pagamento.dueDate && atual.faturaPendente.situacao !== 'paga') return;
+  await ref.set({
+    faturaPendente: { id: pagamento.id, url: pagamento.invoiceUrl || null, vencimento: pagamento.dueDate, valor: Math.round(Number(pagamento.value || 0) * 100), situacao },
+    proximoVencimento: pagamento.dueDate,
     updatedAt: new Date().toISOString(),
   }, { merge: true });
 }
 
-export async function limparBoletoPendente(uid, sessionId) {
-  if (!adminDb || !uid) return;
+export async function limparFatura(uid, pagamentoId) {
   const ref = adminDb.collection('subscriptions').doc(uid);
-  const snap = await ref.get();
-  if (snap.exists && snap.data().boletoPendente?.sessionId === sessionId) await ref.set({ boletoPendente: null }, { merge: true });
+  const atual = (await ref.get()).data() || {};
+  if (atual.faturaPendente && atual.faturaPendente.id === pagamentoId) await ref.set({ faturaPendente: null }, { merge: true });
 }
+
+// Busca no Asaas a assinatura ativa mais recente do cliente e liga à conta (usado também pela página de sucesso)
+export async function sincronizarAssinatura(uid, cliente) {
+  if (!cliente) return null;
+  const lista = await asaas('GET', `/subscriptions?customer=${encodeURIComponent(cliente)}&status=ACTIVE&limit=20`);
+  const ativas = (lista.data || []).sort((a, b) => (a.dateCreated < b.dateCreated ? 1 : -1));
+  const nova = ativas[0];
+  if (!nova) return null;
+  const atual = (await adminDb.collection('subscriptions').doc(uid).get()).data() || {};
+  if (atual.asaasSubscriptionId === nova.id && atual.statusAsaas === 'ACTIVE') return atual;
+  return registrarAssinatura(uid, nova);
+}
+

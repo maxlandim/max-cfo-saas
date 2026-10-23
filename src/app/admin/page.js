@@ -11,7 +11,7 @@ const NOME_PLANO = { basic: 'Básico', intermediate: 'Intermediário', complete:
 const SITUACAO = {
   admin: ['Administrador', 'cinza'],
   assinante: ['Assinante', 'verde'],
-  teste_com_cartao: ['Teste com cartão', 'verde'],
+  teste_com_cartao: ['Teste já assinado', 'verde'],
   teste: ['Em teste', 'ouro'],
   pagamento_pendente: ['Pagamento pendente', 'vermelho'],
   teste_acabou: ['Teste acabou', 'vermelho'],
@@ -190,7 +190,7 @@ export default function AdminPage() {
                       const [rot, cor] = SITUACAO[c.situacao] || [c.situacao, 'cinza'];
                       const fim = diasAte(c.fimTeste);
                       const prazo = c.situacao === 'teste' ? (fim <= 0 ? 'acaba hoje' : `acaba em ${fim} ${fim === 1 ? 'dia' : 'dias'}`)
-                        : (c.situacao === 'assinante' || c.situacao === 'teste_com_cartao') && c.renovaEm ? (c.forma === 'pix/boleto' ? `Pix/boleto, pago até ${dataBR(c.renovaEm)}` : `${c.situacao === 'teste_com_cartao' ? '1ª cobrança' : 'renova'} ${dataBR(c.renovaEm)}${c.cancelaNoFim ? ' (vai cancelar)' : ''}`)
+                        : (c.situacao === 'assinante' || c.situacao === 'teste_com_cartao') && c.renovaEm ? `${c.forma ? c.forma + ' · ' : ''}${c.cancelaNoFim ? 'cancelada, acesso até' : c.situacao === 'teste_com_cartao' ? '1ª cobrança' : 'próxima cobrança'} ${dataBR(c.renovaEm)}`
                           : c.situacao === 'teste_acabou' ? `acabou em ${dataBR(c.fimTeste)}` : '—';
                       return (
                         <tr key={c.email + c.criadoEm}>
