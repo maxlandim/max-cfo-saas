@@ -117,6 +117,34 @@ async def publicas(b):
     await dp.evaluate("est.verAba('produtos')"); await dp.wait_for_timeout(800)
     log('validade' in (await dp.inner_text('#view-inventory')).lower(), 'validade: coluna na lista de produtos')
     await dp.screenshot(path=f'{OUT}/demo_estoque.png', full_page=True)
+    # leitor próprio (sem IA) com o pdf.js de produção e o CFO com respostas próprias
+    import base64 as _b64
+    async def ler_local(nome, tipo):
+        b64 = _b64.b64encode(open('leitor/' + nome, 'rb').read()).decode()
+        return await dp.evaluate("""async ([b64, nome, tipo]) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const f = new File([bin], nome, { type: tipo });
+          if (tipo === 'application/pdf') { const p = await fin.analisarPdf(f, 10); const d = leitor.lerPdf(p); const n = leitor.danfePdf(p); return { d, n: n && { conferido: n.conferido, itens: n.itens.length, total: n.valorTotal, cnpj: n.cnpj } }; }
+          return { d: await leitor.boletoDaImagem(f) }; }""", [b64, nome, tipo])
+    try:
+        r = await ler_local('boleto_itau.pdf', 'application/pdf'); d = r['d'] or {}
+        log(d.get('completo') and d.get('valor') == 1234.56 and d.get('vencimento') == '2026-11-25' and 'Sol' in (d.get('contato') or ''), 'leitor: boleto em PDF sem IA', d)
+        r = await ler_local('boleto_cedente.pdf', 'application/pdf'); d = r['d'] or {}
+        log(d.get('completo') and d.get('valor') == 589.9, 'leitor: boleto com cedente na linha', d)
+        r = await ler_local('conta_energia.pdf', 'application/pdf'); d = r['d'] or {}
+        log(d.get('completo') and d.get('contato') == 'Neoenergia' and d.get('vencimento') == '2026-11-10', 'leitor: conta de energia', d)
+        r = await ler_local('das.pdf', 'application/pdf'); d = r['d'] or {}
+        log(d.get('completo') and d.get('contato') == 'Receita Federal' and d.get('valor') == 3912.77, 'leitor: DAS', d)
+        r = await ler_local('danfe_real.pdf', 'application/pdf')
+        log(r['n'] and r['n']['conferido'] and r['n']['itens'] == 5 and r['n']['total'] == 2030.3, 'leitor: DANFE com itens conferidos', r['n'])
+        r = await ler_local('boleto_foto.jpg', 'image/jpeg'); d = r['d'] or {}
+        log(d.get('valor') == 2350 and d.get('vencimento') == '2026-11-30', 'leitor: código de barras na foto', d)
+        r = await ler_local('v_retrato.jpg', 'image/jpeg'); d = r['d'] or {}
+        log(d.get('valor') == 2350, 'leitor: foto de lado', d)
+    except Exception as e:
+        log(False, 'leitor: erro no teste', str(e)[:300])
+    resp = await dp.evaluate("cfoLocal.responder('quem me deve?')")
+    log(resp and 'A receber nos próximos 30 dias' in resp, 'CFO responde sem IA com os dados', (resp or '')[:120])
+    resp = await dp.evaluate("cfoLocal.responder('onde estou gastando mais?')")
+    log(resp and 'Onde está o gasto' in resp, 'CFO: onde está o gasto', (resp or '')[:120])
     log(not derr, 'demonstração sem erros de JavaScript', derr[:2])
     await d.close()
     s, r = rest(SITE + '/api/admin/backup?email=x@x.com', None, None, 'GET'); log(s in (401, 503), 'backups do administrador fechados sem login', s)
