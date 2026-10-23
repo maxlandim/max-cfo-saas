@@ -146,6 +146,26 @@ async def publicas(b):
         log(isinstance(dl, dict) and dl.get('valor') == 2350, 'leitor: PDF escaneado pelo código de barras', dl)
     except Exception as e:
         log(False, 'leitor: erro no teste', str(e)[:300])
+    # OCR próprio (Tesseract no navegador) com fotos
+    try:
+        for arq in ['tesseract.min.js', 'worker.min.js', 'lang/por.traineddata.gz']:
+            try:
+                with urllib.request.urlopen(urllib.request.Request(SITE + '/vendor/ocr/' + arq, method='HEAD'), timeout=20) as rr: st0 = rr.status
+            except urllib.error.HTTPError as e: st0 = e.code
+            except Exception as e: st0 = str(e)[:60]
+            log(st0 == 200 or 'localhost' not in SITE, 'OCR: arquivo do motor no site ' + arq, st0)
+        async def foto(nome, fn):
+            b64 = _b64.b64encode(open('leitor/' + nome, 'rb').read()).decode()
+            return await dp.evaluate("""async ([b64, fn]) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const f = new File([bin], 'f.jpg', { type: 'image/jpeg' });
+              const t = performance.now(); try { const r = await leitor[fn](f); return { r, ms: Math.round(performance.now() - t) }; } catch (e) { return { erro: String(e && e.message || e), ms: Math.round(performance.now() - t) }; } }""", [b64, fn])
+        x = await foto('boleto_itau_foto.jpg', 'lerImagem'); r = x.get('r') or {}
+        log(r.get('valor') == 1234.56 and r.get('vencimento') == '2026-11-25' and 'Sol' in (r.get('contato') or ''), 'OCR: boleto pela foto (sem código de barras)', x)
+        x = await foto('recibo_foto.jpg', 'lerImagem'); r = x.get('r') or {}
+        log(r.get('valor') == 450 and 'Frio' in (r.get('contato') or ''), 'OCR: recibo pela foto', x)
+        x = await foto('danfe_foto.jpg', 'notaDaImagem'); r = x.get('r') or {}
+        log(r.get('valorTotal') == 2030.3 and len(r.get('itens') or []) == 5, 'OCR: nota fiscal pela foto com itens', {'ms': x.get('ms'), 'erro': x.get('erro'), 'total': r.get('valorTotal'), 'conferido': r.get('conferido'), 'itens': [[i.get('codigo'), i.get('quantidade'), i.get('valorTotal')] for i in (r.get('itens') or [])], 'parc': r.get('parcelas')})
+    except Exception as e:
+        log(False, 'OCR: erro no teste', str(e)[:300])
     s1, r1 = rest(SITE + '/api/chat', {'message': 'oi'}); s2, r2 = rest(SITE + '/api/ler-documento', {'arquivo': 'x'})
     log(s1 == 410 and s2 == 410, 'IA externa desligada no servidor', [s1, s2])
     resp = await dp.evaluate("cfoLocal.responder('como calcular o preço de venda?')")
