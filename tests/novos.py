@@ -203,7 +203,11 @@ async def painel(b):
         for _ in range(20):
             if await pg.is_visible('#cobGerarBtn'): break
             await pg.wait_for_timeout(300)
-        log(await pg.is_visible('#cobGerarBtn'), 'tela Cobrar oferece cobrança pelo Asaas com baixa automática')
+        dbg = await pg.evaluate("[typeof window.cobranca, !!(window.fin&&fin.__cobranca), !!document.getElementById('finCobrancaModal'), (document.getElementById('cobAsaas')||{}).innerText||'(sem caixa)', window.workspaceId||'', !!window.maxcfoLeitura]")
+        print('   cobrança:', dbg)
+        await pg.screenshot(path=f'{OUT}/cobranca_asaas_antes.png')
+        log(await pg.is_visible('#cobGerarBtn'), 'tela Cobrar oferece cobrança pelo Asaas com baixa automática', dbg)
+        if not await pg.is_visible('#cobGerarBtn'): raise Exception('sem botão de gerar cobrança: ' + str(dbg))
         await pg.fill('#cobDoc', '52998224725'); await pg.click('#cobGerarBtn'); await pg.wait_for_timeout(1500)
         url_cob = await pg.evaluate("(fin.tx('cobteste1').cobranca||{}).url")
         log(url_cob == 'https://sandbox.asaas.com/i/teste1' and await pg.is_visible('#cobLink'), 'cobrança gerada e link mostrado', url_cob)
