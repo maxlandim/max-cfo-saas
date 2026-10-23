@@ -139,8 +139,17 @@ async def publicas(b):
         log(d.get('valor') == 2350 and d.get('vencimento') == '2026-11-30', 'leitor: código de barras na foto', d)
         r = await ler_local('v_retrato.jpg', 'image/jpeg'); d = r['d'] or {}
         log(d.get('valor') == 2350, 'leitor: foto de lado', d)
+        b64 = _b64.b64encode(open('leitor/boleto_escaneado.pdf', 'rb').read()).decode()
+        d = await dp.evaluate("""async (b64) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const p = await fin.analisarPdf(new File([bin], 'e.pdf', { type: 'application/pdf' }));
+          if (leitor.lerPdf(p)) return 'leu texto?'; const bi = atob(p.imagem), u = new Uint8Array(bi.length); for (let i = 0; i < bi.length; i++) u[i] = bi.charCodeAt(i);
+          return await leitor.boletoDaImagem(new File([u], 'p.jpg', { type: 'image/jpeg' })); }""", b64)
+        log(isinstance(d, dict) and d.get('valor') == 2350, 'leitor: PDF escaneado pelo código de barras', d)
     except Exception as e:
         log(False, 'leitor: erro no teste', str(e)[:300])
+    s1, r1 = rest(SITE + '/api/chat', {'message': 'oi'}); s2, r2 = rest(SITE + '/api/ler-documento', {'arquivo': 'x'})
+    log(s1 == 410 and s2 == 410, 'IA externa desligada no servidor', [s1, s2])
+    resp = await dp.evaluate("cfoLocal.responder('como calcular o preço de venda?')")
+    log(resp and 'Markup' in resp, 'CFO: preço de venda com os números', (resp or '')[:120])
     resp = await dp.evaluate("cfoLocal.responder('quem me deve?')")
     log(resp and 'A receber nos próximos 30 dias' in resp, 'CFO responde sem IA com os dados', (resp or '')[:120])
     resp = await dp.evaluate("cfoLocal.responder('onde estou gastando mais?')")
