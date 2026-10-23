@@ -1494,7 +1494,7 @@
   // ════════════════ LEITURA DE BOLETO / NOTA (leitor próprio, sem IA externa) ════════════════
   F.abrirLeitura = function () {
     modal('finIAModal', '📷 Ler boleto ou nota',
-      '<p style="color:var(--text-muted);margin-bottom:14px">Envie o PDF do boleto, da conta ou da nota fiscal, ou uma foto do código de barras. O sistema lê valor, vencimento e fornecedor e sugere a categoria. Você confere antes de salvar.</p>' +
+      '<p style="color:var(--text-muted);margin-bottom:14px">Envie o PDF ou a foto do boleto, da conta, da nota fiscal ou do recibo. O sistema lê valor, vencimento e fornecedor e sugere a categoria, sem enviar o documento para fora. Você confere antes de salvar.</p>' +
       '<label class="drop-zone" style="display:block;cursor:pointer;text-align:center;padding:28px;border:2px dashed var(--gold-border);border-radius:var(--radius-sm)" id="finIADrop">' +
       '<div style="font-size:34px">🧾</div><div style="font-weight:700;margin-top:6px">Toque para escolher o arquivo</div><div class="fin-sub">Foto ou PDF até 3 MB</div>' +
       '<input type="file" id="finIAArquivo" accept="image/*,application/pdf,.pdf" style="display:none" onchange="fin.lerArquivo(this.files[0])"></label>' +
@@ -1611,6 +1611,7 @@
     if (arq.size > 15 * 1024 * 1024) { status.innerHTML = '<div class="fin-alerta red">Arquivo grande demais (máximo 15 MB).</div>'; return; }
     if (!L) { status.innerHTML = '<div class="fin-alerta red">O leitor não carregou. Atualize a página e tente de novo.</div>'; return; }
     status.innerHTML = '<div class="fin-alerta gold">⏳ Lendo o documento…</div>';
+    var aviso = function (t) { if (el('finIAStatus')) el('finIAStatus').innerHTML = '<div class="fin-alerta gold">' + esc(t) + '</div>'; };
     F._ultimaLeitura = arq;
     var dados = null;
     try {
@@ -1619,14 +1620,13 @@
         try { pdf = await F.analisarPdf(arq); } catch (e) { console.warn('PDF:', e); }
         if (!pdf) return semLeitura(status, 'Não consegui abrir este PDF (pode estar protegido por senha). Você pode lançar à mão com o arquivo anexado.');
         dados = L.lerPdf(pdf);
-        // PDF escaneado (sem texto): procura o código de barras na imagem da 1ª página
-        if (!dados && pdf.imagem) { status.innerHTML = '<div class="fin-alerta gold">⏳ Procurando o código de barras na página…</div>'; dados = await L.boletoDaImagem(base64ParaArquivo(pdf.imagem)); }
+        // PDF escaneado (sem texto): lê a imagem da 1ª página (código de barras e texto)
+        if (!dados && pdf.imagem) dados = await L.lerImagem(base64ParaArquivo(pdf.imagem), aviso);
       } else {
-        status.innerHTML = '<div class="fin-alerta gold">⏳ Procurando o código de barras…</div>';
-        dados = await L.boletoDaImagem(arq);
+        dados = await L.lerImagem(arq, aviso);
       }
     } catch (e) { console.warn('Leitor:', e); }
-    if (!dados) return semLeitura(status, 'Não achei o código de barras nem os dados do documento. Tente uma foto mais de perto, só do código de barras, reta e com boa luz; ou digite a linha digitável acima. Recibo sem código de barras: lance à mão com o arquivo anexado.');
+    if (!dados) return semLeitura(status, 'Não consegui ler este documento. Tente outra foto: reta, com boa luz e o documento ocupando a tela toda; ou digite a linha digitável acima. Se preferir, lance à mão com o arquivo anexado.');
     fechar('finIAModal');
     F.preencherComLeitura(dados);
     F.anexoPendente = arq; // o arquivo original vira o anexo do lançamento
@@ -1672,6 +1672,7 @@
       var sub = el('txModalSubtitle');
       if (sub) {
         if (x._soCodigo) sub.textContent = 'Valor e vencimento lidos do código de barras. Preencha o fornecedor e a descrição e salve.';
+        else if (x._ocr) sub.textContent = 'Lido da foto pelo sistema. Confira valor, data e fornecedor antes de salvar.';
         else sub.textContent = x.completo ? 'Lido automaticamente pelo sistema. Confira os dados antes de salvar.' : 'Lido automaticamente pelo sistema. Complete o que faltar e confira antes de salvar.';
       }
     }, 80);
