@@ -7,7 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - run: |
+      - shell: bash {0}
+        run: |
           # espera o deploy novo (motor de OCR servido pelo site) por até 12 minutos
           for i in $(seq 1 48); do
             c=$(curl -s -o /dev/null -m 10 -w "%{http_code}" https://landimadvisory.com.br/vendor/ocr/tesseract.min.js)
