@@ -115,7 +115,12 @@ async def main():
             await pg.evaluate("switchView('pagar')"); await pg.wait_for_timeout(500)
             log('Teste robô aluguel' in await pg.inner_text('#view-pagar'), 'lançamento continua depois de recarregar')
             st, doc = rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/workspaces/{uid}', None, token, 'GET')
-            log(st == 200 and 'Teste robô aluguel' in json.dumps(doc, ensure_ascii=False), 'lançamento gravado na nuvem (Firestore)', st if st != 200 else '')
+            texto = json.dumps(doc, ensure_ascii=False)
+            z = ((doc or {}).get('fields', {}).get('dataZ') or {}).get('bytesValue')
+            if z:  # formato novo: dados comprimidos (gzip) em base64
+                import base64, gzip
+                texto = gzip.decompress(base64.b64decode(z)).decode('utf-8')
+            log(st == 200 and 'Teste robô aluguel' in texto, 'lançamento gravado na nuvem (Firestore)', st if st != 200 else ('comprimido' if z else 'texto'))
             # relatório mensal em PDF
             try:
                 await pg.evaluate("switchView('reports')"); await pg.wait_for_timeout(800)
