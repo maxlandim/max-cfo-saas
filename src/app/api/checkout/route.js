@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { PLANOS, somarMeses } from '../../../lib/plans';
 import { vagasFundador } from '../../../lib/fundadores';
-import { fimDoTeste, registrarAssinatura, guardarFatura, valorDoPlano } from '../../../lib/assinatura';
+import { fimDoTeste, registrarAssinatura, guardarFatura, valorDoPlano, empresasCadastradas, extrasNecessarias } from '../../../lib/assinatura';
 import { asaas, asaasConfigurado, linkCheckout, montarRef, dataAsaas, soDigitos, documentoValido } from '../../../lib/asaas';
 
 export const dynamic = 'force-dynamic';
@@ -52,9 +52,11 @@ export async function POST(req) {
     const aindaFundador = atual.fundadorAte && Date.parse(atual.fundadorAte) > Date.now();
     fundador = plano.fundador < plano.valor && (aindaFundador || (await vagasFundador({ semCache: true })) > 0);
   } catch {}
-  const valor = valorDoPlano(planId, periodo, fundador) / 100;
+  // Empresas a mais que já estão cadastradas no login entram na assinatura
+  const extras = extrasNecessarias(planId, await empresasCadastradas(user.uid));
+  const valor = valorDoPlano(planId, periodo, fundador, extras) / 100;
   const nomeProduto = `${plano.nome}${periodo === 'anual' ? ' (anual)' : ''}`;
-  const descricao = `${nomeProduto}${fundador ? ' · preço de fundador por 12 meses' : ''}`;
+  const descricao = `${nomeProduto}${fundador ? ' · preço de fundador por 12 meses' : ''}${extras ? ` · ${extras} empresa${extras > 1 ? 's' : ''} adicional${extras > 1 ? 'is' : ''}` : ''}`;
   const referencia = montarRef({ uid: user.uid, planId, periodo, fundador });
 
   try {
@@ -66,7 +68,7 @@ export async function POST(req) {
     }
     if (!cliente) cliente = (await asaas('POST', '/customers', dadosCliente)).id;
     await adminDb.collection('asaasClientes').doc(cliente).set({ uid: user.uid, em: new Date().toISOString() });
-    await ref.set({ asaasCustomerId: cliente, nomeCobranca: nome, documento, updatedAt: new Date().toISOString() }, { merge: true });
+    await ref.set({ asaasCustomerId: cliente, nomeCobranca: nome, documento, empresasExtras: extras, updatedAt: new Date().toISOString() }, { merge: true });
 
     if (forma === 'cartao') {
       const checkout = await asaas('POST', '/checkouts', {

@@ -10,12 +10,14 @@ export const PLANOS_VITRINE = [
     itens: ['Contas a receber e a pagar', 'Bancos, caixa e cartão', 'Fluxo de caixa de 90 dias', 'DRE e centro de custo', 'Importação do extrato e de planilhas', 'Cobrança por Pix no WhatsApp', 'Lembrete de vencimento por e-mail'] },
   { id: 'intermediate', nome: 'Intermediário', valor: 14990, fundador: 12990, empresas: 'Até 3 empresas', para: 'Para quem vende, emite nota e quer automatizar.', antes: 'Tudo do Básico, mais:',
     itens: ['Leitura automática de boleto e nota', 'Estoque pela nota fiscal (XML ou PDF)', 'Relatório mensal em PDF', 'Orçamentos, ordens de serviço e contratos', 'Funil de vendas, comissões e estoque', 'Notas fiscais e pacote do contador'] },
-  { id: 'complete', nome: 'Completo', valor: 34990, fundador: 26990, empresas: 'Até 10 empresas', para: 'Para BPO financeiro e escritórios.', destaque: true, antes: 'Tudo do Intermediário, mais:',
+  { id: 'complete', nome: 'Completo', valor: 34990, fundador: 26990, empresas: 'Até 3 empresas', para: 'Para BPO financeiro e escritórios.', destaque: true, antes: 'Tudo do Intermediário, mais:',
     itens: ['Indicadores de todas as empresas (BPO)', 'Acesso de consulta para cliente e contador', 'Relatório com a sua marca e logo', 'CFO que responde com os seus números', 'Simulador de impostos e da reforma', 'Funcionários e folha, bens e equipe'] },
-  { id: 'unlimited', nome: 'Escritório', valor: 59990, fundador: 29990, empresas: 'Até 30 empresas', para: 'Para escritórios e BPOs com muitas empresas.', antes: 'Tudo do Completo, mais:',
-    itens: ['Até 30 empresas no mesmo login', 'Suporte prioritário no WhatsApp', 'Mais de 30 empresas? Proposta sob medida'] },
+  { id: 'unlimited', nome: 'Escritório', valor: 59990, fundador: 29990, empresas: 'Até 3 empresas', para: 'Para escritórios e BPOs com muitas empresas.', antes: 'Tudo do Completo, mais:',
+    itens: ['Suporte prioritário no WhatsApp', 'Empresas adicionais por R$ 29,90/mês cada'] },
 ];
 export const MESES_PAGOS_NO_ANUAL = 10;
+// Cada empresa a mais (além das incluídas no plano), em qualquer plano — igual a EMPRESA_EXTRA em src/lib/plans.js
+export const EMPRESA_EXTRA = 2990;
 export const MESES_FUNDADOR = 12;
 
 // Em todos os planos
@@ -27,6 +29,7 @@ export const INCLUSO = [
   'Cartão, Pix ou boleto',
   'Sem fidelidade: cancele quando quiser',
   '7 dias grátis com tudo liberado',
+  'Empresa adicional: R$ 29,90/mês, em qualquer plano',
 ];
 
 export const reais = (centavos) => (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
