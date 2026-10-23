@@ -154,6 +154,22 @@ async def painel(b):
         await pg.check('#lemClientes'); await pg.click('#lembretesCartao >> text=💾 Salvar'); await pg.wait_for_timeout(400)
         log(await pg.evaluate("state.settings.lembretes.avisarClientes===true"), 'lembretes salvos na empresa')
         await pg.screenshot(path=f'{OUT}/novos_lembretes.png', full_page=True)
+        # Volume: 15 mil lançamentos (mais de 1 MB) gravam e voltam depois de recarregar
+        tam = await pg.evaluate("""() => { for (let i = 0; i < 15000; i++) state.transactions.push({ id: 'vol' + i, type: i % 3 ? 'DESPESA' : 'RECEITA', desc: 'Teste de volume ' + (i % 50), amount: 10 + (i % 300), vencimento: '2026-11-' + String(1 + (i % 28)).padStart(2, '0'), status: 'pendente', categoria: 'Teste' }); saveStateToFirebase(workspaceId, state); return JSON.stringify(state).length; }""")
+        await pg.wait_for_timeout(9000)
+        st, doc = rest(f'https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents/workspaces/{uid}', None, token, 'GET')
+        campos = (doc or {}).get('fields', {})
+        log(st == 200 and campos.get('formato', {}).get('integerValue') == '2' and 'dataZ' in campos and 'data' not in campos, f'{tam/1048576:.1f} MB de dados gravados comprimidos na nuvem', [st, sorted(campos.keys())])
+        await pg.evaluate("Object.keys(localStorage).filter(k=>k.startsWith('maxcfo_copia_')).forEach(k=>localStorage.removeItem(k))")
+        await pg.reload(wait_until='networkidle')
+        for _ in range(120):
+            if await pg.evaluate("!!(window.__maxcfoIniciado && window.state && document.querySelector('.lay-mod'))"): break
+            await pg.wait_for_timeout(500)
+        await pg.wait_for_timeout(1500)
+        n = await pg.evaluate("state.transactions.filter(t => String(t.id).startsWith('vol')).length")
+        log(n == 15000, 'os 15 mil lançamentos voltam depois de recarregar', n)
+        await pg.evaluate("state.transactions = state.transactions.filter(t => !String(t.id).startsWith('vol')); saveStateToFirebase(workspaceId, state)")
+        await pg.wait_for_timeout(3000)
         log(not errs, 'sem erros de JavaScript no painel', errs[:2])
         # Painel do administrador com dados simulados (a conta de teste não é administradora)
         log(not await pg.is_visible('text=Painel do administrador'), 'atalho do administrador escondido para cliente comum')
