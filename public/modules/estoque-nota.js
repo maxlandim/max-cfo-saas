@@ -38,7 +38,9 @@
       var p = tag(det, 'prod')[0];
       var qtd = numero(v(p, 'qCom')), vt = numero(v(p, 'vProd'));
       return { codigo: v(p, 'cProd'), descricao: v(p, 'xProd'), ncm: v(p, 'NCM'), ean: /^\d{8,14}$/.test(v(p, 'cEAN')) ? v(p, 'cEAN') : '', unidade: v(p, 'uCom').toUpperCase(),
-        quantidade: qtd, valorUnitario: numero(v(p, 'vUnCom')) || (qtd ? vt / qtd : 0), valorTotal: vt, desconto: numero(v(p, 'vDesc')) };
+        quantidade: qtd, valorUnitario: numero(v(p, 'vUnCom')) || (qtd ? vt / qtd : 0), valorTotal: vt, desconto: numero(v(p, 'vDesc')),
+        // rastreabilidade (medicamentos, alimentos, bebidas…): lote, quantidade do lote, fabricação e validade
+        lotes: Array.prototype.map.call(tag(det, 'rastro'), function (r) { return { lote: v(r, 'nLote'), qtd: numero(v(r, 'qLote')), fabricacao: v(r, 'dFab').slice(0, 10), validade: v(r, 'dVal').slice(0, 10) }; }).filter(function (r) { return r.lote || /^\d{4}-\d{2}-\d{2}$/.test(r.validade); }) };
     }).filter(function (i) { return i.descricao && i.quantidade > 0; });
     var parcelas = Array.prototype.map.call(tag(inf, 'dup'), function (d) { return { numero: v(d, 'nDup'), vencimento: v(d, 'dVenc'), valor: numero(v(d, 'vDup')) }; }).filter(function (p) { return p.valor > 0; });
     return {
@@ -96,12 +98,16 @@
     var total = nota.valorTotal || r2(nota.itens.reduce(function (a, i) { return a + i.valorTotal; }, 0));
     sessao = {
       nota: nota, total: total,
-      linhas: nota.itens.map(function (i) { var m = encontrar(nota, i); return { item: i, destino: m.id, fator: m.fator, como: m.como }; }),
+      linhas: nota.itens.map(function (i) {
+        var m = encontrar(nota, i), lt = Array.isArray(i.lotes) ? i.lotes : [];
+        return { item: i, destino: m.id, fator: m.fator, como: m.como, lote: lt.length === 1 ? lt[0].lote || '' : '', validade: lt.length === 1 ? lt[0].validade || '' : '', multi: lt.length > 1 };
+      }),
       duplicada: st().notasEntrada.find(function (x) { return x.id === idNota(nota); }) || null,
       propria: minhaEmpresa && nota.cnpj === minhaEmpresa,
       contaParecida: (st().transactions || []).find(function (t) { return t.type === 'DESPESA' && Math.abs(numero(t.amount) - total) < 0.01 && (!nota.fornecedor || norm(t.contato).indexOf(norm(nota.fornecedor).split(' ')[0]) > -1); }) || null,
       rateio: true, lancar: true
     };
+    sessao.mostrarVal = sessao.linhas.some(function (l) { var p = (st().inventory || []).find(function (x) { return x.id === l.destino; }); return l.validade || l.lote || l.multi || (p && p.controlaValidade); });
     sessao.lancar = !sessao.contaParecida;
   }
 
@@ -135,7 +141,7 @@
       '<div class="fin-kpi2"><div class="v" style="font-size:16px;color:var(--gold)">' + moeda(sessao.total) + '</div><div class="l">Total da nota · ' + n.itens.length + ' itens</div></div>' +
       '</div>' +
       (ex ? '<label class="fin-check" style="margin-bottom:8px"><input type="checkbox" id="enRateio"' + (sessao.rateio ? ' checked' : '') + ' onchange="estNota.opcao(\'rateio\',this.checked)"> Somar ao custo dos produtos o frete, IPI, ST e outras despesas, menos o desconto (' + (ex > 0 ? '+' : '') + moeda(ex) + ' rateados pelo valor de cada item)</label>' : '') +
-      '<div class="table-scroll" style="max-height:46vh"><table class="data-table"><thead><tr><th>Item da nota</th><th>Qtd na nota</th><th title="Quantas unidades do seu estoque vêm em cada unidade da nota (ex.: caixa com 12 = 12)">Unid. por item</th><th>Entra no estoque</th><th>Custo unit.</th><th>Vai para o produto</th></tr></thead><tbody>' +
+      '<div class="table-scroll" style="max-height:46vh"><table class="data-table"><thead><tr><th>Item da nota</th><th>Qtd na nota</th><th title="Quantas unidades do seu estoque vêm em cada unidade da nota (ex.: caixa com 12 = 12)">Unid. por item</th><th>Entra no estoque</th><th>Custo unit.</th><th>Vai para o produto</th>' + (sessao.mostrarVal ? '<th>Lote e validade</th>' : '') + '</tr></thead><tbody>' +
       sessao.linhas.map(function (l, i) {
         var it = l.item, p = (st().inventory || []).find(function (x) { return x.id === l.destino; });
         var und = p ? p.unidade : unidade(it.unidade);
@@ -144,9 +150,12 @@
           '<td><input type="number" min="0.0001" step="any" class="form-input" style="width:78px;padding:6px 8px" value="' + l.fator + '" onchange="estNota.fator(' + i + ',this.value)"></td>' +
           '<td style="white-space:nowrap;font-weight:700">' + qtdBR(c[i].qtd) + ' ' + esc(und) + '</td>' +
           '<td style="white-space:nowrap">' + moeda(c[i].custo) + '</td>' +
-          '<td style="min-width:220px"><select class="form-input" style="padding:6px 8px" onchange="estNota.destino(' + i + ',this.value)">' + opcoes(l.destino) + '</select>' + (l.como && l.destino !== 'novo' && l.destino !== 'ignorar' ? '<div class="fin-sub">encontrado ' + esc(l.como) + '</div>' : '') + '</td></tr>';
+          '<td style="min-width:220px"><select class="form-input" style="padding:6px 8px" onchange="estNota.destino(' + i + ',this.value)">' + opcoes(l.destino) + '</select>' + (l.como && l.destino !== 'novo' && l.destino !== 'ignorar' ? '<div class="fin-sub">encontrado ' + esc(l.como) + '</div>' : '') + '</td>' +
+          (sessao.mostrarVal ? '<td style="min-width:150px">' + (l.multi
+            ? it.lotes.map(function (r) { return '<div class="fin-sub" style="white-space:nowrap"><b>' + esc(r.lote || 's/ lote') + '</b> · ' + qtdBR(r.qtd) + (r.validade ? ' · val. ' + F().dataBR(r.validade) : '') + '</div>'; }).join('')
+            : '<input class="form-input" style="padding:5px 8px;margin-bottom:4px" placeholder="Lote" maxlength="40" value="' + esc(l.lote || '') + '" onchange="estNota.lote(' + i + ',\'lote\',this.value)"><input type="date" class="form-input" style="padding:5px 8px" title="Validade" value="' + esc(l.validade || '') + '" onchange="estNota.lote(' + i + ',\'validade\',this.value)">') + '</td>' : '') + '</tr>';
       }).join('') + '</tbody></table></div>' +
-      '<p class="fin-sub" style="margin:8px 0 12px">' + (novos ? novos + ' produto(s) novo(s) serão criados. ' : '') + (ign ? ign + ' item(ns) sem entrada. ' : '') + 'O custo médio de cada produto é recalculado com a entrada. O vínculo item → produto fica guardado para as próximas notas deste fornecedor.</p>' +
+      '<p class="fin-sub" style="margin:8px 0 12px">' + (novos ? novos + ' produto(s) novo(s) serão criados. ' : '') + (ign ? ign + ' item(ns) sem entrada. ' : '') + 'O custo médio de cada produto é recalculado com a entrada. O vínculo item → produto fica guardado para as próximas notas deste fornecedor.' + (sessao.mostrarVal ? (sessao.linhas.some(function (l) { return l.validade || l.multi; }) ? ' Produtos com validade passam a ter o controle de vencimento.' : '') : ' <a href="#" class="link-go" onclick="estNota.opcao(\'mostrarVal\',true);return false">🗓️ Informar lote e validade</a>') + '</p>' +
       '<div style="border-top:1px dashed var(--border);padding-top:12px"><label class="fin-check"><input type="checkbox" id="enLancar"' + (sessao.lancar ? ' checked' : '') + ' onchange="estNota.opcao(\'lancar\',this.checked)"> Lançar a compra em Contas a pagar</label>' +
       (sessao.contaParecida ? '<div class="fin-alerta gold" style="margin-top:8px">Já existe uma conta a pagar parecida: ' + esc(sessao.contaParecida.desc) + ' · ' + moeda(sessao.contaParecida.amount) + ' · vence ' + F().dataBR(sessao.contaParecida.vencimento) + '. Por isso esta opção veio desmarcada.</div>' : '') +
       (sessao.lancar ? (parcelas
@@ -155,7 +164,7 @@
       '</div>';
     F().modal('enModal', '📄 Entrada pela nota fiscal', corpo,
       '<button class="btn-ghost" onclick="fin.fechar(\'enModal\')">Cancelar</button><button class="btn-primary" id="enOk" onclick="estNota.confirmar()">Dar entrada em ' + (sessao.linhas.length - ign) + ' ' + (sessao.linhas.length - ign === 1 ? 'item' : 'itens') + '</button>');
-    var box = el('enModal') && el('enModal').querySelector('.modal-box'); if (box) box.style.maxWidth = '1080px';
+    var box = el('enModal') && el('enModal').querySelector('.modal-box'); if (box) box.style.maxWidth = sessao.mostrarVal ? '1260px' : '1080px';
   }
 
   window.estNota = {
@@ -198,6 +207,7 @@
     destino: function (i, v) { var l = sessao.linhas[i]; l.destino = v; l.como = ''; if (v !== 'novo' && v !== 'ignorar') { var m = encontrar(sessao.nota, l.item); if (m.id === v) l.fator = m.fator; } previa(); },
     fator: function (i, v) { var f = numero(v); sessao.linhas[i].fator = f > 0 ? f : 1; previa(); },
     opcao: function (k, v) { sessao[k] = v; if (k !== 'venc') previa(); },
+    lote: function (i, k, v) { var l = sessao.linhas[i]; if (l) l[k] = String(v || '').trim(); },
     confirmar: function () {
       if (!sessao) return;
       var n = sessao.nota, c = custos(), usar = sessao.linhas.map(function (l, i) { return { l: l, c: c[i] }; }).filter(function (x) { return x.l.destino !== 'ignorar' && x.c.qtd > 0; });
@@ -229,7 +239,15 @@
         if (!p) return;
         p.refs = p.refs || {}; p.refs[chaveRef(n, it)] = l.fator;
         if (!p.ncm && it.ncm) p.ncm = it.ncm;
-        window.est.movimentar(p.id, 'entrada', x.c.qtd, x.c.custo, obs, true, data, txIds[0] || '');
+        if (l.multi && it.lotes && it.lotes.length) {
+          // um lançamento por lote da nota; o último fica com o que sobrar (arredondamento ou fator)
+          var resto = x.c.qtd;
+          it.lotes.forEach(function (r, k) {
+            var q = k === it.lotes.length - 1 ? r4(resto) : r4(Math.min(resto, (r.qtd || 0) * (l.fator > 0 ? l.fator : 1)));
+            resto = r4(resto - q);
+            if (q > 0) window.est.movimentar(p.id, 'entrada', q, x.c.custo, obs, true, data, txIds[0] || '', { lote: r.lote, validade: r.validade });
+          });
+        } else window.est.movimentar(p.id, 'entrada', x.c.qtd, x.c.custo, obs, true, data, txIds[0] || '', l.lote || l.validade ? { lote: l.lote, validade: l.validade } : null);
       });
       st().notasEntrada.push({ id: idNota(n), chave: n.chave || '', numero: n.numero || '', fornecedor: n.fornecedor || '', cnpj: n.cnpj || '', data: data, total: sessao.total, itens: usar.length, em: new Date().toISOString() });
       if (window.logAudit) window.logAudit('create', 'estoque', '', 'Entrada pela ' + obs + ' (' + usar.length + ' itens)');

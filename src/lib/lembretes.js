@@ -84,16 +84,41 @@ function tabela(titulo, itens, cor) {
   return `<h2 style="font-size:15px;margin:18px 0 6px;color:${cor}">${titulo} · ${itens.length} · ${moeda(total)}</h2><table style="width:100%;border-collapse:collapse;font-size:14px">${linhas}${mais}</table>`;
 }
 
+// Lotes do estoque com validade: vencidos e que vencem nos próximos 7 dias
+export function validades(estado, hoje, dias = 7) {
+  const out = [];
+  ((estado && estado.inventory) || []).forEach((p) => {
+    (Array.isArray(p && p.lotes) ? p.lotes : []).forEach((l) => {
+      if (!l || !(Number(l.qtd) > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(String(l.validade || ''))) return;
+      const d = diffDias(hoje, l.validade);
+      if (d <= dias) out.push({ produto: String(p.nome || 'Produto'), unidade: p.unidade || '', lote: l.lote || '', validade: l.validade, qtd: Number(l.qtd), dias: d, valor: Math.round(Number(l.qtd) * (Number(p.custo) || 0) * 100) / 100 });
+    });
+  });
+  out.sort((a, b) => (a.validade < b.validade ? -1 : a.validade > b.validade ? 1 : 0));
+  return { vencidos: out.filter((x) => x.dias < 0), proximos: out.filter((x) => x.dias >= 0) };
+}
+
+function tabelaValidade(v) {
+  if (!v.proximos.length && !v.vencidos.length) return '';
+  const qtd = (n) => String(Math.round(n * 1000) / 1000).replace('.', ',');
+  const linhas = v.proximos.slice(0, 12).map((x) => `<tr><td style="padding:7px 6px;border-bottom:1px solid #EEF0F3;white-space:nowrap">${dataBR(x.validade)}</td><td style="padding:7px 6px;border-bottom:1px solid #EEF0F3">${esc(x.produto)}${x.lote ? `<div style="font-size:12px;color:#5B6474">lote ${esc(x.lote)}</div>` : ''}</td><td style="padding:7px 6px;border-bottom:1px solid #EEF0F3;text-align:right;white-space:nowrap">${qtd(x.qtd)} ${esc(x.unidade)}<div style="font-size:12px;color:#B07A12">${x.dias === 0 ? 'vence hoje' : `em ${x.dias} dia${x.dias === 1 ? '' : 's'}`}</div></td></tr>`).join('');
+  const venc = v.vencidos.length ? `<p style="margin:6px 0;font-size:14px;color:#D93636"><b>${v.vencidos.length} lote${v.vencidos.length === 1 ? '' : 's'} já vencido${v.vencidos.length === 1 ? '' : 's'}</b> no estoque (${moeda(v.vencidos.reduce((a, x) => a + x.valor, 0))} a custo). Retire da venda e dê baixa em Estoque › Validades.</p>` : '';
+  return `<h2 style="font-size:15px;margin:18px 0 6px;color:#B07A12">Validade dos produtos</h2>${venc}${linhas ? `<table style="width:100%;border-collapse:collapse;font-size:14px">${linhas}</table>` : ''}`;
+}
+
 // Resumo diário para o dono. Devolve null quando não há nada para avisar.
 export function resumoDono(estado, hoje, site) {
   const p = pendencias(estado, hoje);
-  if (!p.vencidas.length && !p.hoje.length && !p.semana.length) return null;
+  const v = validades(estado, hoje);
+  // lote vencido sozinho não dispara o e-mail todo dia; o que vence nos próximos dias, sim
+  if (!p.vencidas.length && !p.hoje.length && !p.semana.length && !v.proximos.length) return null;
   const soma = (l, tipo) => l.filter((t) => t.type === tipo).reduce((a, t) => a + Number(t.amount || 0), 0);
   const partes = [];
   const n = (q, um, varios) => `${q} ${q === 1 ? um : varios}`;
   if (p.hoje.length) partes.push(n(p.hoje.length, 'conta vence hoje', 'contas vencem hoje'));
   if (p.vencidas.length) partes.push(n(p.vencidas.length, 'em atraso', 'em atraso'));
-  if (!partes.length) partes.push(n(p.semana.length, 'conta vence nos próximos 7 dias', 'contas vencem nos próximos 7 dias'));
+  if (!partes.length && p.semana.length) partes.push(n(p.semana.length, 'conta vence nos próximos 7 dias', 'contas vencem nos próximos 7 dias'));
+  if (!partes.length && v.proximos.length) partes.push(n(v.proximos.length, 'lote de produto vence nos próximos 7 dias', 'lotes de produtos vencem nos próximos 7 dias'));
   const empresa = nomeEmpresa(estado);
   const corpo = `<p style="margin:0 0 6px;line-height:1.6">Bom dia! Este é o resumo das contas da <b>${esc(empresa)}</b> em ${dataBR(hoje)}.</p>
 <table style="width:100%;border-collapse:collapse;margin:10px 0 4px;font-size:14px"><tr>
@@ -101,7 +126,7 @@ export function resumoDono(estado, hoje, site) {
 <td style="width:10px"></td>
 <td style="padding:10px;background:#FDECEC;border-radius:8px"><div style="font-size:12px;color:#5B6474">A pagar (atraso + hoje + 7 dias)</div><div style="font-size:18px;font-weight:bold;color:#D93636">${moeda(soma(p.vencidas, 'DESPESA') + soma(p.hoje, 'DESPESA') + soma(p.semana, 'DESPESA'))}</div></td>
 </tr></table>
-${tabela('Vencem hoje', p.hoje, '#B07A12')}${tabela('Em atraso', p.vencidas, '#D93636')}${tabela('Próximos 7 dias', p.semana, '#0B1220')}
+${tabela('Vencem hoje', p.hoje, '#B07A12')}${tabela('Em atraso', p.vencidas, '#D93636')}${tabela('Próximos 7 dias', p.semana, '#0B1220')}${tabelaValidade(v)}
 <p style="margin:20px 0 0"><a href="${esc(site)}/dashboard" style="display:inline-block;background:#C5A059;color:#0B1220;font-weight:bold;text-decoration:none;padding:11px 20px;border-radius:8px">Abrir o painel</a></p>`;
   return {
     assunto: `${empresa}: ${partes.join(' e ')}`,

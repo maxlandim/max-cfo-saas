@@ -188,7 +188,7 @@
       '</div>' +
       '<div class="lay-grid">' +
       '<div class="card"><div class="card-title" style="margin-bottom:6px">Precisa da sua atenção</div>' +
-      (alertas.length ? alertas.slice(0, 6).map(function (a) { return '<div class="lay-item"' + (a.go ? ' style="cursor:pointer" onclick="switchView(\'' + a.go + '\')"' : '') + '><div class="d" style="white-space:normal">' + esc(a.t) + '</div>' + (a.go ? '<span style="color:var(--gold)">→</span>' : '') + '</div>'; }).join('') : '<div class="lay-item"><div class="d">✅ Tudo em dia. Nada vencido e o caixa segue positivo nos próximos 90 dias.</div></div>') + '</div>' +
+      (alertas.length ? alertas.slice(0, 6).map(function (a) { return '<div class="lay-item"' + (a.go ? ' style="cursor:pointer" onclick="' + (a.acao || "switchView('" + a.go + "')") + '"' : '') + '><div class="d" style="white-space:normal">' + esc(a.t) + '</div>' + (a.go ? '<span style="color:var(--gold)">→</span>' : '') + '</div>'; }).join('') : '<div class="lay-item"><div class="d">✅ Tudo em dia. Nada vencido e o caixa segue positivo nos próximos 90 dias.</div></div>') + '</div>' +
       '<div class="card"><div class="card-header-row"><span class="card-title">Vence nos próximos 10 dias</span><a class="btn-link" onclick="fin.verContas(\'\',\'todas\')">Ver tudo →</a></div>' +
       (proximos.length ? proximos.map(function (t) {
         var rs = F().rotuloSituacao(t), rec = t.type === 'RECEITA';

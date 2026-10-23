@@ -13,6 +13,7 @@
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'success'); }
   function salvar() { if (window.persist) window.persist(); }
   function r2(v) { return Math.round(v * 100) / 100; }
+  function r4(v) { return Math.round(v * 10000) / 10000; }
   function num(v) { return window.fin.num(v); }
   function novoId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function hoje() { return F().hoje(); }
@@ -486,25 +487,37 @@
     var baixos = lista.filter(function (p) { return p.minimo > 0 && p.qtd <= p.minimo; });
     var comMargem = lista.filter(function (p) { return p.preco > 0 && p.custo > 0; });
     var margem = comMargem.length ? comMargem.reduce(function (a, p) { return a + (p.preco - p.custo) / p.preco; }, 0) / comMargem.length * 100 : null;
+    var Vd = window.maxcfoValidade, comVal = Vd ? lista.filter(function (p) { return p.controlaValidade || (p.lotes && p.lotes.length); }) : [];
+    var rv = Vd && comVal.length ? Vd.resumo() : null, aba = window.est && window.est.aba === 'validade' && Vd ? 'validade' : 'produtos';
+    var abas = Vd ? '<div class="est-abas"><button class="' + (aba === 'produtos' ? 'on' : '') + '" onclick="est.verAba(\'produtos\')">📦 Produtos</button><button class="' + (aba === 'validade' ? 'on' : '') + '" onclick="est.verAba(\'validade\')">🗓️ Validades' + (rv && (rv.vencidos.length + rv.perto.length) ? ' (' + (rv.vencidos.length + rv.perto.length) + ')' : '') + '</button></div>' : '';
+    if (aba === 'validade') {
+      v.innerHTML = cabecalho('Estoque', 'Validade dos produtos por lote: o que venceu, o que vence logo e o valor em risco', '<button class="btn-secondary" onclick="estNota.abrir()">📄 Entrada por nota fiscal</button><button class="btn-primary" onclick="est.editar()">+ Produto</button>') + abas + Vd.painel();
+      return;
+    }
     v.innerHTML = cabecalho('Estoque', 'Produtos com custo médio, estoque mínimo e movimentações ligadas ao financeiro', '<button class="btn-secondary" onclick="est.exportar()">⬇️ Exportar</button><button class="btn-secondary" onclick="estNota.abrir()">📄 Entrada por nota fiscal</button><button class="btn-primary" onclick="est.editar()">+ Produto</button>') +
       kpis([
         { v: lista.length, l: 'Produtos' },
         { v: moeda(valor), l: 'Valor em estoque (a custo)', gold: true },
         { v: baixos.length, l: 'No mínimo ou abaixo', c: baixos.length ? 'fin-neg' : 'fin-pos' },
         { v: margem === null ? '—' : margem.toFixed(1).replace('.', ',') + '%', l: 'Margem média (preço × custo)' }
-      ]) +
+      ]) + abas +
+      (rv && rv.vencidos.length ? '<div class="fin-alerta red">🗓️ ' + rv.vencidos.length + (rv.vencidos.length === 1 ? ' lote vencido' : ' lotes vencidos') + ' no estoque (' + moeda(rv.valorVencido) + ' a custo). <a href="#" class="link-go" onclick="validade.abrir(\'vencidos\');return false">Ver e dar baixa</a></div>' : '') +
+      (rv && rv.perto.length ? '<div class="fin-alerta gold">🗓️ ' + rv.perto.length + (rv.perto.length === 1 ? ' lote vence' : ' lotes vencem') + ' nos próximos ' + rv.aviso + ' dias (' + moeda(rv.valorPerto) + '). <a href="#" class="link-go" onclick="validade.abrir(\'alerta\');return false">Ver quais</a></div>' : '') +
       (baixos.length ? '<div class="fin-alerta red">⚠️ Repor: ' + baixos.map(function (p) { return esc(p.nome) + ' (' + p.qtd + ' ' + esc(p.unidade) + ')'; }).join(', ') + '</div>' : '') +
-      '<div class="card">' + (lista.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Produto</th><th>Estoque</th><th class="fin-hide-sm">Custo médio</th><th class="fin-hide-sm">Preço</th><th class="fin-hide-sm">Saídas 30 dias</th><th>Dura</th><th>Ações</th></tr></thead><tbody>' +
+      '<div class="card">' + (lista.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Produto</th><th>Estoque</th><th class="fin-hide-sm">Custo médio</th><th class="fin-hide-sm">Preço</th><th class="fin-hide-sm">Saídas 30 dias</th><th>Dura</th>' + (comVal.length ? '<th>Validade</th>' : '') + '<th>Ações</th></tr></thead><tbody>' +
         lista.map(function (p) {
           var s30 = saidas30(p.id), dias = s30 > 0 ? Math.floor(p.qtd / (s30 / 30)) : null;
           return '<tr><td><b>' + esc(p.nome) + '</b><div class="fin-sub">' + esc(p.sku || '') + (p.minimo ? ' · mínimo ' + p.minimo : '') + '</div></td>' +
             '<td style="font-weight:700" class="' + (p.minimo > 0 && p.qtd <= p.minimo ? 'fin-neg' : '') + '">' + String(p.qtd).replace('.', ',') + ' ' + esc(p.unidade) + '</td>' +
             '<td class="fin-hide-sm">' + moeda(p.custo) + '</td><td class="fin-hide-sm">' + (p.preco ? moeda(p.preco) : '—') + '</td><td class="fin-hide-sm">' + (s30 || '—') + '</td>' +
             '<td>' + (dias === null ? '<span class="fin-sub">sem saídas</span>' : '~' + dias + ' dias') + '</td>' +
+            (comVal.length ? '<td>' + (Vd.etiqueta(p) || '<span class="fin-sub">—</span>') + '</td>' : '') +
             '<td><div class="fin-acoes"><button class="fin-btn ok" onclick="est.mov(\'' + p.id + '\',\'entrada\')">+ Entrada</button><button class="fin-btn" onclick="est.mov(\'' + p.id + '\',\'saida\')">− Saída</button><button class="fin-btn" onclick="est.mov(\'' + p.id + '\',\'ajuste\')" title="Ajuste de inventário">⚖️</button><button class="fin-btn" onclick="est.historico(\'' + p.id + '\')" title="Histórico">🕘</button><button class="fin-btn" onclick="est.editar(\'' + p.id + '\')">✏️</button></div></td></tr>';
         }).join('') + '</tbody></table></div><p class="fin-sub" style="margin-top:8px">"Dura" é a estimativa pelo ritmo de saídas dos últimos 30 dias.</p>' : '<div class="empty-block" style="padding:28px">Nenhum produto cadastrado.</div>') + '</div>';
   };
   window.est = {
+    aba: 'produtos',
+    verAba: function (a) { window.est.aba = a; window.renderInventory(); },
     editar: function (id) {
       migrarEstoque();
       var p = id ? st().inventory.find(function (x) { return x.id === id; }) : null;
@@ -514,6 +527,8 @@
         '<div class="form-field"><label class="form-label" for="pSku">Código (SKU)</label><input class="form-input" id="pSku" maxlength="30" placeholder="Gerado se vazio" value="' + esc(p ? p.sku : '') + '"></div>' +
         '<div class="form-field"><label class="form-label" for="pUn">Unidade</label><select class="form-input" id="pUn">' + ['un', 'cx', 'kg', 'g', 'l', 'ml', 'm', 'm²', 'pct', 'h'].map(function (u) { return '<option' + (p && p.unidade === u ? ' selected' : '') + '>' + u + '</option>'; }).join('') + '</select></div>' +
         (p ? '' : '<div class="form-field"><label class="form-label" for="pQtd">Estoque inicial</label><input type="number" step="0.001" min="0" class="form-input" id="pQtd" value="0"></div>') +
+        (window.maxcfoValidade ? '<div class="form-field span-2"><label class="fin-check"><input type="checkbox" id="pCtrlVal"' + (p && p.controlaValidade ? ' checked' : '') + (p ? '' : ' onchange="document.getElementById(\'pValIni\').style.display=this.checked?\'contents\':\'none\'"') + '> Controlar validade (lotes): pedir lote e validade nas entradas e avisar antes de vencer</label></div>' +
+          (p ? '' : '<div id="pValIni" style="display:none">' + window.maxcfoValidade.campos('pIni') + '</div>') : '') +
         '<div class="form-field"><label class="form-label" for="pMin">Estoque mínimo</label><input type="number" step="0.001" min="0" class="form-input" id="pMin" value="' + (p ? p.minimo : 0) + '"></div>' +
         '<div class="form-field"><label class="form-label" for="pCusto">Custo unitário (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="pCusto" value="' + (p ? p.custo : '') + '"></div>' +
         '<div class="form-field"><label class="form-label" for="pPreco">Preço de venda (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="pPreco" value="' + (p ? p.preco : '') + '"></div>' +
@@ -526,21 +541,27 @@
       var sku = el('pSku').value.trim() || proximo('prd', 'PRD-');
       if (st().inventory.some(function (x) { return x.sku === sku && x.id !== id; })) return toast('Já existe um produto com esse código.', 'error');
       var dados = { nome: nome, sku: sku, unidade: el('pUn').value, minimo: num(el('pMin').value), custo: r2(num(el('pCusto').value)), preco: r2(num(el('pPreco').value)) };
+      if (el('pCtrlVal')) dados.controlaValidade = el('pCtrlVal').checked;
+      var loteIni = dados.controlaValidade && window.maxcfoValidade ? window.maxcfoValidade.ler('pIni') : null;
       if (id) Object.assign(st().inventory.find(function (x) { return x.id === id; }), dados);
       else {
         var p = Object.assign({ id: novoId(), qtd: 0 }, dados); st().inventory.push(p);
-        var q = num(el('pQtd').value); if (q > 0) { p.qtd = q; st().movEstoque.push({ id: novoId(), produtoId: p.id, data: hoje(), tipo: 'ajuste', qtd: q, custo: p.custo, obs: 'Estoque inicial' }); }
+        var q = num(el('pQtd').value); if (q > 0) { p.qtd = q; var lt = loteIni ? window.maxcfoValidade.adicionar(p, loteIni, q, 'inicial', hoje()) : null; st().movEstoque.push({ id: novoId(), produtoId: p.id, data: hoje(), tipo: 'ajuste', qtd: q, custo: p.custo, obs: 'Estoque inicial', lote: lt || undefined }); }
       }
       salvar(); F().fechar('estModal2'); window.renderInventory(); toast('Produto salvo.');
     },
     mov: function (id, tipo) {
       var p = st().inventory.find(function (x) { return x.id === id; }); if (!p) return;
       var titulos = { entrada: '+ Entrada (compra)', saida: '− Saída (venda ou uso)', ajuste: '⚖️ Ajuste de inventário' };
+      var Vd = window.maxcfoValidade, ctrl = Vd && (p.controlaValidade || (p.lotes && p.lotes.length));
       var corpo = '<p class="fin-sub" style="margin-bottom:10px">' + esc(p.nome) + ' · estoque atual ' + p.qtd + ' ' + esc(p.unidade) + '</p><div class="form-grid">' +
         '<div class="form-field"><label class="form-label" for="mQtd">' + (tipo === 'ajuste' ? 'Quantidade contada' : 'Quantidade') + '</label><input type="number" step="0.001" min="0" class="form-input" id="mQtd"></div>' +
         (tipo !== 'ajuste' ? '<div class="form-field"><label class="form-label" for="mValor">' + (tipo === 'entrada' ? 'Custo unitário (R$)' : 'Preço unitário (R$)') + '</label><input type="number" step="0.01" min="0" class="form-input" id="mValor" value="' + (tipo === 'entrada' ? p.custo || '' : p.preco || '') + '"></div>' : '') +
         '<div class="form-field"><label class="form-label" for="mData">Data</label><input type="date" class="form-input" id="mData" value="' + hoje() + '"></div>' +
         '<div class="form-field"><label class="form-label" for="mObs">' + (tipo === 'entrada' ? 'Fornecedor' : tipo === 'saida' ? 'Cliente' : 'Motivo') + '</label><input class="form-input" id="mObs" maxlength="80" list="mListaCt"><datalist id="mListaCt">' + listaContatos(tipo === 'entrada' ? 'fornecedor' : tipo === 'saida' ? 'cliente' : '') + '</datalist></div>' +
+        (ctrl && tipo === 'entrada' ? Vd.campos('m', true) : '') +
+        (ctrl && tipo === 'ajuste' ? Vd.campos('m') + '<div class="form-field span-2 fin-sub">Se a contagem for maior que o estoque, a diferença entra com o lote e a validade acima. Se for menor, sai primeiro o que vence antes.</div>' : '') +
+        (ctrl && tipo === 'saida' ? Vd.infoSaida(p) : '') +
         (tipo === 'entrada' ? '<div class="form-field span-2"><label class="fin-check"><input type="checkbox" id="mFin" checked> Lançar a compra em Contas a pagar, vencimento <input type="date" class="form-input" id="mVenc" value="' + F().addDias(hoje(), 30) + '" style="width:auto;display:inline-block;margin-left:6px;padding:4px 8px"></label></div>' : '') +
         (tipo === 'saida' ? '<div class="form-field span-2"><label class="fin-check"><input type="checkbox" id="mFin" checked> Gerar a venda em Contas a receber</label></div>' : '') +
         '</div>';
@@ -552,9 +573,13 @@
       if (!(q > 0) && tipo !== 'ajuste') return toast('Informe a quantidade.', 'error');
       if (tipo === 'saida' && q > p.qtd && !confirm('A saída é maior que o estoque (' + p.qtd + '). Continuar mesmo assim?')) return;
       var lanc = el('mFin') && el('mFin').checked, venc = el('mVenc') ? el('mVenc').value : '';
+      var lote = window.maxcfoValidade ? window.maxcfoValidade.ler('m') : null;
+      if (el('mLoteSai') && el('mLoteSai').value) lote = { loteId: el('mLoteSai').value };
+      if (tipo === 'entrada' && el('mVal') && !el('mVal').value && !confirm('Este produto controla validade. Dar entrada sem informar a validade?')) return;
+      if (lote && lote.validade && lote.validade < hoje() && tipo !== 'saida' && !confirm('A validade informada já passou. Continuar?')) return;
       F().fechar('movModal');
       if (tipo === 'saida' && lanc && val > 0) {
-        F().faturar({ titulo: '💰 Venda de ' + p.nome, desc: 'Venda — ' + q + ' ' + p.unidade + ' de ' + p.nome, contato: obs, valor: r2(q * val), categoria: 'Vendas de Produto', competencia: data, origem: { tipo: 'estoque', id: p.id } }, function () { est.movimentar(id, 'saida', q, val, obs || 'Venda', true, data); window.renderInventory(); });
+        F().faturar({ titulo: '💰 Venda de ' + p.nome, desc: 'Venda — ' + q + ' ' + p.unidade + ' de ' + p.nome, contato: obs, valor: r2(q * val), categoria: 'Vendas de Produto', competencia: data, origem: { tipo: 'estoque', id: p.id } }, function () { est.movimentar(id, 'saida', q, val, obs || 'Venda', true, data, '', lote); window.renderInventory(); });
         return;
       }
       var txId = '';
@@ -562,29 +587,41 @@
         var t = F().criarLancamento({ type: 'DESPESA', desc: 'Compra — ' + q + ' ' + p.unidade + ' de ' + p.nome, amount: r2(q * val), category: 'Custo de Mercadorias e Serviços', date: data, vencimento: venc || data, contato: obs });
         txId = t.id; F().atualizarTudo();
       }
-      est.movimentar(id, tipo, q, val, obs, false, data, txId);
+      est.movimentar(id, tipo, q, val, obs, false, data, txId, lote);
       window.renderInventory(); toast('Estoque atualizado.');
     },
-    movimentar: function (id, tipo, q, val, obs, silencioso, data, txId) {
+    // lote: { lote, validade } nas entradas (e ajuste para cima); { loteId } para tirar de um lote específico nas saídas
+    movimentar: function (id, tipo, q, val, obs, silencioso, data, txId, lote) {
       migrarEstoque();
       var p = st().inventory.find(function (x) { return x.id === id; }); if (!p) return;
+      var Vd = window.maxcfoValidade, lotesMov = null;
       if (tipo === 'entrada') {
         // custo médio ponderado
         var totalAntes = Math.max(p.qtd, 0) * p.custo, novaQtd = Math.max(p.qtd, 0) + q;
         if (val > 0 && novaQtd > 0) p.custo = r2((totalAntes + q * val) / novaQtd);
-        p.qtd = r2(p.qtd + q);
-      } else if (tipo === 'saida') p.qtd = r2(p.qtd - q);
-      else { var dif = r2(q - p.qtd); p.qtd = q; q = dif; }
-      st().movEstoque.push({ id: novoId(), produtoId: id, data: data || hoje(), tipo: tipo, qtd: q, valor: val, obs: obs || '', txId: txId || '' });
-      if (window.logAudit) window.logAudit('update', 'estoque', id, tipo + ' de ' + q + ' ' + p.unidade + ' — ' + p.nome);
+        p.qtd = r4(p.qtd + q);
+        if (Vd && lote) { var a = Vd.adicionar(p, lote, q, txId ? 'compra' : 'entrada', data); if (a) lotesMov = [a]; }
+      } else if (tipo === 'saida' || tipo === 'perda') {
+        p.qtd = r4(p.qtd - q);
+        if (Vd && p.lotes && p.lotes.length) lotesMov = Vd.consumir(p, q, lote && lote.loteId);
+      } else {
+        var dif = r4(q - p.qtd); p.qtd = q; q = dif;
+        if (Vd && dif < 0 && p.lotes && p.lotes.length) lotesMov = Vd.consumir(p, -dif, lote && lote.loteId);
+        if (Vd && dif > 0 && lote) { var b = Vd.adicionar(p, lote, dif, 'ajuste', data); if (b) lotesMov = [b]; }
+      }
+      if (Vd && p.lotes && p.lotes.length) Vd.conferir(p);
+      var m = { id: novoId(), produtoId: id, data: data || hoje(), tipo: tipo, qtd: q, valor: val, obs: obs || '', txId: txId || '' };
+      if (lotesMov && lotesMov.length) m.lotes = lotesMov;
+      st().movEstoque.push(m);
+      if (window.logAudit) window.logAudit('update', 'estoque', id, tipo + ' de ' + q + ' ' + p.unidade + ' — ' + p.nome + (lotesMov && lotesMov.length ? ' (' + lotesMov.map(function (l) { return (l.lote ? 'lote ' + l.lote : 'sem lote') + (l.validade ? ' val. ' + dataBR(l.validade) : ''); }).join(', ') + ')' : ''));
       salvar();
       if (!silencioso) return;
     },
     historico: function (id) {
       var p = st().inventory.find(function (x) { return x.id === id; }); if (!p) return;
       var movs = st().movEstoque.filter(function (m) { return m.produtoId === id; }).slice(-40).reverse();
-      F().modal('histModal', '🕘 ' + esc(p.nome), movs.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Tipo</th><th>Qtd</th><th>Valor unit.</th><th>Obs.</th></tr></thead><tbody>' +
-        movs.map(function (m) { return '<tr><td>' + dataBR(m.data) + '</td><td>' + { entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste' }[m.tipo] + '</td><td>' + String(m.qtd).replace('.', ',') + '</td><td>' + (m.valor ? moeda(m.valor) : '—') + '</td><td>' + esc(m.obs || '') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="fin-sub">Sem movimentações.</p>',
+      F().modal('histModal', '🕘 ' + esc(p.nome), movs.length ? '<div class="table-scroll"><table class="data-table"><thead><tr><th>Data</th><th>Tipo</th><th>Qtd</th><th>Valor unit.</th><th>Lote / validade</th><th>Obs.</th></tr></thead><tbody>' +
+        movs.map(function (m) { return '<tr><td>' + dataBR(m.data) + '</td><td>' + ({ entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste', perda: '<span class="fin-neg">Perda</span>' }[m.tipo] || esc(m.tipo)) + '</td><td>' + String(m.qtd).replace('.', ',') + '</td><td>' + (m.valor ? moeda(m.valor) : '—') + '</td><td class="fin-sub">' + (m.lotes ? m.lotes.map(function (l) { return esc((l.lote || 's/ lote') + (l.validade ? ' · ' + dataBR(l.validade) : '') + (m.lotes.length > 1 ? ' (' + String(l.qtd).replace('.', ',') + ')' : '')); }).join('<br>') : m.lote ? esc((m.lote.lote || '') + (m.lote.validade ? ' · ' + dataBR(m.lote.validade) : '')) : '—') + '</td><td>' + esc(m.obs || '') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="fin-sub">Sem movimentações.</p>',
         '<button class="btn-ghost" onclick="fin.fechar(\'histModal\')">Fechar</button>', true);
     },
     exportar: function () {
