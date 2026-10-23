@@ -156,7 +156,8 @@
       { feito: txs.some(function (t) { return t.type === 'RECEITA'; }), t: 'Lance algo que você tem a receber', a: "fin.novo('RECEITA',{status:'pendente'})" },
       { feito: txs.some(function (t) { return t.type === 'DESPESA'; }), t: 'Lance uma conta a pagar (ou leia um boleto com a câmera)', a: "fin.novo('DESPESA',{status:'pendente'})" },
       { feito: !!(s.pix && s.pix.chave), t: 'Cadastre sua chave Pix para cobrar clientes', a: "switchView('settings')" },
-      { feito: txs.some(function (t) { return t.fitid || t.notes === 'Importado do extrato'; }), t: 'Importe o extrato do banco para conferir tudo', a: "switchView('reconciliation')" }
+      { feito: txs.some(function (t) { return t.fitid || t.notes === 'Importado do extrato'; }), t: 'Importe o extrato do banco para conferir tudo', a: "switchView('reconciliation')" },
+      { feito: !!s.viuFluxo, t: 'Veja quanto vai sobrar ou faltar no caixa nos próximos 90 dias', a: "switchView('fluxo')" }
     ];
   }
 

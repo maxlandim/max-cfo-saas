@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
+import { adminConfigurado, adminAuth, adminDb, usuarioDaRequisicao, emailsAdmin } from '../../../lib/firebaseAdmin';
 import { statusDoUsuario } from '../../../lib/assinatura';
 import { config, hojeBrasil, resumoDono, avisosClientes } from '../../../lib/lembretes';
 import { estadoDoEspaco, temDados } from '../../../lib/espacoServidor';
+import { emailDoDia, montarEmailTeste } from '../../../lib/emailsTeste';
+import { vagasFundador } from '../../../lib/fundadores';
+import { DIAS_DE_TESTE } from '../../../lib/plans';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -92,6 +95,38 @@ export async function GET(req) {
       resultado.erros.push(`${wsId}: ${e.message}`);
     }
   }
+  // E-mails do teste grátis: boas-vindas, dica, "acaba amanhã" e "acabou" (uma vez cada, só para quem não assinou)
+  resultado.emailsTeste = 0;
+  try {
+    const fundador = (await vagasFundador()) > 0;
+    const admins = emailsAdmin();
+    const agora = Date.now();
+    let token;
+    for (let pagina = 0; pagina < 10; pagina++) {
+      const lista = await adminAuth.listUsers(1000, token);
+      for (const u of lista.users) {
+        const email = (u.email || '').toLowerCase();
+        const dias = (agora - new Date(u.metadata.creationTime).getTime()) / 864e5;
+        if (!email || dias > DIAS_DE_TESTE + 4 || admins.includes(email) || /@exemplo\.com$/.test(email)) continue;
+        const ref = adminDb.collection('emailsTeste').doc(u.uid);
+        const enviados = (await ref.get()).data() || {};
+        if (enviados.sair) continue;
+        const sub = (await adminDb.collection('subscriptions').doc(u.uid).get()).data() || {};
+        const temAssinatura = (sub.asaasSubscriptionId && sub.statusAsaas === 'ACTIVE') || (sub.pagoAte && Date.parse(sub.pagoAte) > agora);
+        const tipo = emailDoDia(Math.floor(dias), enviados, temAssinatura);
+        if (!tipo) continue;
+        const m = montarEmailTeste(tipo, { nome: u.displayName || '', site: site(), uid: u.uid, fundador });
+        try {
+          await enviar({ para: email, assunto: m.assunto, html: m.html, responderPara: process.env.EMAIL_RESPOSTA || admins[0] || undefined });
+          await ref.set({ [tipo]: new Date().toISOString() }, { merge: true });
+          resultado.emailsTeste++;
+        } catch (e) { resultado.erros.push(`e-mail ${tipo} ${u.uid}: ${e.message}`); }
+      }
+      token = lista.pageToken;
+      if (!token) break;
+    }
+  } catch (e) { resultado.erros.push('e-mails do teste: ' + e.message); }
+
   return NextResponse.json(resultado);
 }
 

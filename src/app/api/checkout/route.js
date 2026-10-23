@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
-import { PLANOS } from '../../../lib/plans';
+import { PLANOS, somarMeses } from '../../../lib/plans';
 import { vagasFundador } from '../../../lib/fundadores';
 import { fimDoTeste, registrarAssinatura, guardarFatura, valorDoPlano } from '../../../lib/assinatura';
 import { asaas, asaasConfigurado, linkCheckout, montarRef, dataAsaas, soDigitos, documentoValido } from '../../../lib/asaas';
@@ -41,7 +41,9 @@ export async function POST(req) {
   let fimTeste = 0;
   try { fimTeste = await fimDoTeste(user.uid); } catch {}
   const pagoAte = atual.pagoAte ? Date.parse(atual.pagoAte) : 0;
-  const inicio = Math.max(Date.now(), fimTeste, pagoAte);
+  // Meses grátis ganhos por indicação (guardados até a pessoa assinar) empurram a 1ª cobrança
+  const mesesGratis = Math.max(0, Math.min(12, Number(atual.mesesGratis) || 0));
+  const inicio = somarMeses(Math.max(Date.now(), fimTeste, pagoAte), mesesGratis);
   const primeiraCobranca = dataAsaas(inicio);
 
   // Preço de fundador: para os primeiros assinantes, por 12 meses
@@ -77,7 +79,7 @@ export async function POST(req) {
         items: [{ name: (plano.nome.replace('Landim Advisory - ', 'Plano ') + (periodo === 'anual' ? ' anual' : '')).slice(0, 30), description: descricao.slice(0, 150), quantity: 1, value: valor }],
         subscription: { cycle: periodo === 'anual' ? 'YEARLY' : 'MONTHLY', nextDueDate: primeiraCobranca },
       });
-      await ref.set({ checkoutPendente: { planId, periodo, fundador, checkoutId: checkout.id, em: new Date().toISOString() } }, { merge: true });
+      await ref.set({ checkoutPendente: { planId, periodo, fundador, mesesGratis, checkoutId: checkout.id, em: new Date().toISOString() } }, { merge: true });
       return NextResponse.json({ url: linkCheckout(checkout.id), primeiraCobranca });
     }
 
@@ -91,7 +93,8 @@ export async function POST(req) {
       description: descricao,
       externalReference: referencia,
     });
-    await registrarAssinatura(user.uid, assinatura);
+    // meses grátis usados contam como período pago até a 1ª cobrança
+    await registrarAssinatura(user.uid, assinatura, mesesGratis ? { mesesGratis: 0, pagoAte: new Date(Math.max(inicio, pagoAte)).toISOString() } : {});
     let url = null;
     try {
       const lista = await asaas('GET', `/subscriptions/${assinatura.id}/payments`);

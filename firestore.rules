@@ -12,6 +12,12 @@ service cloud.firestore {
     function emailConfirmado() {
       return request.auth != null && request.auth.token.email != null && request.auth.token.email_verified == true;
     }
+    // Analista ou gestor convidado pelo dono (convites/<e-mail>/espacos/<empresa> com papel de edição)
+    function editor(wsId) {
+      return emailConfirmado()
+        && exists(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId))
+        && get(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId)).data.papel in ['analista', 'gestor'];
+    }
     function meuEmail(email) {
       return request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == email;
     }
@@ -23,6 +29,8 @@ service cloud.firestore {
         || (request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == wsId)
         || (emailConfirmado() && exists(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId)));
       allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
+      // Equipe (analista ou gestor) grava os dados, mas não troca o dono
+      allow update: if editor(wsId) && request.resource.data.owner == resource.data.owner;
       // A empresa principal não pode ser apagada pelo painel
       allow delete: if donoDoEspaco(wsId) && wsId != request.auth.uid;
 
@@ -31,8 +39,9 @@ service cloud.firestore {
       match /partes/{parte} {
         allow read: if donoDoEspaco(wsId)
           || (emailConfirmado() && exists(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId)));
-        allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
-        allow delete: if donoDoEspaco(wsId);
+        allow create, update: if (donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid)
+          || (editor(wsId) && request.resource.data.owner == get(/databases/$(database)/documents/workspaces/$(wsId)).data.owner);
+        allow delete: if donoDoEspaco(wsId) || editor(wsId);
       }
     }
 
@@ -45,7 +54,7 @@ service cloud.firestore {
     // Só o dono da empresa cria ou altera; o convidado lê a própria lista e pode recusar (apagar).
     match /convites/{email}/espacos/{wsId} {
       allow read: if meuEmail(email) || donoDoEspaco(wsId);
-      allow create, update: if donoDoEspaco(wsId) && request.resource.data.dono == request.auth.uid && request.resource.data.papel == 'leitura';
+      allow create, update: if donoDoEspaco(wsId) && request.resource.data.dono == request.auth.uid && request.resource.data.papel in ['leitura', 'analista', 'gestor'];
       allow delete: if donoDoEspaco(wsId) || meuEmail(email);
     }
 

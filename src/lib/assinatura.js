@@ -99,13 +99,42 @@ export async function registrarAssinatura(uid, assinatura, extra = {}) {
     plano: planId, periodo, forma,
     proximoVencimento: assinatura.nextDueDate || null,
     checkoutPendente: null,
+    ...(atual.checkoutPendente && atual.checkoutPendente.mesesGratis ? {
+      mesesGratis: Math.max(0, (atual.mesesGratis || 0) - atual.checkoutPendente.mesesGratis),
+      pagoAte: new Date(Math.max(atual.pagoAte ? Date.parse(atual.pagoAte) : 0, msDaData(assinatura.nextDueDate || new Date().toISOString()))).toISOString(),
+    } : {}),
     updatedAt: new Date().toISOString(),
     ...(fundador ? { fundador: true, fundadorAte: atual.fundadorAte || new Date(somarMeses(msDaData(assinatura.nextDueDate || new Date().toISOString()), 12)).toISOString() } : {}),
     ...(atual.faturaPendente && atual.asaasSubscriptionId !== assinatura.id ? { faturaPendente: null } : {}),
     ...extra,
   };
   await ref.set(dados, { merge: true });
+  if (atual.asaasSubscriptionId !== assinatura.id) await ativarNotaFiscal(assinatura.id);
   return dados;
+}
+
+// Nota fiscal de serviço automática para cada cobrança paga da assinatura (configurado por variáveis no servidor):
+//   NFSE_ATIVA=1, NFSE_SERVICO_ID (id de GET /v3/fiscalInfo/services) ou NFSE_SERVICO_CODIGO (código da prefeitura),
+//   NFSE_SERVICO_NOME (descrição do serviço) e NFSE_ISS (alíquota do ISS em %, ex.: 2)
+export function configNotaFiscal() {
+  if (process.env.NFSE_ATIVA !== '1') return null;
+  return {
+    effectiveDatePeriod: 'ON_PAYMENT_CONFIRMATION',
+    ...(process.env.NFSE_SERVICO_ID ? { municipalServiceId: process.env.NFSE_SERVICO_ID } : {}),
+    ...(process.env.NFSE_SERVICO_CODIGO ? { municipalServiceCode: process.env.NFSE_SERVICO_CODIGO } : {}),
+    municipalServiceName: process.env.NFSE_SERVICO_NOME || 'Licenciamento de uso de software (sistema de gestão financeira)',
+    observations: 'Assinatura do sistema Landim Advisory.',
+    taxes: { retainIss: false, iss: Number(process.env.NFSE_ISS || 0), cofins: 0, csll: 0, inss: 0, ir: 0, pis: 0 },
+  };
+}
+export async function ativarNotaFiscal(assinaturaId) {
+  const cfg = configNotaFiscal();
+  if (!cfg || !assinaturaId) return { ativo: false };
+  try { await asaas('POST', `/subscriptions/${assinaturaId}/invoiceSettings`, cfg); return { ativo: true }; }
+  catch (e) {
+    try { await asaas('PUT', `/subscriptions/${assinaturaId}/invoiceSettings`, cfg); return { ativo: true }; }
+    catch (e2) { console.warn('Nota fiscal da assinatura', assinaturaId, e2.message); return { ativo: false, erro: e2.message }; }
+  }
 }
 
 // Descobre de quem é uma cobrança/assinatura do Asaas

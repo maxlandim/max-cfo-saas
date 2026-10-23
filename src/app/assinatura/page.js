@@ -122,11 +122,37 @@ export default function MinhaAssinatura() {
                 </div>
               </section>
             )}
+            <Indicacao />
+
             <p className="ma-sub">Dúvidas sobre cobrança? <a href="https://wa.me/5561992105889" target="_blank" rel="noopener">Fale no WhatsApp</a>.</p>
           </>
         )}
       </main>
     </div>
+  );
+}
+
+// Indique e ganhe: link próprio; quando a pessoa indicada paga a primeira cobrança, as duas ganham 1 mês grátis
+function Indicacao() {
+  const [d, setD] = useState(null);
+  const [copiado, setCopiado] = useState(false);
+  useEffect(() => {
+    authFetch('/api/indicacao').then((r) => (r.ok ? r.json() : null)).then(setD).catch(() => {});
+  }, []);
+  if (!d || !d.link) return null;
+  const texto = `Uso a Landim Advisory para organizar o financeiro da empresa (contas, fluxo de caixa e DRE). Teste 7 dias grátis pelo meu link e ganhe 1 mês grátis quando assinar: ${d.link}`;
+  const copiar = async () => { try { await navigator.clipboard.writeText(d.link); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch {} };
+  return (
+    <section className="ma-cartao ma-indica">
+      <h2>🎁 Indique e ganhe 1 mês grátis</h2>
+      <p className="ma-sub" style={{ marginTop: 0 }}>Quando alguém criar a conta pelo seu link e pagar a primeira mensalidade, <b>vocês dois ganham 1 mês grátis</b>. Não tem limite de indicações.</p>
+      <div className="ma-link-ind"><input readOnly value={d.link} aria-label="Seu link de indicação" onFocus={(e) => e.target.select()} /><button type="button" className="ma-btn" onClick={copiar}>{copiado ? 'Copiado!' : 'Copiar'}</button></div>
+      <div className="ma-acoes">
+        <a className="ma-btn ma-btn-ouro" style={{ marginTop: 0 }} href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noopener">Enviar no WhatsApp</a>
+      </div>
+      <div className="ma-numeros"><span><b>{d.indicados}</b> {d.indicados === 1 ? 'conta criada' : 'contas criadas'}</span><span><b>{d.pagos}</b> {d.pagos === 1 ? 'assinou' : 'assinaram'}</span><span><b>{d.mesesGanhos}</b> {d.mesesGanhos === 1 ? 'mês ganho' : 'meses ganhos'}</span></div>
+      {d.mesesGuardados > 0 && <p className="ma-sub">Você tem {d.mesesGuardados} {d.mesesGuardados === 1 ? 'mês grátis guardado' : 'meses grátis guardados'}: ao assinar, a primeira cobrança fica para depois.</p>}
+    </section>
   );
 }
 
@@ -157,5 +183,8 @@ const ESTILO = `
 .ma-tabela th{text-align:left;color:#5B6474;font-weight:700;padding:8px;border-bottom:1px solid #E3E6EC}
 .ma-tabela td{padding:9px 8px;border-bottom:1px solid #F0F1F4}
 .ma-selo{display:inline-block;padding:3px 9px;border-radius:99px;font-size:12.5px;font-weight:800}
+.ma-indica h2{margin-bottom:6px}
+.ma-link-ind{display:flex;gap:8px;margin-top:12px}.ma-link-ind input{flex:1;min-width:0;font:inherit;font-size:15px;padding:10px 12px;border:1.5px solid #D5D9E0;border-radius:10px;min-height:44px}
+.ma-numeros{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:14px;color:#4B5565}.ma-numeros b{color:#0B1220;font-size:17px}
 .ma-verde{background:#E7F6EF;color:#0B6B4A}.ma-amarelo{background:#FFF6DD;color:#7A5A12}.ma-vermelho{background:#FDECEC;color:#B91C1C}.ma-cinza{background:#EEF0F3;color:#4B5565}
 `;
