@@ -156,6 +156,7 @@ var initMaxCfoApp = async () => {
   if (window.initGestaoModule) window.initGestaoModule();
   if (window.initRelatorioModule) window.initRelatorioModule();
   if (window.initLayoutModule) window.initLayoutModule();
+  if (window.initEquipeModule) window.initEquipeModule();
   if (window.initAcessosModule) window.initAcessosModule();
   if (window.initCobrancaModule) window.initCobrancaModule();
   if (window.initTutorialModule) window.initTutorialModule();
@@ -897,6 +898,8 @@ async function submitTransaction(e) {
       showToast('✅ Lançamento atualizado', 'success');
     }
   } else {
+    // Conta a pagar lançada por analista da equipe fica aguardando aprovação do gestor
+    if (window.maxcfoPapel === 'analista') lista.forEach(tx => { if (tx.type === 'DESPESA' && tx.status !== 'pago') { tx.aprovacao = 'pendente'; tx.lancadoPor = (window.maxcfoUser || {}).email || ''; } });
     lista.forEach(tx => state.transactions.push(tx));
     if (window.logAudit) window.logAudit('create', 'transaction', lista[0].id, `Lançamento "${desc}" criado${lista.length > 1 ? ` (${lista.length}x)` : ''}`, null, lista[0]);
     const aberto = lista[0].status !== 'pago';

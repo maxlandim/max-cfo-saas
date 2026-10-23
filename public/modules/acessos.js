@@ -23,7 +23,7 @@
     return 'Olá! Liberei para você o acesso de consulta aos números da ' + nomeEmpresa() + ' na Landim Advisory.\n\n' +
       '1. Abra ' + site() + '/login\n2. Entre (ou crie sua conta) com o e-mail ' + email + '\n' +
       '3. Confirme o e-mail, se o sistema pedir\n4. Clique no nome da empresa, no alto do menu, e abra a ' + nomeEmpresa() + ' em "Compartilhadas com você".\n\n' +
-      'O acesso é somente leitura: você vê tudo, mas não altera nada.';
+      'O que você pode fazer depende do papel que eu escolhi (consulta, analista ou gestor); aparece no alto do painel.';
   }
 
   // ── Tela "Equipe e acessos": cartão de convites ──
@@ -37,16 +37,17 @@
     }
     if (window.maxcfoLeitura) { c.innerHTML = '<div class="card-title">🔐 Acesso do cliente ou do contador</div><p class="fin-sub">Disponível só para o dono da empresa.</p>'; return; }
     var l = lista();
-    c.innerHTML = '<div class="card-title">🔐 Acesso do cliente ou do contador (somente leitura)</div>' +
-      '<p class="fin-sub" style="margin:6px 0 14px;line-height:1.6">A pessoa entra com o próprio e-mail e senha e vê os números da <b>' + esc(nomeEmpresa()) + '</b>: contas, fluxo de caixa, DRE e relatórios. Ela não consegue lançar, editar nem apagar nada. Cada empresa tem os seus acessos.</p>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div class="form-field" style="flex:1;min-width:220px;margin:0"><label class="form-label" for="acessoEmail">E-mail do cliente ou do contador</label><input class="form-input" id="acessoEmail" type="email" placeholder="contador@escritorio.com.br" autocomplete="off"></div>' +
+    c.innerHTML = '<div class="card-title">🔐 Acessos da equipe, do cliente e do contador</div>' +
+      '<p class="fin-sub" style="margin:6px 0 14px;line-height:1.6">A pessoa entra com o próprio e-mail e senha e trabalha na <b>' + esc(nomeEmpresa()) + '</b> conforme o papel: <b>Consulta</b> só vê os números; <b>Analista</b> lança e edita, mas não exclui e as contas a pagar ficam aguardando aprovação; <b>Gestor</b> lança, edita, exclui e aprova pagamentos. Configurações e acessos continuam só com você.</p>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><div class="form-field" style="flex:1;min-width:220px;margin:0"><label class="form-label" for="acessoEmail">E-mail da pessoa</label><input class="form-input" id="acessoEmail" type="email" placeholder="analista@escritorio.com.br" autocomplete="off"></div>' +
+      '<div class="form-field" style="margin:0"><label class="form-label" for="acessoPapel">Papel</label><select class="form-input" id="acessoPapel"><option value="leitura">Consulta (só vê)</option><option value="analista">Analista (lança, com aprovação)</option><option value="gestor">Gestor (lança e aprova)</option></select></div>' +
       '<button class="btn-primary" id="acessoBtn" onclick="acessos.convidar()">Dar acesso</button></div>' +
       (l.length ? '<div class="table-scroll" style="margin-top:16px"><table class="data-table"><thead><tr><th>E-mail</th><th>Acesso</th><th>Desde</th><th></th></tr></thead><tbody>' +
         l.map(function (a, i) {
-          return '<tr><td style="font-weight:600">' + esc(a.email) + '</td><td><span class="fin-sit ok">Somente leitura</span></td><td>' + esc((a.em || '').slice(0, 10).split('-').reverse().join('/')) + '</td>' +
+          return '<tr><td style="font-weight:600">' + esc(a.email) + '</td><td><span class="fin-sit ok">' + esc((window.maxcfoPapeis || {})[a.papel || 'leitura'] || 'Consulta') + '</span></td><td>' + esc((a.em || '').slice(0, 10).split('-').reverse().join('/')) + '</td>' +
             '<td style="white-space:nowrap"><button class="fin-btn" onclick="acessos.copiar(' + i + ')">📋 Copiar convite</button> <a class="fin-btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(textoConvite(a.email)) + '">WhatsApp</a> <a class="fin-btn" style="text-decoration:none" href="mailto:' + encodeURIComponent(a.email) + '?subject=' + encodeURIComponent('Acesso aos números da ' + nomeEmpresa()) + '&body=' + encodeURIComponent(textoConvite(a.email)) + '">E-mail</a> <button class="fin-btn" style="color:var(--danger)" onclick="acessos.revogar(' + i + ')">Remover acesso</button></td></tr>';
         }).join('') + '</tbody></table></div>'
-        : '<p class="fin-sub" style="margin-top:14px">Ninguém tem acesso de consulta a esta empresa ainda.</p>') +
+        : '<p class="fin-sub" style="margin-top:14px">Ninguém mais tem acesso a esta empresa ainda.</p>') +
       '<p class="fin-sub" style="margin-top:12px">Depois de dar o acesso, envie o convite pelo WhatsApp ou e-mail. A pessoa precisa confirmar o e-mail dela para abrir a empresa.</p>';
     var inp = el('acessoEmail'); if (inp) inp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') window.acessos.convidar(); });
   }
@@ -55,12 +56,12 @@
   function secaoSeletor() {
     var a = A(); if (!a || !a.compartilhadas || !a.compartilhadas.length) return '';
     var lido = window.maxcfoLeitura;
-    return '<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px"><div style="font-weight:800;margin-bottom:8px">👁 Compartilhadas com você <span class="fin-sub">(somente leitura)</span></div>' +
+    return '<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px"><div style="font-weight:800;margin-bottom:8px">👁 Compartilhadas com você</div>' +
       (a.emailVerificado ? '' : '<div class="fin-alerta gold" style="margin-bottom:10px">Para abrir, confirme o seu e-mail (' + esc(a.email) + '). <button class="fin-btn gold" onclick="acessos.enviarVerificacao()">Enviar e-mail de confirmação</button> <button class="fin-btn" onclick="acessos.jaVerifiquei()">Já confirmei</button></div>') +
       '<div style="display:flex;flex-direction:column;gap:8px">' + a.compartilhadas.map(function (c) {
-        var aberta = lido && lido.wsId === c.wsId;
+        var aberta = (lido && lido.wsId === c.wsId) || (window.maxcfoEquipe && window.maxcfoEquipe.wsId === c.wsId);
         return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ' + (aberta ? 'var(--gold-border)' : 'var(--border)') + ';border-radius:10px;background:' + (aberta ? 'var(--gold-dim)' : 'var(--bg-surf)') + '">' +
-          '<div style="flex:1;min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.empresa || 'Empresa') + '</div><div class="fin-sub">de ' + esc(c.donoNome || c.donoEmail || '—') + '</div></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.empresa || 'Empresa') + '</div><div class="fin-sub">de ' + esc(c.donoNome || c.donoEmail || '—') + ' · ' + esc((window.maxcfoPapeis || {})[c.papel || 'leitura'] || 'Consulta') + '</div></div>' +
           (aberta ? '<span class="fin-sit ok">Aberta</span>' : a.emailVerificado ? '<button class="fin-btn gold" onclick="acessos.abrir(\'' + esc(c.wsId) + '\')">Abrir</button>' : '') + '</div>';
       }).join('') + '</div></div>';
   }
@@ -150,11 +151,12 @@
       var email = inp.value.trim().toLowerCase();
       if (lista().some(function (x) { return x.email === email; })) return toast('Este e-mail já tem acesso.', 'info');
       var b = el('acessoBtn'); if (b) { b.disabled = true; b.textContent = 'Salvando…'; }
-      var r = await a.convidar(email, nomeEmpresa());
+      var papel = ((el('acessoPapel') || {}).value) || 'leitura';
+      var r = await a.convidar(email, nomeEmpresa(), papel);
       if (b) { b.disabled = false; b.textContent = 'Dar acesso'; }
       if (r.erro) return toast(r.erro, 'error');
-      lista().push({ email: email, papel: 'leitura', em: new Date().toISOString() });
-      if (window.addAuditEntry) window.addAuditEntry('deu acesso somente leitura para ' + email); else if (window.persist) window.persist();
+      lista().push({ email: email, papel: papel, em: new Date().toISOString() });
+      if (window.addAuditEntry) window.addAuditEntry('deu acesso de ' + ((window.maxcfoPapeis || {})[papel] || papel) + ' para ' + email); else if (window.persist) window.persist();
       toast('Acesso liberado. Agora envie o convite para ' + email + '.');
       cartao();
     },

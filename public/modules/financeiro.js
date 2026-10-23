@@ -667,6 +667,19 @@
   F.modal = modal;
 
   F.tx = function (id) { return st().transactions.find(function (t) { return t.id === id; }); };
+  // Aprovação de contas a pagar lançadas por analistas (módulo equipe.js)
+  F.precisaAprovar = function (t) { return !!(t && t.aprovacao === 'pendente' && t.status !== 'pago'); };
+  F.podeAprovar = function () { return window.maxcfoPapel !== 'analista' && !window.maxcfoLeitura; };
+  F.podePagar = function (t) { return !(F.precisaAprovar(t) && !F.podeAprovar()); };
+  F.seloAprovacao = function (t) { return F.precisaAprovar(t) ? '<div><span class="fin-sit hoje" style="margin-top:4px;display:inline-block" title="Lançada por ' + esc(t.lancadoPor || 'analista') + '">⏳ Aguardando aprovação</span></div>' : ''; };
+  F.botaoAprovar = function (t) { return F.precisaAprovar(t) && F.podeAprovar() ? '<button class="fin-btn gold" onclick="fin.aprovar(\'' + t.id + '\')" title="Aprovar o pagamento">✔ Aprovar</button>' : ''; };
+  F.aprovar = function (id) {
+    var t = F.tx(id); if (!t || !F.podeAprovar()) return;
+    var antes = Object.assign({}, t), u = window.maxcfoUser || {};
+    t.aprovacao = 'aprovada'; t.aprovadoPor = u.email || u.name || ''; t.aprovadoEm = new Date().toISOString(); t.atualizadoEm = Date.now();
+    if (window.logAudit) window.logAudit('update', 'transaction', t.id, 'Pagamento aprovado: "' + t.desc + '"', antes, t);
+    salvar(); F.atualizarTudo(); toast('Pagamento aprovado.');
+  };
 
   F.novo = function (tipo, opcoes) {
     if (window.openModal) window.openModal(tipo === 'RECEITA' ? 'receita' : 'despesa', '', opcoes || {});
@@ -675,6 +688,7 @@
   // Dar baixa (pagar / receber), com juros/multa, desconto e baixa parcial
   F.baixar = function (id) {
     var t = F.tx(id); if (!t) return;
+    if (!F.podePagar(t)) return toast('Esta conta aguarda a aprovação de um gestor antes do pagamento.', 'info');
     var rec = t.type === 'RECEITA';
     var contas = st().contas.map(function (c) { return '<option value="' + esc(c.id) + '"' + (c.id === t.contaId ? ' selected' : '') + '>' + esc(c.nome) + '</option>'; }).join('');
     modal('finBaixaModal', (rec ? '✅ Registrar recebimento' : '✅ Registrar pagamento'),
@@ -1159,7 +1173,7 @@
       var s = F.rotuloSituacao(t), rec = t.type === 'RECEITA', conta = F.contaPorId(t.contaId), sit = F.situacao(t);
       var acoes = sit === 'pago'
         ? (t.transferenciaId ? '' : '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎ Estornar</button><button class="fin-btn" onclick="fin.recibo(\'' + t.id + '\')" title="Recibo">🧾 Recibo</button>')
-        : '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')">💠 Cobrar</button>' : '');
+        : F.botaoAprovar(t) + (F.podePagar(t) ? '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' : '') + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')">💠 Cobrar</button>' : '');
       if (!t.transferenciaId) acoes += '<button class="fin-btn" onclick="fin.duplicar(\'' + t.id + '\')" title="Duplicar">⧉</button>';
       return '<tr>' +
         '<td>' + (sit === 'pago' ? '' : '<input type="checkbox" class="fin-sel" value="' + t.id + '" aria-label="Selecionar">') + '</td>' +
@@ -1167,7 +1181,7 @@
         '<td><div style="font-weight:600">' + esc(t.desc) + (t.parcela ? ' <span class="fin-sub">(' + esc(t.parcela) + ')</span>' : '') + '</div><div class="fin-sub">' + esc([t.contato, t.category, t.centroCusto].filter(Boolean).join(' · ')) + (t.cobradoEm ? ' · cobrado em ' + F.dataBR(t.cobradoEm) : '') + '</div></td>' +
         '<td class="fin-hide-sm">' + esc(conta ? conta.nome : '—') + '</td>' +
         '<td style="font-weight:800;white-space:nowrap" class="' + (rec ? 'fin-pos' : 'fin-neg') + '">' + (rec ? '+' : '−') + moeda(t.amount) + '</td>' +
-        '<td><span class="fin-sit ' + s.cls + '">' + s.txt + '</span></td>' +
+        '<td><span class="fin-sit ' + s.cls + '">' + s.txt + '</span>' + F.seloAprovacao(t) + '</td>' +
         '<td><div class="fin-acoes">' + acoes + '<button class="fin-btn" onclick="editTx(\'' + t.id + '\')" title="Editar">✏️</button><button class="fin-btn" onclick="fin.excluir(\'' + t.id + '\')" title="Excluir">🗑️</button></div></td>' +
         '</tr>';
     }).join('');
@@ -1198,14 +1212,14 @@
     var s = F.rotuloSituacao(t), rec = t.type === 'RECEITA', conta = F.contaPorId(t.contaId), sit = F.situacao(t);
     var acoes = sit === 'pago'
       ? (t.transferenciaId ? '' : '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎</button><button class="fin-btn" onclick="fin.recibo(\'' + t.id + '\')" title="Recibo">🧾</button>')
-      : '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')" title="Cobrar por Pix e WhatsApp">💠</button>' : '');
+      : F.botaoAprovar(t) + (F.podePagar(t) ? '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' : '') + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')" title="Cobrar por Pix e WhatsApp">💠</button>' : '');
     if (!t.transferenciaId) acoes += '<button class="fin-btn" onclick="fin.duplicar(\'' + t.id + '\')" title="Duplicar">⧉</button>';
     return '<tr><td>' + (sit === 'pago' ? '' : '<input type="checkbox" class="fin-sel" value="' + t.id + '" aria-label="Selecionar">') + '</td>' +
       '<td style="white-space:nowrap">' + F.dataBR(sit === 'pago' ? t.pagoEm : t.vencimento) + '</td>' +
       '<td><div style="font-weight:600">' + esc(t.desc) + (t.parcela ? ' <span class="fin-sub">(' + esc(t.parcela) + ')</span>' : '') + '</div><div class="fin-sub">' + esc([t.contato, t.category, t.centroCusto].filter(Boolean).join(' · ')) + '</div>' + (t.notes ? '<div class="fin-sub" style="font-style:italic">' + esc(String(t.notes).slice(0, 90)) + '</div>' : '') + '</td>' +
       '<td class="fin-hide-sm">' + esc(conta ? conta.nome : '—') + '</td>' +
       '<td style="font-weight:800;white-space:nowrap" class="' + (rec ? 'fin-pos' : 'fin-neg') + '">' + moeda(t.amount) + '</td>' +
-      '<td><span class="fin-sit ' + s.cls + '">' + s.txt + '</span></td>' +
+      '<td><span class="fin-sit ' + s.cls + '">' + s.txt + '</span>' + F.seloAprovacao(t) + '</td>' +
       '<td><div class="fin-acoes">' + acoes + '<button class="fin-btn" onclick="editTx(\'' + t.id + '\')" title="Editar">✏️</button><button class="fin-btn" onclick="fin.excluir(\'' + t.id + '\')" title="Excluir">🗑️</button></div></td></tr>';
   };
   F.renderTipo = function (tipo) {

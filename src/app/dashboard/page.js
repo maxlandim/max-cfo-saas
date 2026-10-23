@@ -6,6 +6,7 @@ import { app, db, authFetch } from '../../lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore/lite';
 import { lerDadosDoEspaco, gravarDadosDoEspaco, apagarPartesDoEspaco } from '../../lib/espaco';
 import { estadoDemo, USUARIO_DEMO } from '../../lib/demo';
+import { mesclarEstados, mesmoEstado } from '../../lib/mesclar';
 import { sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,7 +15,7 @@ const CAMPOS_TEMPORARIOS = ['currentModal', 'isListening', 'voiceRec', 'txFilter
 
 // Versão dos scripts do painel: muda a cada publicação, então o navegador pode guardá-los em cache sem medo
 const VERSAO = 'v=' + (process.env.NEXT_PUBLIC_BUILD_ID || '9');
-const SCRIPTS = ['/engine.js', ...['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'relatorio', 'importar', 'estoque-nota', 'acessos', 'cobranca', 'tutorial', 'layout'].map((m) => `/modules/${m}.js`), '/app.js'].map((s) => `${s}?${VERSAO}`);
+const SCRIPTS = ['/engine.js', ...['financeiro', 'empresas', 'operacao', 'gestao', 'accountant', 'nfe', 'team', 'relatorio', 'importar', 'estoque-nota', 'equipe', 'acessos', 'cobranca', 'tutorial', 'layout'].map((m) => `/modules/${m}.js`), '/app.js'].map((s) => `${s}?${VERSAO}`);
 const CACHE_ACESSO_MS = 12 * 3600 * 1000; // a verificação da assinatura é refeita em segundo plano
 
 // Nenhuma etapa de rede pode travar a abertura: depois do prazo, desiste e segue com o plano B
@@ -171,6 +172,39 @@ export default function DashboardPage() {
       avisoLeitura = Date.now();
     };
     let avisoDemo = Date.now() + 5000; // não avisa no carregamento, só quando a pessoa mexer
+    // Última versão lida ou gravada de cada empresa (base da mescla quando outra pessoa também altera)
+    const base = {};
+    const colaborativo = () => !!window.maxcfoEquipe || ((window.state && window.state.acessosLeitura) || []).some((a) => a && (a.papel === 'analista' || a.papel === 'gestor'));
+    const trocarEstado = (novo) => {
+      const s = window.state; if (!s) return;
+      Object.keys(s).forEach((k) => { if (!CAMPOS_TEMPORARIOS.includes(k) && typeof s[k] !== 'function' && !(k in novo)) delete s[k]; });
+      Object.assign(s, novo);
+    };
+    // Lê a nuvem; se mudou desde a base, mescla com o que está aqui e devolve o JSON mesclado (ou null se nada mudou)
+    const mesclarComNuvem = async (wsId, local) => {
+      const snap = await comPrazo(getDoc(doc(db, 'workspaces', wsId)), 15000);
+      const quandoR = snap.exists() ? snap.data().updatedAt || '' : '';
+      if (!quandoR || quandoR === base[wsId].quando) return null;
+      const textoR = await comPrazo(lerDadosDoEspaco(db, wsId, snap), 30000);
+      if (!textoR) return null;
+      const remoto = JSON.parse(textoR);
+      const { estado: m } = mesclarEstados(JSON.parse(base[wsId].json), local, remoto);
+      trocarEstado(m);
+      base[wsId] = { json: textoR, quando: quandoR };
+      if (window.fin && window.fin.atualizarTudo) { try { window.fin.atualizarTudo(); } catch {} }
+      if (window.showToast) window.showToast('Alterações feitas por outra pessoa da equipe foram juntadas às suas.', 'info');
+      const json = JSON.stringify(limparEstado(window.state));
+      return { json, temAlgoDaqui: !mesmoEstado(JSON.parse(json), remoto) };
+    };
+    // A cada 45 s, com a equipe trabalhando junto, traz o que os outros gravaram (sem esperar a próxima gravação daqui)
+    const puxar = setInterval(async () => {
+      const wsId = window.workspaceId;
+      if (!wsId || !nuvemLida || pendente || !base[wsId] || !colaborativo() || document.hidden || window.maxcfoDemo) return;
+      try {
+        const m = await mesclarComNuvem(wsId, JSON.parse(JSON.stringify(limparEstado(window.state))));
+        if (m && m.temAlgoDaqui) window.saveStateToFirebase(wsId, window.state); // havia algo aqui que ainda não estava lá
+      } catch (e) { console.warn('Atualizar da nuvem:', e.message); }
+    }, 45000);
     const gravar = async (wsId, estado) => {
       if (window.maxcfoDemo) {
         if (Date.now() - avisoDemo > 20000 && window.showToast) window.showToast('Na demonstração nada é salvo. Crie sua conta grátis para usar com os seus dados.', 'info');
@@ -178,14 +212,21 @@ export default function DashboardPage() {
         return;
       }
       if (window.maxcfoLeitura) return; // empresa de outra pessoa, aberta só para consulta
-      const json = JSON.stringify(limparEstado(estado));
+      let json = JSON.stringify(limparEstado(estado));
       const copia = lerCopia(wsId) || {};
       gravarCopia(wsId, { ...copia, t: Date.now(), pendente: true, dados: json });
       if (!nuvemLida) return;
       try {
+        // Mais de uma pessoa nesta empresa: junta as alterações que chegaram da nuvem antes de gravar
+        if (colaborativo() && base[wsId]) {
+          const m = await mesclarComNuvem(wsId, JSON.parse(json));
+          if (m) json = m.json;
+        }
         const quando = new Date().toISOString();
+        const dono = window.maxcfoEquipe ? window.maxcfoEquipe.dono : user.uid;
         // Grava comprimido (e em partes, se precisar): sem o limite de 1 MB por documento
-        const r = await comPrazo(gravarDadosDoEspaco(db, wsId, json, user.uid, quando), 30000);
+        const r = await comPrazo(gravarDadosDoEspaco(db, wsId, json, dono, quando), 30000);
+        base[wsId] = { json, quando };
         if (r && r.bytes > 7 * 1024 * 1024 && !aviso && window.showToast) {
           window.showToast('Esta empresa tem muitos dados. Exporte um backup em Configurações e fale com o suporte.', 'error');
           aviso = true;
@@ -243,6 +284,7 @@ export default function DashboardPage() {
           return JSON.parse(copia.dados);
         }
         if (n.dados) {
+          base[wsId] = { json: n.dados, quando: n.quando };
           gravarCopia(wsId, { t: Date.now(), pendente: false, nuvem: n.quando, dados: n.dados });
           const dados = JSON.parse(n.dados);
           if (n.migrar) setTimeout(() => gravar(wsId, dados), 1500);
@@ -367,15 +409,16 @@ export default function DashboardPage() {
     const acessos = {
       compartilhadas: [], leitura: null, temAcessoProprio: !!acesso.acesso,
       emailVerificado: !!user.emailVerified, email: (user.email || '').toLowerCase(),
-      convidar: async (email, empresa) => {
+      convidar: async (email, empresa, papel) => {
+        papel = ['leitura', 'analista', 'gestor'].includes(papel) ? papel : 'leitura';
         email = String(email || '').trim().toLowerCase();
         if (!/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(email)) return { erro: 'Informe um e-mail válido.' };
         if (email === acessos.email) return { erro: 'Este é o seu próprio e-mail.' };
-        if (window.maxcfoLeitura) return { erro: 'Você está vendo uma empresa em modo leitura.' };
+        if (window.maxcfoLeitura || window.maxcfoEquipe) return { erro: 'Só o dono da empresa pode dar acessos.' };
         try {
           await comPrazo(setDoc(doc(db, 'convites', email, 'espacos', window.workspaceId), {
             dono: user.uid, donoNome: user.displayName || user.email || '', donoEmail: user.email || '',
-            empresa: String(empresa || 'Empresa').slice(0, 80), papel: 'leitura', criadoEm: new Date().toISOString(),
+            empresa: String(empresa || 'Empresa').slice(0, 80), papel, criadoEm: new Date().toISOString(),
           }), 15000);
           return { ok: true };
         } catch (e) {
@@ -419,7 +462,11 @@ export default function DashboardPage() {
       try { compart = localStorage.getItem(chaveCompart) || ''; } catch {}
       if (!acesso.acesso && !acessos.compartilhadas.some((c) => c.wsId === compart)) compart = (acessos.compartilhadas[0] || {}).wsId || '';
       const alvo = acessos.compartilhadas.find((c) => c.wsId === compart);
-      if (alvo && user.emailVerified) {
+      if (alvo && user.emailVerified && (alvo.papel === 'analista' || alvo.papel === 'gestor')) {
+        // Equipe: trabalha na empresa de outra pessoa com permissão de lançar (veja equipe.js e firestore.rules)
+        acessos.equipe = alvo; window.maxcfoEquipe = alvo; window.workspaceId = alvo.wsId;
+        window.maxcfoPlano = { ...window.maxcfoPlano, nivel: Math.max(window.maxcfoPlano.nivel || 1, 3) };
+      } else if (alvo && user.emailVerified) {
         acessos.leitura = alvo; window.maxcfoLeitura = alvo; window.workspaceId = alvo.wsId;
         window.maxcfoPlano = { ...window.maxcfoPlano, nivel: Math.max(window.maxcfoPlano.nivel || 1, 3) };
       } else if (!acesso.acesso) {
@@ -441,7 +488,7 @@ export default function DashboardPage() {
       }
     })();
 
-    return () => window.removeEventListener('pagehide', salvarAgora);
+    return () => { window.removeEventListener('pagehide', salvarAgora); clearInterval(puxar); };
   }, [user, acesso, convites]);
 
   useEffect(() => {
