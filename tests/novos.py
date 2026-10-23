@@ -125,25 +125,25 @@ async def publicas(b):
           if (tipo === 'application/pdf') { const p = await fin.analisarPdf(f, 10); const d = leitor.lerPdf(p); const n = leitor.danfePdf(p); return { d, n: n && { conferido: n.conferido, itens: n.itens.length, total: n.valorTotal, cnpj: n.cnpj } }; }
           return { d: await leitor.boletoDaImagem(f) }; }""", [b64, nome, tipo])
     try:
-        r = await ler_local('boleto_itau.pdf', 'application/pdf'); d = r['d'] or {}
-        log(d.get('completo') and d.get('valor') == 1234.56 and d.get('vencimento') == '2026-11-25' and 'Sol' in (d.get('contato') or ''), 'leitor: boleto em PDF sem IA', d)
-        r = await ler_local('boleto_cedente.pdf', 'application/pdf'); d = r['d'] or {}
-        log(d.get('completo') and d.get('valor') == 589.9, 'leitor: boleto com cedente na linha', d)
-        r = await ler_local('conta_energia.pdf', 'application/pdf'); d = r['d'] or {}
-        log(d.get('completo') and d.get('contato') == 'Neoenergia' and d.get('vencimento') == '2026-11-10', 'leitor: conta de energia', d)
-        r = await ler_local('das.pdf', 'application/pdf'); d = r['d'] or {}
-        log(d.get('completo') and d.get('contato') == 'Receita Federal' and d.get('valor') == 3912.77, 'leitor: DAS', d)
+        r = await ler_local('boleto_itau.pdf', 'application/pdf'); dl = r['d'] or {}
+        log(dl.get('completo') and dl.get('valor') == 1234.56 and dl.get('vencimento') == '2026-11-25' and 'Sol' in (dl.get('contato') or ''), 'leitor: boleto em PDF sem IA', dl)
+        r = await ler_local('boleto_cedente.pdf', 'application/pdf'); dl = r['d'] or {}
+        log(dl.get('completo') and dl.get('valor') == 589.9, 'leitor: boleto com cedente na linha', dl)
+        r = await ler_local('conta_energia.pdf', 'application/pdf'); dl = r['d'] or {}
+        log(dl.get('completo') and dl.get('contato') == 'Neoenergia' and dl.get('vencimento') == '2026-11-10', 'leitor: conta de energia', dl)
+        r = await ler_local('das.pdf', 'application/pdf'); dl = r['d'] or {}
+        log(dl.get('completo') and dl.get('contato') == 'Receita Federal' and dl.get('valor') == 3912.77, 'leitor: DAS', dl)
         r = await ler_local('danfe_real.pdf', 'application/pdf')
         log(r['n'] and r['n']['conferido'] and r['n']['itens'] == 5 and r['n']['total'] == 2030.3, 'leitor: DANFE com itens conferidos', r['n'])
-        r = await ler_local('boleto_foto.jpg', 'image/jpeg'); d = r['d'] or {}
-        log(d.get('valor') == 2350 and d.get('vencimento') == '2026-11-30', 'leitor: código de barras na foto', d)
-        r = await ler_local('v_retrato.jpg', 'image/jpeg'); d = r['d'] or {}
-        log(d.get('valor') == 2350, 'leitor: foto de lado', d)
+        r = await ler_local('boleto_foto.jpg', 'image/jpeg'); dl = r['d'] or {}
+        log(dl.get('valor') == 2350 and dl.get('vencimento') == '2026-11-30', 'leitor: código de barras na foto', dl)
+        r = await ler_local('v_retrato.jpg', 'image/jpeg'); dl = r['d'] or {}
+        log(dl.get('valor') == 2350, 'leitor: foto de lado', dl)
         b64 = _b64.b64encode(open('leitor/boleto_escaneado.pdf', 'rb').read()).decode()
-        d = await dp.evaluate("""async (b64) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const p = await fin.analisarPdf(new File([bin], 'e.pdf', { type: 'application/pdf' }));
+        dl = await dp.evaluate("""async (b64) => { const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const p = await fin.analisarPdf(new File([bin], 'e.pdf', { type: 'application/pdf' }));
           if (leitor.lerPdf(p)) return 'leu texto?'; const bi = atob(p.imagem), u = new Uint8Array(bi.length); for (let i = 0; i < bi.length; i++) u[i] = bi.charCodeAt(i);
           return await leitor.boletoDaImagem(new File([u], 'p.jpg', { type: 'image/jpeg' })); }""", b64)
-        log(isinstance(d, dict) and d.get('valor') == 2350, 'leitor: PDF escaneado pelo código de barras', d)
+        log(isinstance(dl, dict) and dl.get('valor') == 2350, 'leitor: PDF escaneado pelo código de barras', dl)
     except Exception as e:
         log(False, 'leitor: erro no teste', str(e)[:300])
     s1, r1 = rest(SITE + '/api/chat', {'message': 'oi'}); s2, r2 = rest(SITE + '/api/ler-documento', {'arquivo': 'x'})
