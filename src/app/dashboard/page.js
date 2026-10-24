@@ -160,6 +160,7 @@ export default function DashboardPage() {
     window.maxcfoAdmin = acesso.motivo === 'admin';
     window.maxcfoPlanoTexto = acesso.motivo === 'teste' ? `Teste grátis · ${acesso.diasRestantes} ${acesso.diasRestantes === 1 ? 'dia' : 'dias'}`
       : acesso.motivo === 'admin' ? 'Administrador'
+      : acesso.motivo === 'cortesia' ? 'Plano Escritório · cortesia'
       : acesso.motivo === 'assinatura' ? (nomesPlano[acesso.plano] || 'Assinante')
       : acesso.motivo === 'demo' ? 'Demonstração'
       : '';
@@ -354,7 +355,7 @@ export default function DashboardPage() {
     // Empresas do mesmo login (BPO, grupo de empresas). A principal usa o uid; as demais, "<uid>__<id>".
     // Básico inclui 1 empresa e os demais planos 3; cada empresa a mais é cobrada à parte (EMPRESA_EXTRA por mês)
     const limiteEmpresas = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(limiteDeEmpresas(acesso.plano, acesso.empresasExtras), 3) : limiteDeEmpresas(acesso.plano, acesso.empresasExtras))
-      : acesso.motivo === 'teste' ? 3 : 9999; // admin e modo de configuração
+      : acesso.motivo === 'teste' ? 3 : acesso.motivo === 'cortesia' ? limiteDeEmpresas('unlimited', 0) : 9999; // admin e modo de configuração
     const chaveAtiva = 'maxcfo_empresa_' + user.uid;
     const perfilRef = doc(db, 'perfis', user.uid);
     const empresas = { lista: [], ativa: '', limite: limiteEmpresas, plano: acesso.plano || null, motivo: acesso.motivo,
@@ -515,8 +516,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!acesso?.acesso || !window.maxcfoEmpresas) return;
-    const LIM = { basic: 1, intermediate: 3, complete: 10, unlimited: 30 };
-    window.maxcfoEmpresas.limite = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(LIM[acesso.plano] || 1, 3) : (LIM[acesso.plano] || 1)) : acesso.motivo === 'teste' ? 3 : 9999;
+    // mesmo cálculo do carregamento (plano + empresas adicionais contratadas)
+    window.maxcfoEmpresas.limite = acesso.motivo === 'assinatura' ? (acesso.status === 'trialing' ? Math.max(limiteDeEmpresas(acesso.plano, acesso.empresasExtras), 3) : limiteDeEmpresas(acesso.plano, acesso.empresasExtras))
+      : acesso.motivo === 'teste' ? 3 : acesso.motivo === 'cortesia' ? limiteDeEmpresas('unlimited', 0) : 9999;
     window.maxcfoEmpresas.plano = acesso.plano || null; window.maxcfoEmpresas.motivo = acesso.motivo;
     const antes = window.maxcfoPlano && window.maxcfoPlano.nivel;
     window.maxcfoPlano = nivelPlano(acesso);

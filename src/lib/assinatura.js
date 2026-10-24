@@ -10,7 +10,7 @@
 //   pagoAte        fim do período coberto pelas cobranças já pagas
 //   proximoVencimento, faturaPendente { id, url, vencimento, valor, situacao }
 //   fundador, fundadorAte, checkoutPendente { planId, periodo, fundador, em }
-import { adminAuth, adminDb, emailsAdmin } from './firebaseAdmin';
+import { adminAuth, adminDb, emailsAdmin, emailsCortesia } from './firebaseAdmin';
 import { DIAS_DE_TESTE, PLANOS, somarMeses, CARENCIA_DIAS, MESES_PAGOS_NO_ANUAL, EMPRESA_EXTRA, MAX_EMPRESAS, empresasIncluidas } from './plans';
 import { asaas, lerRef, montarRef, msDaData } from './asaas';
 
@@ -25,6 +25,9 @@ export async function statusDoUsuario(decoded) {
 
   if (email && emailsAdmin().includes(email)) {
     return { acesso: true, motivo: 'admin', plano: 'unlimited' };
+  }
+  if (email && emailsCortesia().includes(email)) {
+    return { acesso: true, motivo: 'cortesia', plano: 'unlimited', status: 'active' };
   }
 
   const snap = await adminDb.collection('subscriptions').doc(uid).get();

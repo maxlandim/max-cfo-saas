@@ -78,6 +78,7 @@ export default function MinhaAssinatura() {
                 <p className="ma-sub" style={{ margin: 0 }}>
                   {d.pagoAte && Date.parse(d.pagoAte) > Date.now()
                     ? <>Assinatura cancelada. Você continua com acesso até <b>{dataBR(d.pagoAte)}</b>.</>
+                    : d.status && d.status.motivo === 'cortesia' ? <>Acesso de <b>cortesia</b> ao plano Escritório, com tudo liberado e até 10 empresas, sem cobrança.</>
                     : d.status && d.status.motivo === 'teste' ? <>Você está no teste grátis ({d.status.diasRestantes} {d.status.diasRestantes === 1 ? 'dia restante' : 'dias restantes'}) e ainda não assinou.</>
                     : 'Nenhuma assinatura ativa nesta conta.'}
                 </p>
