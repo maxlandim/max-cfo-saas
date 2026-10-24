@@ -13,7 +13,7 @@ window.initAccountantModule = function () {};
 
   function dadosDoMes(mes) {
     var txs = (window.state.transactions || []).filter(function (t) { return (t.date || '').slice(0, 7) === mes || (t.pagoEm || '').slice(0, 7) === mes; });
-    var notas = (window.state.nfes || []).filter(function (n) { return (n.dataEmissao || n.data || '').slice(0, 7) === mes; });
+    var notas = (window.state.nfes || []).filter(function (n) { return !n.teste && (n.dataEmissao || n.data || '').slice(0, 7) === mes; });
     return { txs: txs, notas: notas };
   }
   function q(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }

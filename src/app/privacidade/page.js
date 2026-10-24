@@ -18,6 +18,7 @@ export default function PrivacidadePage() {
         <li>Cadastro: nome, e-mail, CPF ou CNPJ e senha (guardada de forma criptografada pelo Google Firebase).</li>
         <li>Uso do painel: os dados financeiros e cadastrais que você inserir ou importar (extratos OFX/CSV, planilhas, anexos).</li>
         <li>Pagamento: o Asaas processa o cartão, o Pix e o boleto. Guardamos o nome e o CPF ou CNPJ informados para a cobrança e recebemos só o status das cobranças, nunca o número do cartão.</li>
+        <li>Emissão de NFS-e: o certificado digital A1 da empresa e a senha dele, guardados cifrados (AES-256) no servidor e usados só para assinar e enviar as notas que você emitir. Eles nunca voltam para o navegador e você pode removê-los quando quiser.</li>
         <li>Dados técnicos: registros de acesso, aparelho e navegador, para segurança e correção de erros.</li>
       </ul>
 
@@ -37,6 +38,8 @@ export default function PrivacidadePage() {
         <li><b>Pessoas que você autorizar:</b> quem você liberar em Equipe e acessos (o seu cliente ou contador, por exemplo) vê os dados daquela empresa em modo somente leitura, até você remover o acesso.</li>
         <li><b>Asaas:</b> processamento de pagamentos (cartão, Pix e boleto) e envio das cobranças.</li>
         <li><b>Leitura de documentos e CFO:</b> a leitura de boletos e notas e as respostas do CFO são feitas no seu próprio navegador, pelo sistema. Os arquivos e as perguntas não são enviados a serviços de inteligência artificial de terceiros.</li>
+        <li><b>Receita Federal (Sefin Nacional da NFS-e):</b> quando você emite ou cancela uma NFS-e, os dados da nota (prestador, tomador, serviço e valores) vão assinados com o seu certificado para o sistema nacional da NFS-e.</li>
+        <li><b>ViaCEP:</b> quando você informa um CEP na emissão da nota, o número é consultado para completar o endereço.</li>
         <li><b>BrasilAPI / Minha Receita:</b> quando você consulta um CNPJ, o número é enviado para buscar os dados públicos da Receita Federal.</li>
       </ul>
       <p>Alguns desses fornecedores guardam dados fora do Brasil, com cláusulas de proteção compatíveis com a LGPD (art. 33). Não vendemos dados pessoais.</p>

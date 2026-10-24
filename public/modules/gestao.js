@@ -199,7 +199,7 @@
     add(semComp.length ? 'alerta' : 'ok', semComp.length ? semComp.length + ' pagamento(s) de ' + F().nomeMes(mesAnt) + ' sem comprovante' : 'Comprovantes de ' + F().nomeMes(mesAnt) + ' em dia', semComp.length ? 'Anexe nota ou recibo nos lançamentos (acima de R$ 100). Sem documento a despesa pode não ser aceita pelo contador.' : 'Todos os pagamentos acima de R$ 100 têm anexo.', "switchView('accountant')");
     var outros = st().transactions.filter(function (t) { return t.category === 'Outros'; });
     add(outros.length ? 'alerta' : 'ok', outros.length ? outros.length + ' lançamento(s) sem categoria' : 'Lançamentos categorizados', outros.length ? 'Lançamentos em "Outros" deixam o DRE e o pacote do contador imprecisos.' : 'Nenhum lançamento em "Outros".', "switchView('finance')");
-    var notasMes = (st().nfes || []).filter(function (n) { return n.status !== 'Cancelada' && (n.dataEmissao || '').slice(0, 7) === mesAnt; });
+    var notasMes = (st().nfes || []).filter(function (n) { return n.status !== 'Cancelada' && !n.teste && (n.dataEmissao || '').slice(0, 7) === mesAnt; });
     var issRet = r2(notasMes.reduce(function (a, n) { return a + num(n.issRetido); }, 0));
     if (issRet) add('info', 'ISS retido em ' + F().nomeMes(mesAnt) + ': ' + moeda(issRet), 'Informe ao contador para não pagar o ISS em duplicidade no DAS.');
     if (regime.indexOf('simples') === 0) add(h >= '2026-11-01' ? 'info' : 'alerta', 'NFS-e no padrão nacional', 'Obrigatória para ME e EPP do Simples a partir de 01/11/2026 (Resolução CGSN nº 191/2026). Emita pelo Emissor Nacional e registre a nota aqui.', "switchView('nfe')");
