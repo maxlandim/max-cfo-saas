@@ -47,3 +47,12 @@ export function emailsAdmin() {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 }
+
+// Contas de cortesia: acesso completo (plano Escritório) sem pagar, sem acesso ao painel do administrador.
+// CORTESIA_EMAILS = e-mails separados por vírgula
+export function emailsCortesia() {
+  return (process.env.CORTESIA_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}

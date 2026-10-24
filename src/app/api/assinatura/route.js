@@ -39,6 +39,10 @@ export async function GET(req) {
 async function empresasExtras(user, body) {
   const status = await statusDoUsuario(user);
   if (status.motivo === 'admin') return NextResponse.json({ ok: true, limite: MAX_EMPRESAS, extras: 0 });
+  if (status.motivo === 'cortesia') {
+    if (body.modo === 'sincronizar') return NextResponse.json({ ok: true, limite: limiteDeEmpresas('unlimited', 0), extras: 0 });
+    return NextResponse.json({ error: 'O acesso de cortesia inclui até ' + limiteDeEmpresas('unlimited', 0) + ' empresas.' }, { status: 400 });
+  }
   const sub = (await adminDb.collection('subscriptions').doc(user.uid).get()).data() || {};
   const ativa = Boolean(sub.asaasSubscriptionId) && sub.statusAsaas === 'ACTIVE';
   const plano = sub.plano || status.plano || 'basic';
