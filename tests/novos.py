@@ -85,6 +85,12 @@ async def publicas(b):
     s, r = rest(SITE + '/api/cobrancas?wsId=x', None, None, 'GET'); log(s in (401, 503), 'cobrança pelo Asaas exige login', s)
     s, r = rest(SITE + '/api/cobrancas/webhook?ws=x', {'event': 'PAYMENT_RECEIVED'}); log(s in (401, 503), 'webhook das cobranças recusa sem token', s)
     s, r = rest(SITE + '/api/indicacao', None, None, 'GET'); log(s in (401, 503), 'indicação exige login', s)
+    s, r = rest(SITE + '/api/nfse?wsId=xxxxxxxx', None, None, 'GET'); log(s in (401, 503), 'emissor de NFS-e exige login', s)
+    s, r = rest(SITE + '/api/nfse', {'acao': 'emitir', 'wsId': 'xxxxxxxx'}); log(s in (401, 503), 'emitir NFS-e exige login', s)
+    try:
+        with urllib.request.urlopen(SITE + '/', timeout=30) as rr: home = rr.read().decode('utf-8', 'ignore')
+        log('Sim, a NFS-e de servi' in home, 'site diz que emite NFS-e', '')
+    except Exception as e: log(False, 'site diz que emite NFS-e', e)
     # Demonstração sem login
     d = await b.new_context(viewport={'width': 1366, 'height': 900}, locale='pt-BR'); dp = await d.new_page(); derr = []
     dp.on('pageerror', lambda e: derr.append(str(e)))
@@ -290,6 +296,38 @@ async def painel(b):
         log(st_cob[0] == 'pago' and st_cob[1] == 'Pix' and st_cob[2] == 'paga', 'pagamento avisado pelo Asaas dá baixa sozinho', st_cob)
         await pg.unroute('**/api/cobrancas/eventos**')
         await pg.evaluate("state.transactions = state.transactions.filter(t => t.id !== 'cobteste1')")
+        # Emissor de NFS-e (respostas do servidor simuladas; a lógica do servidor é testada em tests/nfse)
+        nf = {'pronto': False}
+        async def falso_nfse(rota):
+            req = rota.request
+            if req.method == 'GET':
+                if 'lista=1' in req.url: return await rota.fulfill(status=200, content_type='application/json', body='{"notas":[]}')
+                cert = {'titular': 'EMPRESA TESTE LTDA', 'documento': '98765432000198', 'validade': '2027-10-24T00:00:00Z', 'diasParaVencer': 365, 'vencido': False}
+                d = {'papel': 'dono', 'pronto': nf['pronto'], 'falta': [] if nf['pronto'] else ['certificado digital A1', 'dados fiscais da empresa'], 'certificado': cert if nf['pronto'] else None,
+                     'config': {'ambiente': '2', 'documento': '98765432000198', 'cMun': '5300108', 'cTribNac': '170101', 'opSimpNac': '3', 'pTotTribSN': 6, 'descricaoPadrao': 'Consultoria', 'vencimentoDias': 30, 'serie': 1} if nf['pronto'] else None}
+                return await rota.fulfill(status=200, content_type='application/json', body=json.dumps(d))
+            corpo = json.loads(req.post_data or '{}')
+            if corpo.get('acao') == 'emitir':
+                return await rota.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'chave': '5' * 50, 'numero': '12', 'idDps': 'DPS1', 'nDps': 1, 'ambiente': '2', 'alertas': [],
+                    'dados': {'valores': {'servico': 350, 'liquido': 350, 'retido': 0, 'iss': 0}, 'tomador': {'nome': 'CLIENTE NFSE'}, 'emitente': {'nome': 'EMPRESA TESTE LTDA', 'documento': '98765432000198'}, 'servico': {'descricao': 'Consultoria', 'cTribNac': '170101'}, 'dps': {'serie': '1', 'numero': '1', 'competencia': '2026-10-24'}}}))
+            await rota.fulfill(status=200, content_type='application/json', body='{"ok":true}')
+        await pg.route('**/api/nfse**', falso_nfse)
+        await pg.evaluate("switchView('nfe')"); await pg.wait_for_timeout(1500)
+        t = await pg.inner_text('#view-nfe')
+        log('Falta configurar' in t and 'certificado digital A1' in t, 'NFS-e: tela mostra o que falta configurar', t[:200])
+        await pg.evaluate("nfse.configurar()"); await pg.wait_for_timeout(1200)
+        log(await pg.is_visible('#nfseArq') and await pg.is_visible('#nfCfgServ'), 'NFS-e: configuração pede certificado e dados fiscais')
+        await pg.screenshot(path=f'{OUT}/nfse_config.png', full_page=True)
+        await pg.evaluate("fin.fechar('nfseCfgModal')")
+        nf['pronto'] = True
+        await pg.evaluate("nfse.abrirEmissao()"); await pg.wait_for_timeout(1500)
+        log(await pg.is_visible('#nfeEmitirBtn'), 'NFS-e: formulário de emissão abre')
+        await pg.fill('#nfeTDoc', '52998224725'); await pg.fill('#nfeTNome', 'Cliente NFSe'); await pg.fill('#nfeVal', '350'); await pg.click('#nfeEmitirBtn'); await pg.wait_for_timeout(1500)
+        n = await pg.evaluate("(state.nfes||[]).find(n=>n.chave==='" + '5' * 50 + "')")
+        log(n and n.get('numero') == '12' and n.get('teste') and await pg.is_visible('#nfseOkModal'), 'NFS-e: nota emitida aparece no painel', n)
+        await pg.screenshot(path=f'{OUT}/nfse_ok.png')
+        await pg.evaluate("fin.fechar('nfseOkModal'); state.nfes = state.nfes.filter(n => n.chave !== '" + '5' * 50 + "')")
+        await pg.unroute('**/api/nfse**')
         # Aprovação de contas a pagar (papel de analista simulado na tela)
         await pg.evaluate("state.transactions.push({id:'aprteste1',type:'DESPESA',desc:'Fornecedor teste',amount:90,date:'2026-10-23',vencimento:'2099-01-10',status:'pendente',category:'Fornecedores',aprovacao:'pendente',lancadoPor:'analista@exemplo.com'}); window.maxcfoPapel='analista'; switchView('pagar')")
         await pg.wait_for_timeout(800)
