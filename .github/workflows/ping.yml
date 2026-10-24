@@ -5,18 +5,13 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - shell: bash {0}
         run: |
-          # espera o deploy novo (motor de OCR servido pelo site) por até 12 minutos
-          for i in $(seq 1 48); do
-            c=$(curl -s -o /dev/null -m 10 -w "%{http_code}" https://landimadvisory.com.br/vendor/ocr/tesseract.min.js)
-            [ "$c" = "200" ] && break; sleep 15
+          S=https://landimadvisory.com.br
+          for u in $S/ $S/pricing $S/login $S/dashboard?demo=1 $S/api/saude $S/vendor/ocr/tesseract.min.js $S/modules/leitor.js http://200.141.22.185:8000/api/health; do
+            echo "::warning::$u -> $(curl -s -o /dev/null -m 20 -w '%{http_code} em %{time_total}s' "$u")"
           done
-          echo "::warning::ocr tesseract.min.js -> $c (tentativa $i)"
-          echo "::warning::lang -> $(curl -s -o /dev/null -m 15 -w '%{http_code}' https://landimadvisory.com.br/vendor/ocr/lang/por.traineddata.gz)"
-          echo "::warning::leitor.js -> $(curl -s -m 15 https://landimadvisory.com.br/modules/leitor.js | grep -c 'notaDaImagem')"
-          echo "::warning::planos 10 empresas -> $(curl -s -m 15 https://landimadvisory.com.br/pricing | grep -c 'Até 10 empresas')"
-          echo "::warning::saude -> $(curl -s -m 15 https://landimadvisory.com.br/api/saude)"
-          echo "::warning::chat 410 -> $(curl -s -o /dev/null -m 15 -w '%{http_code}' -X POST https://landimadvisory.com.br/api/chat)"
+          echo "::warning::saude: $(curl -s -m 15 $S/api/saude)"
+          echo "::warning::ssl expira: $(echo | openssl s_client -servername landimadvisory.com.br -connect landimadvisory.com.br:443 2>/dev/null | openssl x509 -noout -enddate)"
