@@ -288,7 +288,7 @@ window.initNFeModule = function () {
   nfse.abrirEmissao = async function (pre) {
     if (window.maxcfoDemo) { toast('No modo demonstração a emissão fica desligada. Crie sua conta para emitir.', 'warn'); return; }
     if (!livre()) return;
-    await carregarEmissor();
+    await carregarEmissor(!(emissor.dados && emissor.dados.pronto));
     var d = emissor.dados;
     if (!d) { toast(emissor.erro || 'Não consegui abrir o emissor agora.', 'error'); return; }
     if (!d.pronto) { if (souDono()) { toast('Antes de emitir, complete: ' + d.falta.join(', ') + '.', 'warn'); nfse.configurar(); } else toast('O dono da empresa precisa configurar a emissão primeiro.', 'warn'); return; }
