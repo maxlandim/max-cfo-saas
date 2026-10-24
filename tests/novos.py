@@ -55,6 +55,10 @@ async def publicas(b):
     await pg.goto(SITE + '/', wait_until='networkidle')
     log(await pg.locator('a[href="/consultoria"]').count() >= 2, 'página inicial tem links para a consultoria')
     log(await pg.evaluate("[...document.images].some(i=>i.src.endsWith('/logo.svg') && i.naturalWidth>0)"), 'logo aparece na página inicial')
+    try:
+        await pg.click('text=O sistema emite nota fiscal?'); await pg.wait_for_timeout(400)
+        log('Sim, a NFS-e de servi' in await pg.inner_text('body'), 'site diz que emite NFS-e')
+    except Exception as e: log(False, 'site diz que emite NFS-e', e)
     await pg.goto(SITE + '/pricing', wait_until='networkidle'); await pg.wait_for_timeout(800)
     t = (await pg.inner_text('.pl')).replace('\xa0', ' ')
     log('Escritório' in t and 'Até 10 empresas' in t and '29,90' in t, 'plano Escritório com 10 empresas e empresa adicional')
@@ -87,10 +91,6 @@ async def publicas(b):
     s, r = rest(SITE + '/api/indicacao', None, None, 'GET'); log(s in (401, 503), 'indicação exige login', s)
     s, r = rest(SITE + '/api/nfse?wsId=xxxxxxxx', None, None, 'GET'); log(s in (401, 503), 'emissor de NFS-e exige login', s)
     s, r = rest(SITE + '/api/nfse', {'acao': 'emitir', 'wsId': 'xxxxxxxx'}); log(s in (401, 503), 'emitir NFS-e exige login', s)
-    try:
-        with urllib.request.urlopen(SITE + '/', timeout=30) as rr: home = rr.read().decode('utf-8', 'ignore')
-        log('Sim, a NFS-e de servi' in home, 'site diz que emite NFS-e', '')
-    except Exception as e: log(False, 'site diz que emite NFS-e', e)
     # Demonstração sem login
     d = await b.new_context(viewport={'width': 1366, 'height': 900}, locale='pt-BR'); dp = await d.new_page(); derr = []
     dp.on('pageerror', lambda e: derr.append(str(e)))
