@@ -133,9 +133,10 @@
       { sel: [V('inventory') + ' .est-abas'], t: 'Validade dos produtos', x: 'Em ✏️ marque <b>Controlar validade</b> no produto: as entradas pedem lote e validade (no XML da nota isso vem sozinho) e as saídas tiram primeiro o que vence antes. Em <b>🗓️ Validades</b> você vê o que venceu, o que vence em 30, 60 e 90 dias, o valor em risco, e dá baixa das perdas. Os avisos também aparecem no Início.' }
     ],
     nfe: [
-      { sel: cab('nfe'), t: 'Notas fiscais', x: 'Registre as notas que a empresa emitiu. O sistema cria a conta a receber e soma o faturamento dos últimos 12 meses (o limite do Simples).' },
-      { sel: b('nfe', 'Emissor Nacional'), t: 'Emita no Emissor Nacional', x: 'A NFS-e é emitida no portal do governo. Depois, registre aqui com número, valor e cliente.' },
-      { sel: kpis('nfe'), t: 'Faturamento', x: 'O total do mês e dos últimos 12 meses.' }
+      { sel: cab('nfe'), t: 'Notas fiscais', x: 'Emita a NFS-e no padrão nacional direto daqui. Cada nota cria a conta a receber e soma no faturamento dos últimos 12 meses (o limite do Simples).' },
+      { sel: b('nfe', 'Configurar emissão'), t: 'Configure uma vez', x: 'Envie o certificado digital A1 da empresa (.pfx), que fica cifrado no servidor, e informe os dados fiscais: município, Simples Nacional e o código do serviço. Comece no ambiente de <b>testes</b> e, quando estiver tudo certo, mude para produção.' },
+      { sel: b('nfe', 'Emitir NFS-e'), t: 'Emita a nota', x: 'Informe o tomador (o CNPJ busca os dados na Receita), a descrição e o valor. A nota sai autorizada pela Sefin Nacional, com DANFSe para imprimir e o XML oficial.' },
+      { sel: kpis('nfe'), t: 'Faturamento', x: 'O total do mês e dos últimos 12 meses. Notas de teste e canceladas não entram.' }
     ],
     tributario: [
       { sel: ['#tributarioFrame'], t: 'Impostos e reforma', x: 'Compare quanto a empresa pagaria no Simples, no Lucro Presumido e no Lucro Real, e veja como a reforma tributária (IBS e CBS) muda o preço e a margem. Use os números do seu faturamento.' }

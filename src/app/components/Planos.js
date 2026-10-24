@@ -9,7 +9,7 @@ export const PLANOS_VITRINE = [
   { id: 'basic', nome: 'Básico', valor: 7990, fundador: 4990, empresas: '1 empresa', para: 'O financeiro da empresa em ordem.',
     itens: ['Contas a receber e a pagar', 'Bancos, caixa e cartão', 'Fluxo de caixa de 90 dias', 'DRE e centro de custo', 'Importação do extrato e de planilhas', 'Cobrança por Pix no WhatsApp', 'Lembrete de vencimento por e-mail'] },
   { id: 'intermediate', nome: 'Intermediário', valor: 14990, fundador: 12990, empresas: 'Até 3 empresas', para: 'Para quem vende, emite nota e quer automatizar.', antes: 'Tudo do Básico, mais:',
-    itens: ['Leitura automática de boleto e nota', 'Estoque pela nota fiscal (XML ou PDF)', 'Relatório mensal em PDF', 'Orçamentos, ordens de serviço e contratos', 'Funil de vendas, comissões e estoque', 'Notas fiscais e pacote do contador'] },
+    itens: ['Leitura automática de boleto e nota', 'Estoque pela nota fiscal (XML ou PDF)', 'Relatório mensal em PDF', 'Orçamentos, ordens de serviço e contratos', 'Funil de vendas, comissões e estoque', 'Emissão de NFS-e (padrão nacional) e pacote do contador'] },
   { id: 'complete', nome: 'Completo', valor: 34990, fundador: 26990, empresas: 'Até 3 empresas', para: 'Para BPO financeiro e escritórios.', destaque: true, antes: 'Tudo do Intermediário, mais:',
     itens: ['Indicadores de todas as empresas (BPO)', 'Acesso de consulta para cliente e contador', 'Relatório com a sua marca e logo', 'CFO que responde com os seus números', 'Simulador de impostos e da reforma', 'Funcionários e folha, bens e equipe'] },
   { id: 'unlimited', nome: 'Escritório', valor: 59990, fundador: 29990, empresas: 'Até 10 empresas', para: 'Para escritórios e BPOs com muitas empresas.', antes: 'Tudo do Completo, mais:',

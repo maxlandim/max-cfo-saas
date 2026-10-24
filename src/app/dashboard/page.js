@@ -1425,46 +1425,6 @@ const PAINEL_HTML = `\n\n<!-- SIDEBAR -->
   </div>
 </div>
 
-<div class="modal-overlay" id="nfeModal" role="dialog" aria-modal="true">
-  <div class="modal-box">
-    <div class="modal-head">
-      <h2 class="modal-title">🧾 Emitir NF-e (Serviço)</h2>
-      <button class="modal-x" onclick="closeModal('nfeModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-field span-2">
-          <label class="form-label">Tomador do Serviço (Cliente)</label>
-          <input type="text" class="form-input" id="nfeCliente" required>
-        </div>
-        <div class="form-field span-2">
-          <label class="form-label">Certificado Digital A1 (.pfx)</label>
-          <div style="display:flex;gap:10px;align-items:center;">
-             <input type="file" class="form-input" id="nfeCertificado" accept=".pfx,.p12" style="flex:1">
-             <span id="nfeCertStatus" class="chip" style="display:none;background:var(--success);color:white">OK</span>
-          </div>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Descrição do Serviço</label>
-          <input type="text" class="form-input" id="nfeServico" required>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Valor (R$)</label>
-          <input type="number" step="0.01" class="form-input" id="nfeValor" required>
-        </div>
-      </div>
-      <div id="nfeSpinner" style="display:none; text-align:center; padding: 20px;">
-         <div style="color:var(--primary); margin-bottom:10px;">⏳</div>
-         <div id="nfeStatusText" style="color:var(--text-muted); font-size:14px;">Processando...</div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button type="button" class="btn-ghost" onclick="closeModal('nfeModal')">Cancelar</button>
-      <button type="button" class="btn-primary" onclick="window.gerarNFe()">Emitir Nota Fiscal</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="teamModal" role="dialog" aria-modal="true">
   <div class="modal-box">
     <div class="modal-head">
