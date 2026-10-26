@@ -13,6 +13,15 @@ const nextConfig = {
     // O Firebase Admin roda só no servidor e não deve ser empacotado
     serverComponentsExternalPackages: ['firebase-admin'],
   },
+  // Login com Google pelo próprio domínio: a janela do Google abre em landimadvisory.com.br/__/auth/...
+  // e não em max-cfo-saas.firebaseapp.com. Só passa a valer quando NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  // aponta para o domínio do site (veja LANCAMENTO.md, seção Firebase).
+  async rewrites() {
+    return [
+      { source: '/__/auth/:path*', destination: 'https://max-cfo-saas.firebaseapp.com/__/auth/:path*' },
+      { source: '/__/firebase/:path*', destination: 'https://max-cfo-saas.firebaseapp.com/__/firebase/:path*' },
+    ];
+  },
   async headers() {
     return [
       {

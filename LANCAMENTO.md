@@ -96,6 +96,7 @@ Enquanto `FIREBASE_SERVICE_ACCOUNT` não estiver cadastrada, o painel abre para 
 
 1. **Authentication → Método de login:** ative E-mail/senha e Google.
 2. **Authentication → Configurações → Domínios autorizados:** inclua `max-cfo-saas.vercel.app` e o seu domínio próprio, se tiver.
+   - **Login com Google no próprio domínio** (a janela mostra `landimadvisory.com.br`, não `max-cfo-saas.firebaseapp.com`): no Google Cloud (projeto max-cfo-saas → APIs e serviços → Credenciais → Web client), inclua a origem `https://landimadvisory.com.br` e o redirecionamento `https://landimadvisory.com.br/__/auth/handler`. Depois cadastre `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=landimadvisory.com.br` no servidor (vale no build) e publique de novo. O `next.config.mjs` já encaminha `/__/auth` para o Firebase.
 3. **Firestore → Regras:** apague o conteúdo, cole o arquivo `firestore.rules` e clique em Publicar.
 4. **Storage → Regras:** cole o arquivo `storage.rules` e publique.
 
