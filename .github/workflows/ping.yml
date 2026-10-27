@@ -10,7 +10,7 @@ jobs:
       - shell: bash {0}
         run: |
           S=https://landimadvisory.com.br
-          for u in $S/ $S/pricing $S/login $S/dashboard?demo=1 $S/api/saude $S/vendor/ocr/tesseract.min.js $S/modules/leitor.js http://200.141.22.185:8000/api/health; do
+          for u in $S/ $S/api/saude; do
             echo "::warning::$u -> $(curl -s -o /dev/null -m 20 -w '%{http_code} em %{time_total}s' "$u")"
           done
           echo "::warning::api/nfse (401 = versão nova no ar, 404 = deploy ainda não feito) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$S/api/nfse?wsId=xxxxxxxx")"
