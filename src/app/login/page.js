@@ -7,6 +7,7 @@ import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, ge
 import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import SeletorIdioma from '../components/SeletorIdioma';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -81,6 +82,7 @@ export default function LoginPage() {
           <img src="/logo.svg" alt="" width="32" height="32" style={{ borderRadius: 8, display: "block" }} />
           <span style={{ fontSize: '20px', fontWeight: '800', color: '#fff' }}>Landim Advisory</span>
         </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><SeletorIdioma escuro /></div>
         <h1 style={{ textAlign: 'center' }}>Bem-vindo de volta</h1>
         <p style={{ textAlign: 'center' }}>Acesse seu painel financeiro executivo</p>
         

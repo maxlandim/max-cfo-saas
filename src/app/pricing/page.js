@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { authFetch } from '../../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { CardsPlanos, INCLUSO, ESTILO_PLANOS, PLANOS_VITRINE } from '../components/Planos';
+import SeletorIdioma from '../components/SeletorIdioma';
 
 const digitos = (v) => String(v || '').replace(/\D/g, '');
 // Máscara de CPF (000.000.000-00) ou CNPJ (00.000.000/0000-00)
@@ -90,7 +91,7 @@ export default function PricingPage() {
       <style dangerouslySetInnerHTML={{ __html: ESTILO_PLANOS + ESTILO }} />
       <header className="pr-topo">
         <Link href="/" className="pr-marca"><img src="/logo.svg" alt="" className="pr-logo" width="34" height="34" />Landim Advisory</Link>
-        {user ? <Link href="/dashboard" className="pr-link">Voltar ao painel</Link> : <Link href="/login" className="pr-link">Entrar</Link>}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}><SeletorIdioma />{user ? <Link href="/dashboard" className="pr-link">Voltar ao painel</Link> : <Link href="/login" className="pr-link">Entrar</Link>}</span>
       </header>
 
       <main className="pr-main">

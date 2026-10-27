@@ -117,6 +117,7 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 // INIT
 // ════════════════════════════════════════════
 var initMaxCfoApp = async () => {
+  try { const si = document.getElementById('topbarIdioma'); if (si && window.laIdioma) si.value = window.laIdioma.atual(); } catch (e) { }
   // O painel chama esta função depois de carregar os scripts; evita iniciar duas vezes
   if (window.__maxcfoIniciado) return;
   window.__maxcfoIniciado = true;

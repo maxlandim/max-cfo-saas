@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Formulario from './Formulario';
 import DadosEmpresa from '../components/DadosEmpresa';
+import SeletorIdioma from '../components/SeletorIdioma';
 
 export const metadata = {
   title: 'Consultoria financeira e BPO — Landim Advisory',
@@ -59,7 +60,8 @@ export default function ConsultoriaPage() {
             <a href="#como">Como trabalhamos</a>
             <Link href="/">Sistema</Link>
           </nav>
-          <a href={WHATS} target="_blank" rel="noopener" className="cs-btn cs-btn-ouro cs-btn-sm">Falar com um consultor</a>
+          <SeletorIdioma escuro style={{ marginLeft: 'auto' }} />
+          <a href={WHATS} target="_blank" rel="noopener" className="cs-btn cs-btn-ouro cs-btn-sm" style={{ marginLeft: 0 }}>Falar com um consultor</a>
         </div>
       </header>
 
@@ -220,5 +222,5 @@ const ESTILO = `
 .cs-rodape nav{display:flex;gap:18px;flex-wrap:wrap;margin-left:auto}
 .cs-rodape nav a{color:#4B5565;font-size:14px}
 @media (max-width:960px){.cs-hero-in,.cs-duas,.cs-contato-in{grid-template-columns:1fr}.cs h1{font-size:38px}.cs-passos{grid-template-columns:1fr 1fr}.cs-menu{display:none}}
-@media (max-width:640px){.cs h1{font-size:31px}.cs-sub{font-size:17px}.cs h2{font-size:27px}.cs-hero{padding:40px 0 52px}.cs-grade,.cs-passos,.cs-form .cs-duplo{grid-template-columns:1fr}.cs-sec{padding:52px 0}.cs-ctas .cs-btn{width:100%}.cs-topo .cs-btn{padding:8px 12px;font-size:13px}}
+@media (max-width:640px){.cs h1{font-size:31px}.cs-sub{font-size:17px}.cs h2{font-size:27px}.cs-hero{padding:40px 0 52px}.cs-grade,.cs-passos,.cs-form .cs-duplo{grid-template-columns:1fr}.cs-sec{padding:52px 0}.cs-ctas .cs-btn{width:100%}.cs-topo .cs-btn{padding:8px 10px;font-size:12.5px;white-space:normal;text-align:center;line-height:1.2;max-width:128px}.cs-topo-in{gap:10px}}
 `;

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
+import SeletorIdioma from '../components/SeletorIdioma';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -73,6 +74,7 @@ export default function RegisterPage() {
           <img src="/logo.svg" alt="" width="32" height="32" style={{ borderRadius: 8, display: "block" }} />
           <span style={{ fontSize: '20px', fontWeight: '800', color: '#fff' }}>Landim Advisory</span>
         </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><SeletorIdioma escuro /></div>
         <h1 style={{ textAlign: 'center' }}>Comece Grátis</h1>
         <p style={{ textAlign: 'center' }}>Crie sua conta e tenha um CFO Virtual</p>
 
