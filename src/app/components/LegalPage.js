@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import DadosEmpresa from './DadosEmpresa';
+import SeletorIdioma from './SeletorIdioma';
 
 // Página de texto legal no visual escuro da Landim Advisory.
 export default function LegalPage({ titulo, atualizado, children }) {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0f1e', color: '#E8EFF8', padding: '48px 20px', fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
       <main style={{ maxWidth: 760, margin: '0 auto', lineHeight: 1.7, fontSize: 15 }}>
-        <Link href="/" style={{ color: '#C5A059', textDecoration: 'none', fontWeight: 700 }}>Landim Advisory</Link>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}><Link href="/" style={{ color: '#C5A059', textDecoration: 'none', fontWeight: 700 }}>Landim Advisory</Link><SeletorIdioma escuro /></div>
         <h1 style={{ fontSize: 32, margin: '24px 0 4px', lineHeight: 1.2 }}>{titulo}</h1>
         <p style={{ color: '#8899B0', marginBottom: 32, fontSize: 13 }}>Última atualização: {atualizado}</p>
         <div className="legal">{children}</div>

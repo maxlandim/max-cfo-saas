@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Formulario from './Formulario';
 import DadosEmpresa from '../components/DadosEmpresa';
+import SeletorIdioma from '../components/SeletorIdioma';
 
 export const metadata = {
   title: 'Consultoria financeira e BPO — Landim Advisory',
@@ -59,7 +60,8 @@ export default function ConsultoriaPage() {
             <a href="#como">Como trabalhamos</a>
             <Link href="/">Sistema</Link>
           </nav>
-          <a href={WHATS} target="_blank" rel="noopener" className="cs-btn cs-btn-ouro cs-btn-sm">Falar com um consultor</a>
+          <SeletorIdioma escuro style={{ marginLeft: 'auto' }} />
+          <a href={WHATS} target="_blank" rel="noopener" className="cs-btn cs-btn-ouro cs-btn-sm" style={{ marginLeft: 0 }}>Falar com um consultor</a>
         </div>
       </header>
 

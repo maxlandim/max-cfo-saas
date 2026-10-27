@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { PLANOS_VITRINE, reais } from '../components/Planos';
+import SeletorIdioma from '../components/SeletorIdioma';
 
 const SITUACAO = {
   PENDING: ['Aguardando pagamento', 'amarelo'], OVERDUE: ['Vencida', 'vermelho'], RECEIVED: ['Paga', 'verde'], CONFIRMED: ['Paga', 'verde'],
@@ -57,7 +58,7 @@ export default function MinhaAssinatura() {
       <style dangerouslySetInnerHTML={{ __html: ESTILO }} />
       <header className="ma-topo">
         <Link href="/" className="ma-marca"><img src="/logo.svg" alt="" width="34" height="34" />Landim Advisory</Link>
-        <Link href="/dashboard" className="ma-link">Voltar ao painel</Link>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}><SeletorIdioma /><Link href="/dashboard" className="ma-link">Voltar ao painel</Link></span>
       </header>
       <main className="ma-main">
         <h1>Minha assinatura</h1>

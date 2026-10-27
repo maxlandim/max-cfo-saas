@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CardsPlanos, INCLUSO, ESTILO_PLANOS, useFundadores } from './components/Planos';
 import DadosEmpresa from './components/DadosEmpresa';
+import SeletorIdioma from './components/SeletorIdioma';
 
 const WHATS = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Quero saber mais sobre a Landim Advisory.');
 
@@ -55,6 +56,7 @@ export default function LandingPage() {
             <Link href="/consultoria">Consultoria</Link>
           </nav>
           <div className="lp-topo-acoes">
+            <SeletorIdioma />
             <Link href="/login" className="lp-entrar">Entrar</Link>
             <Link href="/register" className="lp-btn lp-btn-p lp-btn-sm">Testar grátis</Link>
           </div>
