@@ -301,5 +301,5 @@ const ESTILO = `
 .lp-rodape nav a{color:#4B5565;font-size:14px}
 .lp-rodape small{color:#7B8494;width:100%;text-align:right}
 @media (max-width:960px){.lp-hero-in{grid-template-columns:1fr}.lp h1{font-size:40px}.lp-grade{grid-template-columns:1fr 1fr}.lp-menu{display:none}}
-@media (max-width:640px){.lp h1{font-size:32px}.lp-sub{font-size:17px}.lp h2{font-size:28px}.lp-hero{padding:36px 0 48px}.lp-passos,.lp-grade,.lp-paraquem{grid-template-columns:1fr}.lp-sec{padding:52px 0}.lp-btn{width:100%}.lp-btn-sm{width:auto}.lp-entrar{display:none}.lp-kpis b{font-size:18px}.lp-rodape small{text-align:left}}
+@media (max-width:640px){.lp h1{font-size:32px}.lp-sub{font-size:17px}.lp h2{font-size:28px}.lp-hero{padding:36px 0 48px}.lp-passos,.lp-grade,.lp-paraquem{grid-template-columns:1fr}.lp-sec{padding:52px 0}.lp-btn{width:100%}.lp-btn-sm{width:auto}.lp-entrar{display:none}.lp-topo-in{gap:10px}.lp-topo-acoes{gap:8px}.lp-topo-acoes .lp-btn-sm{padding:8px 12px;font-size:13px}.lp-kpis b{font-size:18px}.lp-rodape small{text-align:left}}
 `;

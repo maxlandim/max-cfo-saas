@@ -20,8 +20,11 @@
     try { l = localStorage.getItem(CHAVE) || ''; } catch (e) { /* sem armazenamento */ }
     try { var q = new URLSearchParams(location.search).get('lang'); if (q && LINGUAS[q]) { l = q; try { localStorage.setItem(CHAVE, q); } catch (e) { } } } catch (e) { }
     if (LINGUAS[l]) return l;
-    var nav = String((navigator.languages && navigator.languages[0]) || navigator.language || 'pt').toLowerCase();
-    if (nav.indexOf('pt') === 0) return 'pt';
+    // Sem escolha salva: segue o navegador, mas quem tem português em qualquer posição da lista fica em português
+    // (muita gente no Brasil usa o navegador em inglês).
+    var todas = [].concat(navigator.languages || [], navigator.language || []).map(function (x) { return String(x).toLowerCase(); });
+    if (todas.some(function (x) { return x.indexOf('pt') === 0; })) return 'pt';
+    var nav = todas[0] || 'pt';
     if (nav.indexOf('es') === 0) return 'es';
     if (nav.indexOf('en') === 0) return 'en';
     return 'pt';
@@ -61,6 +64,9 @@
     if (vals.length && dic[mod] != null) return dic[mod].replace(/\{(\d+)\}/g, function (_, i) { return vals[+i] != null ? vals[+i] : ''; });
     var dt = datas(chave);
     if (dt != null) return dt;
+    // saudação com o nome da pessoa ("Boa tarde, Maria!")
+    var sd = /^(Bom dia|Boa tarde|Boa noite), (.+?)([!.]?)$/.exec(chave);
+    if (sd && dic[sd[1]] != null) return dic[sd[1]] + ', ' + (dic[sd[2]] != null ? dic[sd[2]] : sd[2]) + sd[3];
     // partes separadas por " · " (ex.: "Fornecedor · Categoria"): traduz o que der de cada parte
     if (chave.indexOf(' · ') > 0) {
       var partes = chave.split(' · '), mudou = false;
