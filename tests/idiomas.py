@@ -38,6 +38,22 @@ async def main():
             log(not erros, f'{ling}: sem erros de JavaScript', erros[:3])
             log(not hidr, f'{ling}: sem erro de hidratação do React', hidr[:2])
             await ctx.close()
+        # celular: o topo com o seletor não pode criar rolagem lateral, em nenhuma língua
+        for ling in ['pt', 'en', 'es']:
+            ctx = await b.new_context(viewport={'width': 390, 'height': 844}, locale='en-US'); pg = await ctx.new_page()
+            for i, rota in enumerate(['/', '/consultoria', '/pricing', '/login', '/register', '/termos']):
+                await pg.goto(SITE + rota + ('?lang=' + ling if i == 0 else ''), wait_until='networkidle'); await pg.wait_for_timeout(900)
+                w = await pg.evaluate('document.documentElement.scrollWidth')
+                largos = await pg.evaluate("[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>392).slice(0,4).map(e=>e.tagName+'.'+(e.className||'').toString().slice(0,30)+' '+Math.round(e.getBoundingClientRect().right))")
+                log(w <= 392, f'{ling}: celular {rota} sem rolagem lateral ({w}px)', largos)
+                if rota in ('/', '/consultoria'): await pg.screenshot(path=f'{OUT}/idioma_cel_{ling}_{rota.strip("/") or "inicio"}.png')
+            await ctx.close()
+        # navegador em inglês com português na lista fica em português
+        ctx = await b.new_context(viewport={'width': 1366, 'height': 900}, locale='en-US', extra_http_headers={'Accept-Language': 'en-US,pt-BR;q=0.8'})
+        await ctx.add_init_script("Object.defineProperty(navigator,'languages',{get:()=>['en-US','pt-BR']})")
+        pg = await ctx.new_page(); await pg.goto(SITE + '/', wait_until='networkidle'); await pg.wait_for_timeout(800)
+        l1 = await pg.evaluate('document.documentElement.lang'); log(l1 == 'pt-BR', 'navegador en-US com pt-BR na lista abre em português', l1)
+        await ctx.close()
         # português continua normal
         ctx = await b.new_context(viewport={'width': 1366, 'height': 900}); pg = await ctx.new_page()
         await pg.goto(SITE + '/?lang=pt', wait_until='networkidle'); await pg.wait_for_timeout(800)

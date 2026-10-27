@@ -51,7 +51,7 @@ def resumo_exemplo():
     return {'geradoEm': datetime.now(timezone.utc).isoformat(), 'hoje': hoje.isoformat(), 'contas': contas, 'dias': dias, 'precos': {'basic': 79.9, 'intermediate': 149.9, 'complete': 349.9, 'unlimited': 599.9}, 'diasDeTeste': 7, 'fundador': {'usados': 2, 'vagas': 50}}
 
 async def publicas(b):
-    pg = await b.new_page(viewport={'width': 1366, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg = await b.new_page(viewport={'width': 1366, 'height': 900}, locale='pt-BR'); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     await pg.goto(SITE + '/', wait_until='networkidle')
     log(await pg.locator('a[href="/consultoria"]').count() >= 2, 'página inicial tem links para a consultoria')
     log(await pg.evaluate("[...document.images].some(i=>i.src.endsWith('/logo.svg') && i.naturalWidth>0)"), 'logo aparece na página inicial')
@@ -78,7 +78,7 @@ async def publicas(b):
     from urllib.parse import unquote
     log('wa.me/5561992105889' in u and 'Planejamento tributário' in unquote(u) and 'Empresa XPTO' in unquote(u), 'formulário abre o WhatsApp com a mensagem pronta', unquote(u)[:160])
     await pg.screenshot(path=f'{OUT}/consultoria_pc.png', full_page=True)
-    m = await b.new_page(viewport={'width': 390, 'height': 844}); await m.goto(SITE + '/consultoria', wait_until='networkidle')
+    m = await b.new_page(viewport={'width': 390, 'height': 844}, locale='pt-BR'); await m.goto(SITE + '/consultoria', wait_until='networkidle')
     w = await m.evaluate('document.documentElement.scrollWidth'); log(w <= 392, 'consultoria no celular sem rolagem lateral', w)
     await m.screenshot(path=f'{OUT}/consultoria_cel.png', full_page=True)
     log(not errs, 'sem erros de JavaScript nas páginas públicas', errs[:2])
