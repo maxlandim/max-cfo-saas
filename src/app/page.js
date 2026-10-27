@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CardsPlanos, INCLUSO, ESTILO_PLANOS, useFundadores } from './components/Planos';
+import DadosEmpresa from './components/DadosEmpresa';
 
 const WHATS = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Quero saber mais sobre a Landim Advisory.');
 
@@ -206,6 +207,7 @@ export default function LandingPage() {
           <span className="lp-marca"><img src="/logo.svg" alt="" className="lp-logo" width="34" height="34" />Landim Advisory</span>
           <nav><Link href="/consultoria">Consultoria</Link><Link href="/pricing">Planos</Link><Link href="/termos">Termos de Uso</Link><Link href="/privacidade">Privacidade</Link><a href={WHATS} target="_blank" rel="noopener">Contato</a></nav>
           <small>© {new Date().getFullYear()} Landim Advisory</small>
+          <DadosEmpresa />
         </div>
       </footer>
     </div>

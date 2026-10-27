@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Formulario from './Formulario';
+import DadosEmpresa from '../components/DadosEmpresa';
 
 export const metadata = {
   title: 'Consultoria financeira e BPO — Landim Advisory',
@@ -143,6 +144,7 @@ export default function ConsultoriaPage() {
         <div className="cs-cx cs-rodape-in">
           <span className="cs-marca"><img src="/logo.svg" alt="" width="28" height="28" />Landim Advisory</span>
           <nav><Link href="/">Sistema</Link><Link href="/pricing">Planos</Link><Link href="/termos">Termos de Uso</Link><Link href="/privacidade">Privacidade</Link></nav>
+          <DadosEmpresa />
         </div>
       </footer>
     </div>

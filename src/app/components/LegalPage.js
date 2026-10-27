@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import DadosEmpresa from './DadosEmpresa';
 
 // Página de texto legal no visual escuro da Landim Advisory.
 export default function LegalPage({ titulo, atualizado, children }) {
@@ -12,6 +13,7 @@ export default function LegalPage({ titulo, atualizado, children }) {
         <p style={{ marginTop: 48, color: '#8899B0', fontSize: 13 }}>
           <Link href="/termos" style={{ color: '#8899B0' }}>Termos de Uso</Link> · <Link href="/privacidade" style={{ color: '#8899B0' }}>Política de Privacidade</Link> · <Link href="/" style={{ color: '#8899B0' }}>Início</Link>
         </p>
+        <DadosEmpresa cor="#8899B0" style={{ marginTop: 8 }} />
       </main>
       <style>{`
         .legal h2 { font-size: 19px; margin: 32px 0 8px; color: #fff; }
