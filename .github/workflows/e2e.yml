@@ -59,6 +59,9 @@ jobs:
       - run: python nota_ia.py 2>&1 | tee -a saida_log.txt
         working-directory: tests
         continue-on-error: true
+      - run: python idiomas.py 2>&1 | tee -a saida_log.txt
+        working-directory: tests
+        continue-on-error: true
       - name: Emissor de NFS-e (Node 24, certificado, DPS no XSD oficial, assinatura, Sefin)
         if: steps.alvo.outputs.ref != ''
         run: pip install lxml cryptography > /dev/null && APP=$GITHUB_WORKSPACE/app bash nfse/roda.sh 2>&1 | tee -a saida_log.txt
