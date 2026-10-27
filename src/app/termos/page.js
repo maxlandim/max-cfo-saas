@@ -1,12 +1,13 @@
 import LegalPage from '../components/LegalPage';
+import { EMPRESA } from '../../lib/empresa';
 
 export const metadata = { title: 'Termos de Uso — Landim Advisory' };
 
 export default function TermosPage() {
   return (
-    <LegalPage titulo="Termos de Uso" atualizado="outubro de 2026">
+    <LegalPage titulo="Termos de Uso" atualizado="27 de outubro de 2026">
       <h2>1. Quem somos</h2>
-      <p>A Landim Advisory é uma plataforma on-line de gestão financeira para empresas, operada por <span className="pendente">[RAZÃO SOCIAL]</span>, inscrita no CNPJ <span className="pendente">[CNPJ]</span>, com sede em Brasília-DF. Contato: maxpaeslandim@gmail.com ou WhatsApp (61) 99210-5889.</p>
+      <p>A Landim Advisory é uma plataforma on-line de gestão financeira para empresas, operada por {EMPRESA.razao}, inscrita no CNPJ {EMPRESA.cnpj}, com sede em {EMPRESA.endereco}. Contato: {EMPRESA.email} ou WhatsApp {EMPRESA.whatsapp}.</p>
 
       <h2>2. Aceite</h2>
       <p>Ao criar uma conta ou usar a plataforma, você declara ter lido e aceito estes Termos e a <a href="/privacidade">Política de Privacidade</a>. Se usar a Landim Advisory em nome de uma empresa, você declara ter poderes para aceitá-los em nome dela.</p>
