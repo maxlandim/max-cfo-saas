@@ -21,11 +21,5 @@ jobs:
           for B in max-cfo-saas.appspot.com max-cfo-saas.firebasestorage.app; do
             echo "::warning::storage $B listar sem login (403 = fechado, 404 = bucket não existe) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "https://firebasestorage.googleapis.com/v0/b/$B/o")"
           done
+          echo "::warning::cadastro novo no ar (1 = sim): $(curl -s -m 20 $S/register | grep -c 'Crie sua conta em 1 minuto') · campo CPF no cadastro (0 = saiu): $(curl -s -m 20 $S/register | grep -c '000.000.000-00')"
           echo "::warning::erro do firestore: $(curl -s -m 20 "$F/workspaces" | tr -d '\n' | cut -c1-200)"
-      - uses: actions/checkout@v4
-        with:
-          ref: ping
-      - shell: bash {0}
-        run: |
-          pip install -q playwright >/dev/null 2>&1 && python -m playwright install --with-deps chromium >/dev/null 2>&1
-          python diag/register.py
