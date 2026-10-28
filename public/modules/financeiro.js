@@ -1175,6 +1175,7 @@
         ? (t.transferenciaId ? '' : '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎ Estornar</button><button class="fin-btn" onclick="fin.recibo(\'' + t.id + '\')" title="Recibo">🧾 Recibo</button>')
         : F.botaoAprovar(t) + (F.podePagar(t) ? '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' : '') + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')">💠 Cobrar</button>' : '');
       if (!t.transferenciaId) acoes += '<button class="fin-btn" onclick="fin.duplicar(\'' + t.id + '\')" title="Duplicar">⧉</button>';
+      if (window.nfse && nfse.botaoConta) acoes += nfse.botaoConta(t);
       return '<tr>' +
         '<td>' + (sit === 'pago' ? '' : '<input type="checkbox" class="fin-sel" value="' + t.id + '" aria-label="Selecionar">') + '</td>' +
         '<td style="white-space:nowrap">' + F.dataBR(sit === 'pago' ? t.pagoEm : t.vencimento) + '</td>' +
@@ -1214,6 +1215,7 @@
       ? (t.transferenciaId ? '' : '<button class="fin-btn" onclick="fin.estornar(\'' + t.id + '\')" title="Voltar para em aberto">↩︎</button><button class="fin-btn" onclick="fin.recibo(\'' + t.id + '\')" title="Recibo">🧾</button>')
       : F.botaoAprovar(t) + (F.podePagar(t) ? '<button class="fin-btn ok" onclick="fin.baixar(\'' + t.id + '\')">✓ ' + (rec ? 'Receber' : 'Pagar') + '</button>' : '') + (rec ? '<button class="fin-btn gold" onclick="fin.cobrar(\'' + t.id + '\')" title="Cobrar por Pix e WhatsApp">💠</button>' : '');
     if (!t.transferenciaId) acoes += '<button class="fin-btn" onclick="fin.duplicar(\'' + t.id + '\')" title="Duplicar">⧉</button>';
+    if (window.nfse && nfse.botaoConta) acoes += nfse.botaoConta(t);
     return '<tr><td>' + (sit === 'pago' ? '' : '<input type="checkbox" class="fin-sel" value="' + t.id + '" aria-label="Selecionar">') + '</td>' +
       '<td style="white-space:nowrap">' + F.dataBR(sit === 'pago' ? t.pagoEm : t.vencimento) + '</td>' +
       '<td><div style="font-weight:600">' + esc(t.desc) + (t.parcela ? ' <span class="fin-sub">(' + esc(t.parcela) + ')</span>' : '') + '</div><div class="fin-sub">' + esc([t.contato, t.category, t.centroCusto].filter(Boolean).join(' · ')) + '</div>' + (t.notes ? '<div class="fin-sub" style="font-style:italic">' + esc(String(t.notes).slice(0, 90)) + '</div>' : '') + '</td>' +

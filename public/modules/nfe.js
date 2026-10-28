@@ -101,6 +101,7 @@ window.initNFeModule = function () {
       var proprio = n.origem === 'emissor';
       var acoes = '';
       if (proprio) acoes += '<button class="fin-btn" onclick="nfse.danfse(\'' + esc(n.id) + '\')">🖨️ DANFSe</button><button class="fin-btn" onclick="nfse.xml(\'' + esc(n.id) + '\')">XML</button>';
+      if (proprio && !window.maxcfoLeitura) acoes += '<button class="fin-btn" onclick="nfse.repetir(\'' + esc(n.id) + '\')" title="Emitir outra nota igual">⧉ Repetir</button>';
       else if (n.anexo) acoes += '<a class="fin-btn" href="' + esc(n.anexo) + '" target="_blank" rel="noopener">📎 PDF</a>';
       if (rec && rec.status !== 'pago' && !cancel) acoes += '<button class="fin-btn gold" onclick="fin.cobrar(\'' + esc(rec.id) + '\')">💠 Cobrar</button>';
       if (!cancel && !window.maxcfoLeitura) acoes += '<button class="fin-btn" onclick="cancelarNFe(\'' + esc(n.id) + '\')">Cancelar</button>';
@@ -109,7 +110,7 @@ window.initNFeModule = function () {
         : rec ? '<span class="fin-sit ' + F().rotuloSituacao(rec).cls + '">' + F().rotuloSituacao(rec).txt + '</span>'
         : '<span class="fin-sit ok">' + (proprio ? 'Autorizada' : 'Registrada') + '</span>';
       return '<tr' + (cancel ? ' style="opacity:.55"' : '') + '><td><strong>' + esc(n.numero || '—') + '</strong><div class="fin-sub">' + esc(n.modelo || 'NFS-e') + (proprio ? ' · emitida aqui' : '') + '</div></td>' +
-        '<td><div style="font-weight:600">' + esc(n.tomador) + '</div><div class="fin-sub">' + esc(mascaraDoc(n.cnpj)) + '</div></td>' +
+        '<td><div style="font-weight:600">' + esc(n.cliente || n.tomador) + '</div><div class="fin-sub">' + (n.cliente ? 'consumidor não identificado' : esc(mascaraDoc(n.cnpj))) + '</div></td>' +
         '<td>' + esc(n.servico) + '</td><td style="font-weight:700;white-space:nowrap">' + moeda(n.valor) + (n.issRetido ? '<div class="fin-sub">ISS retido ' + moeda(n.issRetido) + '</div>' : '') + '</td>' +
         '<td style="white-space:nowrap">' + dataBR(n.dataEmissao || n.data) + '</td>' +
         '<td>' + situacao + '</td><td><div class="fin-acoes">' + acoes + '</div></td></tr>';
@@ -119,7 +120,7 @@ window.initNFeModule = function () {
     v.innerHTML = '' +
       '<div class="page-header"><div class="page-header-text"><h1>Notas Fiscais</h1><p class="page-subtitle">Emissão de NFS-e no padrão nacional, com conta a receber e faturamento de 12 meses</p></div>' +
       '<div class="page-header-actions">' + (window.maxcfoLeitura ? '' : '<button class="btn-secondary" onclick="nfse.configurar()">⚙️ Configurar emissão</button><button class="btn-secondary" onclick="openNFeModal()">Registrar nota de outro sistema</button>') + botaoEmitir + '</div></div>' +
-      cartaoEmissor(d) +
+      cartaoEmissor(d) + cartaoSemNota() +
       '<div class="fin-kpis"><div class="fin-kpi2"><div class="v">' + doMes.length + '</div><div class="l">Notas no mês</div></div>' +
       '<div class="fin-kpi2"><div class="v fin-pos">' + moeda(doMes.reduce(function (a, n) { return a + (n.valor || 0); }, 0)) + '</div><div class="l">Faturado no mês</div></div>' +
       '<div class="fin-kpi2"><div class="v" style="color:var(--gold)">' + moeda(rbt12) + '</div><div class="l">Faturamento 12 meses (RBT12)</div><div class="s">base do Simples Nacional · limite R$ 4,8 milhões</div></div></div>' +
@@ -285,6 +286,19 @@ window.initNFeModule = function () {
   };
 
   // ---------- emissão ----------
+  // A tela pede só o essencial (cliente, o que foi feito, valor). Os dados do cliente vêm do cadastro de contatos
+  // ou da Receita pelo CNPJ e ficam guardados para a próxima nota. O resto fica em "Mais opções".
+  var pend = null; // de onde a nota veio: { vincular: [ids de contas a receber], os: id da OS }
+  function contatoDe(nome) { var c = F() && nome ? (F().contatos() || {})[nome] : null; return c || null; }
+  function preDoContato(nome, pre) {
+    var c = contatoDe(nome); if (!c) return pre;
+    var e = c.nfse || {};
+    return Object.assign({ documento: c.documento || '', email: c.email || '', cep: e.cep || '', logradouro: e.logradouro || '', numero: e.numero || '', bairro: e.bairro || '', cMun: e.cMun || '' }, pre);
+  }
+  function clientes() {
+    if (!F() || !F().todosContatos) return [];
+    return F().todosContatos().filter(function (c) { return c.tipo !== 'fornecedor'; }).map(function (c) { return c.nome; }).sort();
+  }
   nfse.abrirEmissao = async function (pre) {
     if (window.maxcfoDemo) { toast('No modo demonstração a emissão fica desligada. Crie sua conta para emitir.', 'warn'); return; }
     if (!livre()) return;
@@ -292,40 +306,68 @@ window.initNFeModule = function () {
     var d = emissor.dados;
     if (!d) { toast(emissor.erro || 'Não consegui abrir o emissor agora.', 'error'); return; }
     if (!d.pronto) { if (souDono()) { toast('Antes de emitir, complete: ' + d.falta.join(', ') + '.', 'warn'); nfse.configurar(); } else toast('O dono da empresa precisa configurar a emissão primeiro.', 'warn'); return; }
-    pre = pre || {};
+    pre = preDoContato(pre && pre.nome, pre || {});
+    pend = { vincular: pre.vincular || [], os: pre.os || '' };
     var cfg = d.config, teste = cfg.ambiente !== '1';
-    var venc = F() ? F().addDias(hoje(), cfg.vencimentoDias != null ? cfg.vencimentoDias : 30) : hoje();
+    var venc = pre.vencimento || (F() ? F().addDias(hoje(), cfg.vencimentoDias != null ? cfg.vencimentoDias : 30) : hoje());
+    var vinculada = pend.vincular.length
+      ? '<div class="fin-alerta" style="margin:0">🔗 A nota fica ligada à conta a receber que já existe' + (pend.vincular.length > 1 ? ' (' + pend.vincular.length + ' parcelas)' : '') + '. Nenhum lançamento novo é criado.</div>'
+      : '<label class="fin-check"><input type="checkbox" id="nfeRec"' + (teste ? '' : ' checked') + '> Lançar em contas a receber, vencendo em <input type="date" class="form-input" id="nfeVenc" value="' + venc + '" style="width:auto;display:inline-block;margin-left:6px;padding:4px 8px"></label>';
     var corpo = (teste ? '<div class="fin-alerta gold" style="margin:0 0 10px">🧪 Ambiente de <b>testes</b>: a nota não tem valor fiscal. Quando estiver tudo certo, mude para produção em Configurar emissão.</div>' : '') +
+      (pre.origemTxt ? '<div class="fin-sub" style="margin:0 0 10px">Gerada a partir de: <b>' + esc(pre.origemTxt) + '</b></div>' : '') +
       '<div class="form-grid">' +
-      campo('nfeTDoc', 'CPF ou CNPJ do tomador', mascaraDoc(pre.documento), 'maxlength="18"', 'Saia do campo para buscar o CNPJ na Receita. Vazio = consumidor não identificado') +
-      campo('nfeTNome', 'Nome do tomador', pre.nome, 'maxlength="120"') +
-      campo('nfeTEmail', 'E-mail do tomador', pre.email, 'maxlength="80" type="email"') +
-      campo('nfeTCep', 'CEP (opcional)', pre.cep, 'maxlength="9" inputmode="numeric"', 'Saia do campo para completar o endereço') +
+      '<div class="form-field"><label class="form-label" for="nfeTNome">Cliente *</label><input class="form-input" id="nfeTNome" maxlength="120" list="nfeListaCli" autocomplete="off" value="' + esc(pre.nome || '') + '" placeholder="Nome ou razão social"><datalist id="nfeListaCli">' + clientes().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist></div>' +
+      campo('nfeTDoc', 'CPF ou CNPJ', mascaraDoc(pre.documento), 'maxlength="18" inputmode="numeric"', 'Com CNPJ, os dados vêm da Receita. Vazio = consumidor não identificado') +
+      '<div class="form-field span-2"><label class="form-label" for="nfeDesc">O que foi feito *</label><textarea class="form-input" id="nfeDesc" rows="3" maxlength="2000">' + esc(pre.descricao || cfg.descricaoPadrao || '') + '</textarea></div>' +
+      campo('nfeVal', 'Valor (R$) *', pre.valor, 'type="number" step="0.01" min="0.01" inputmode="decimal"') +
+      '<div class="form-field" style="align-self:end"><div id="nfeTInfo" class="fin-sub" style="line-height:1.5"></div></div>' +
+      '<div class="form-field span-2">' + vinculada + '</div>' +
+      '</div>' +
+      '<details id="nfeMais" style="margin-top:12px"><summary style="cursor:pointer;color:var(--gold);font-size:13px;font-weight:600">Mais opções: endereço do cliente, competência, código do serviço e ISS retido</summary><div class="form-grid" style="margin-top:10px">' +
+      campo('nfeTEmail', 'E-mail do cliente', pre.email, 'maxlength="80" type="email"') +
+      campo('nfeComp', 'Competência (mês do serviço)', pre.competencia || hoje(), 'type="date" max="' + hoje() + '"') +
+      campo('nfeTCep', 'CEP', pre.cep, 'maxlength="9" inputmode="numeric"', 'Saia do campo para completar o endereço') +
       campo('nfeTLgr', 'Endereço', pre.logradouro, 'maxlength="255"') +
       campo('nfeTNro', 'Número', pre.numero, 'maxlength="60"') +
       campo('nfeTBairro', 'Bairro', pre.bairro, 'maxlength="60"') +
-      campo('nfeTMun', 'Código IBGE do município do tomador', pre.cMun, 'maxlength="7" inputmode="numeric"') +
-      '<div class="form-field span-2"><label class="form-label" for="nfeDesc">Descrição do serviço *</label><textarea class="form-input" id="nfeDesc" rows="3" maxlength="2000">' + esc(pre.descricao || cfg.descricaoPadrao || '') + '</textarea></div>' +
-      campo('nfeVal', 'Valor do serviço (R$) *', pre.valor, 'type="number" step="0.01" min="0.01"') +
-      campo('nfeComp', 'Competência (mês do serviço)', pre.competencia || hoje(), 'type="date" max="' + hoje() + '"') +
+      campo('nfeTMun', 'Código IBGE do município do cliente', pre.cMun, 'maxlength="7" inputmode="numeric"') +
       campo('nfeServ', 'Código do serviço', cfg.cTribNac, 'maxlength="8" list="nfCfgServLista2" inputmode="numeric"') +
       '<datalist id="nfCfgServLista2">' + SERVICOS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</datalist>' +
       campo('nfeAliq', 'Alíquota do ISS (%)', cfg.aliquota, 'inputmode="decimal"', 'Obrigatória quando o ISS é retido') +
-      '<div class="form-field span-2"><label class="fin-check"><input type="checkbox" id="nfeRet"> ISS retido pelo tomador</label></div>' +
-      '<div class="form-field span-2"><label class="fin-check"><input type="checkbox" id="nfeRec"' + (teste ? '' : ' checked') + '> Criar conta a receber com vencimento em <input type="date" class="form-input" id="nfeVenc" value="' + venc + '" style="width:auto;display:inline-block;margin-left:6px;padding:4px 8px"></label></div>' +
-      '</div><div id="nfeErros"></div>';
+      '<div class="form-field" style="align-self:end"><label class="fin-check"><input type="checkbox" id="nfeRet"> ISS retido pelo cliente</label></div>' +
+      '</div></details><div id="nfeErros"></div>';
     F().modal('nfseEmitirModal', '🧾 Emitir NFS-e' + (teste ? ' (teste)' : ''), corpo,
       '<button class="btn-ghost" onclick="fin.fechar(\'nfseEmitirModal\')">Cancelar</button><button class="btn-primary" id="nfeEmitirBtn" onclick="nfse.emitir()">Emitir nota</button>', true);
     el('nfeTDoc').addEventListener('blur', buscarTomador);
     el('nfeTCep').addEventListener('blur', buscarCep);
+    el('nfeTNome').addEventListener('change', escolheuCliente);
+    el('nfeTNome').addEventListener('input', function () { infoTomador(); });
+    infoTomador();
+    if (dig(pre.documento).length === 14 && !pre.cep) buscarTomador();
+    setTimeout(function () { var f = !pre.nome ? el('nfeTNome') : !(pre.valor > 0) ? el('nfeVal') : null; if (f) f.focus(); }, 60);
   };
-
+  // Cliente escolhido da lista: completa CPF/CNPJ, e-mail e endereço guardados na última nota
+  function escolheuCliente() {
+    var p = preDoContato(el('nfeTNome').value.trim(), {});
+    [['nfeTDoc', mascaraDoc(p.documento)], ['nfeTEmail', p.email], ['nfeTCep', p.cep], ['nfeTLgr', p.logradouro], ['nfeTNro', p.numero], ['nfeTBairro', p.bairro], ['nfeTMun', p.cMun]].forEach(function (x) {
+      var c = el(x[0]); if (c && !c.value && x[1]) c.value = x[1];
+    });
+    infoTomador();
+    if (dig(el('nfeTDoc').value).length === 14 && !el('nfeTCep').value) buscarTomador();
+  }
+  function infoTomador(buscando) {
+    var box = el('nfeTInfo'); if (!box) return;
+    var doc = dig(el('nfeTDoc').value), end = [el('nfeTLgr').value, el('nfeTNro').value, el('nfeTBairro').value].filter(Boolean).join(', ');
+    var nome = el('nfeTNome') ? el('nfeTNome').value.trim() : '';
+    box.innerHTML = !doc ? (nome ? '⚠️ Sem CPF ou CNPJ, a nota sai para <b>consumidor não identificado</b> e o nome não aparece nela.' : 'Nota para consumidor não identificado.') : end ? '📍 ' + esc(end) : buscando ? '⏳ Buscando o endereço na Receita…' : 'Endereço do cliente: opcional, em Mais opções.';
+  }
   async function buscarTomador() {
     var d = dig(el('nfeTDoc').value);
-    if (d.length !== 14) return;
+    if (d.length !== 14) { infoTomador(); return; }
+    infoTomador(true);
     try {
       var r = await fetch('https://brasilapi.com.br/api/cnpj/v1/' + d);
-      if (!r.ok) return;
+      if (!r.ok) { infoTomador(); return; }
       var j = await r.json();
       if (!el('nfeTNome').value) el('nfeTNome').value = String(j.razao_social || j.nome_fantasia || '').slice(0, 120);
       if (!el('nfeTEmail').value && j.email) el('nfeTEmail').value = String(j.email).toLowerCase().slice(0, 80);
@@ -336,8 +378,8 @@ window.initNFeModule = function () {
         el('nfeTBairro').value = String(j.bairro || '').slice(0, 60);
         if (j.codigo_municipio_ibge) el('nfeTMun').value = String(j.codigo_municipio_ibge);
       }
-      toast('Tomador encontrado na Receita: ' + el('nfeTNome').value, 'success');
     } catch (e) { /* sem internet ou CNPJ não encontrado */ }
+    infoTomador();
   }
   async function buscarCep() {
     var c = dig(el('nfeTCep').value);
@@ -350,6 +392,7 @@ window.initNFeModule = function () {
       if (!el('nfeTLgr').value) el('nfeTLgr').value = String(j.logradouro || '').slice(0, 255);
       if (!el('nfeTBairro').value) el('nfeTBairro').value = String(j.bairro || '').slice(0, 60);
       if (j.ibge) el('nfeTMun').value = String(j.ibge);
+      infoTomador();
     } catch (e) { /* sem internet */ }
   }
 
@@ -371,15 +414,19 @@ window.initNFeModule = function () {
     if (!(valor > 0)) erros.push('Informe o valor do serviço.');
     if (!String(nota.descricao).trim()) erros.push('Descreva o serviço prestado.');
     if (nota.tomador.documento && !String(nota.tomador.nome).trim()) erros.push('Informe o nome do tomador.');
-    if (nota.retido === '2' && !(parseFloat(String(nota.aliquota).replace(',', '.')) > 0)) erros.push('Com ISS retido, informe a alíquota do ISS.');
+    if (nota.retido === '2' && !(parseFloat(String(nota.aliquota).replace(',', '.')) > 0)) { erros.push('Com ISS retido, informe a alíquota do ISS.'); el('nfeMais').open = true; }
+    if (nota.tomador.documento && [11, 14].indexOf(nota.tomador.documento.length) < 0) erros.push('O CPF precisa de 11 dígitos e o CNPJ de 14.');
     if (erros.length) { mostrarErros(erros); return; }
+    var nomeDigitado = String(nota.tomador.nome || '').trim();
     if (!nota.tomador.documento) nota.tomador = null;
-    var criarConta = el('nfeRec').checked, venc = el('nfeVenc').value;
+    pend.cliente = nomeDigitado;
+    var criarConta = !!(el('nfeRec') && el('nfeRec').checked), venc = el('nfeVenc') ? el('nfeVenc').value : '';
     var btn = el('nfeEmitirBtn'); btn.disabled = true; btn.textContent = 'Emitindo na Sefin Nacional…';
     mostrarErros([]);
     try {
       var r = await api('POST', '/api/nfse', { acao: 'emitir', wsId: window.workspaceId, nota: nota });
-      var n = registrarEmitida(r, nota, criarConta, venc);
+      var n = registrarEmitida(r, nota, criarConta, venc, pend);
+      lembrarCliente(nota);
       F().fechar('nfseEmitirModal');
       sucesso(n, r);
     } catch (e) {
@@ -389,8 +436,20 @@ window.initNFeModule = function () {
       mostrarErros(dd.erros && dd.erros.length ? dd.erros : [e.message]);
     }
   };
+  // Guarda CPF/CNPJ, e-mail e endereço no cadastro do cliente para a próxima nota sair sem digitar nada
+  function lembrarCliente(nota) {
+    var to = nota.tomador; if (!to || !F() || !to.nome) return;
+    var nome = String(to.nome).trim(); F().registrarContato(nome, 'RECEITA');
+    var c = F().contatos()[nome]; if (!c) return;
+    if (to.documento && !c.documento) c.documento = to.documento;
+    if (to.email && !c.email) c.email = to.email;
+    var e = to.end || {};
+    if (e.cep || e.logradouro) c.nfse = { cep: e.cep || '', logradouro: e.logradouro || '', numero: e.numero || '', bairro: e.bairro || '', cMun: e.cMun || '' };
+    salvar();
+  }
 
-  function registrarEmitida(r, nota, criarConta, venc) {
+  function registrarEmitida(r, nota, criarConta, venc, origem) {
+    origem = origem || {};
     var dd = r.dados || {}, val = dd.valores || {};
     var existente = (window.state.nfes || []).find(function (x) { return x.chave === r.chave; });
     if (existente) return existente;
@@ -401,20 +460,43 @@ window.initNFeModule = function () {
       valor: val.servico || nota.valor, issRetido: val.retido || 0, iss: val.iss || 0, aliquota: val.aliquota || 0, dataEmissao: hoje(), competencia: nota.competencia,
       status: 'Emitida', dados: resumoDanfse(dd, nota),
     };
+    if (!to.documento && origem.cliente) n.cliente = origem.cliente;
+    var ligadas = (origem.vincular || []).map(function (id) { return F() ? F().tx(id) : null; }).filter(Boolean);
+    if (ligadas.length) {
+      ligadas.forEach(function (t) {
+        t.nfId = n.id; t.atualizadoEm = Date.now();
+        t.notes = ((t.notes ? t.notes + ' ' : '') + 'NFS-e ' + (n.numero || '') + ', chave ' + n.chave + '.').trim();
+      });
+      // ISS retido numa conta única ainda em aberto: o cliente paga o valor líquido
+      if (n.issRetido && ligadas.length === 1 && ligadas[0].status !== 'pago' && Math.abs(ligadas[0].amount - n.valor) < 0.005) {
+        ligadas[0].amount = Math.round(((val.liquido || n.valor - n.issRetido) - 0) * 100) / 100;
+        ligadas[0].notes += ' ISS retido: ' + moeda(n.issRetido) + '.';
+      }
+      n.txId = ligadas[0].id;
+      criarConta = false;
+    }
     if (criarConta && window.state.transactions) {
       var liquido = Math.round(((val.liquido || n.valor) - 0) * 100) / 100;
       var tx = {
         id: 'nf' + n.id, type: 'RECEITA', desc: ('NFS-e ' + (n.numero || '')).trim() + ' — ' + n.servico.slice(0, 80), amount: liquido,
-        category: 'Serviços Prestados', date: n.dataEmissao, vencimento: venc || n.dataEmissao, status: 'pendente', pagoEm: '', contato: n.tomador,
+        category: 'Serviços Prestados', date: n.dataEmissao, vencimento: venc || n.dataEmissao, status: 'pendente', pagoEm: '', contato: n.cliente || n.tomador,
         contaId: ((window.state.contas || [])[0] || {}).id, notes: (n.issRetido ? 'ISS retido: ' + moeda(n.issRetido) + '. ' : '') + 'Chave da NFS-e: ' + n.chave, nfId: n.id, atualizadoEm: Date.now(),
       };
       window.state.transactions.push(tx);
       n.txId = tx.id;
       if (window.logAudit) window.logAudit('create', 'transaction', tx.id, 'Conta a receber criada pela NFS-e ' + (n.numero || ''), null, tx);
     }
+    if (origem.os && window.state.os) {
+      var o = window.state.os.find(function (x) { return x.id === origem.os; });
+      if (o) {
+        o.nfId = n.id;
+        if (o.status !== 'billed') { o.status = 'billed'; o.faturadoEm = hoje(); if (n.txId) o.txIds = [n.txId]; }
+      }
+    }
     window.state.nfes.push(n);
     salvar();
     window.renderNFe();
+    if (window.initOS && el('view-os') && el('view-os').classList.contains('active')) window.initOS();
     if (F()) F().atualizarTudo();
     return n;
   }
@@ -437,6 +519,63 @@ window.initNFeModule = function () {
       '<button class="btn-secondary" onclick="nfse.xml(\'' + esc(n.id) + '\')">Baixar XML</button>' +
       (n.txId && F().cobrar ? '<button class="btn-secondary" onclick="fin.fechar(\'nfseOkModal\');fin.cobrar(\'' + esc(n.txId) + '\')">💠 Cobrar</button>' : '') +
       '<button class="btn-primary" onclick="nfse.danfse(\'' + esc(n.id) + '\')">🖨️ DANFSe</button>');
+  }
+
+  // ---------- transformar em nota: conta a receber, ordem de serviço ou nota anterior ----------
+  function semPrefixo(desc) { return String(desc || '').replace(/^(OS-\d+|NFS-e[^—]*)\s*—\s*/, '').trim(); }
+  function produto(t) { return /produto|mercadoria|revenda/i.test(t.category || '') || (t.origem && t.origem.tipo === 'estoque'); }
+  // Conta a receber que ainda não tem nota (serviço)
+  nfse.podeDaConta = function (t) { return !!(t && t.type === 'RECEITA' && !t.nfId && !t.transferenciaId && !produto(t) && !window.maxcfoLeitura); };
+  nfse.botaoConta = function (t) { return nfse.podeDaConta(t) ? '<button class="fin-btn" onclick="nfse.daConta(\'' + esc(t.id) + '\')" title="Emitir a NFS-e deste recebimento">🧾 NF</button>' : ''; };
+  nfse.daConta = function (id) {
+    var t = F() && F().tx(id); if (!t) return;
+    var grupo = t.grupo ? window.state.transactions.filter(function (x) { return x.grupo === t.grupo && x.type === 'RECEITA' && !x.nfId; }) : [t];
+    var valor = Math.round(grupo.reduce(function (a, x) { return a + (x.amount || 0); }, 0) * 100) / 100;
+    nfse.abrirEmissao({ nome: t.contato || '', descricao: semPrefixo(t.desc), valor: valor, competencia: (t.date || hoje()).slice(0, 10) > hoje() ? hoje() : (t.date || hoje()).slice(0, 10),
+      vincular: grupo.map(function (x) { return x.id; }), os: t.origem && t.origem.tipo === 'os' ? t.origem.id : '', origemTxt: 'conta a receber "' + t.desc + '"' + (grupo.length > 1 ? ' (' + grupo.length + ' parcelas)' : '') });
+  };
+  // Ordem de serviço concluída ou faturada
+  nfse.daOS = function (id) {
+    var o = (window.state.os || []).find(function (x) { return x.id === id; }); if (!o) return;
+    if (o.nfId) { toast('Essa OS já tem nota fiscal.', 'warn'); return; }
+    var ligadas = (o.txIds || []).filter(function (tid) { var t = F() && F().tx(tid); return t && !t.nfId; });
+    var tel = o.equipamento ? o.equipamento + ' — ' : '';
+    nfse.abrirEmissao({ nome: o.client, descricao: (tel + (o.desc || '')).slice(0, 2000), valor: o.value, competencia: (o.concluidaEm || hoje()).slice(0, 10),
+      vincular: ligadas, os: o.id, origemTxt: 'ordem de serviço ' + o.numero });
+  };
+  // Mesma nota de novo (cliente que paga todo mês)
+  nfse.repetir = function (id) {
+    var n = notaPorId(id); if (!n) return;
+    var dd = n.dados || {}, t = dd.tomador || {};
+    nfse.abrirEmissao({ nome: n.cliente || (n.tomador === 'Consumidor' ? '' : n.tomador), documento: n.cnpj || t.documento || '', email: t.email || '', descricao: (dd.servico && dd.servico.descricao) || n.servico, valor: n.valor, origemTxt: 'nota ' + (n.numero || '') + ' de ' + dataBR(n.dataEmissao) });
+  };
+  // Serviços recentes que ainda não viraram nota
+  function semNota() {
+    var limite = F() ? F().addDias(hoje(), -60) : '';
+    var lista = [];
+    (window.state.os || []).forEach(function (o) {
+      if (o.nfId || (o.status !== 'done' && o.status !== 'billed') || !(o.value > 0)) return;
+      if ((o.faturadoEm || o.concluidaEm || o.date || hoje()) < limite) return;
+      lista.push({ tipo: 'os', id: o.id, quem: o.client, desc: o.numero + ' — ' + (o.equipamento || o.desc || ''), valor: o.value, data: o.faturadoEm || o.concluidaEm || o.date });
+    });
+    var grupos = {};
+    (window.state.transactions || []).forEach(function (t) {
+      if (!nfse.podeDaConta(t) || !/servi/i.test(t.category || '') || (t.date || '') < limite) return;
+      if (t.origem && t.origem.tipo === 'os') return;
+      if (t.grupo) { if (grupos[t.grupo]) return; grupos[t.grupo] = 1; }
+      lista.push({ tipo: 'conta', id: t.id, quem: t.contato || '—', desc: t.desc + (t.grupo ? ' (parcelado)' : ''), valor: t.amount, data: t.date });
+    });
+    return lista.sort(function (a, b) { return (b.data || '') > (a.data || '') ? 1 : -1; });
+  }
+  function cartaoSemNota() {
+    if (window.maxcfoLeitura) return '';
+    var l = semNota(); if (!l.length) return '';
+    var mostrar = l.slice(0, 6);
+    return '<div class="card" style="margin-top:14px"><div class="card-header-row"><span class="card-title">🧾 Serviços sem nota fiscal (' + l.length + ')</span><span class="fin-sub">ordens de serviço e recebimentos dos últimos 60 dias</span></div>' +
+      '<div class="table-scroll"><table class="data-table"><tbody>' + mostrar.map(function (x) {
+        return '<tr><td><div style="font-weight:600">' + esc(x.quem) + '</div><div class="fin-sub">' + esc(String(x.desc).slice(0, 90)) + '</div></td><td style="white-space:nowrap">' + dataBR(x.data) + '</td><td style="font-weight:700;white-space:nowrap">' + moeda(x.valor) + '</td>' +
+          '<td style="text-align:right"><button class="fin-btn gold" onclick="nfse.' + (x.tipo === 'os' ? 'daOS' : 'daConta') + '(\'' + esc(x.id) + '\')">Emitir nota</button></td></tr>';
+      }).join('') + '</tbody></table></div>' + (l.length > mostrar.length ? '<div class="fin-sub" style="padding:8px 4px 0">e mais ' + (l.length - mostrar.length) + '. Também dá para emitir pelo botão 🧾 NF em Contas a receber.</div>' : '') + '</div>';
   }
 
   // ---------- XML e DANFSe ----------
