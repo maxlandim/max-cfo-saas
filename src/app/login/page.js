@@ -8,12 +8,14 @@ import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import SeletorIdioma from '../components/SeletorIdioma';
+import AvisoNavegadorInterno, { useNavegadorInterno, erroDoGoogle, MSG_GOOGLE_INTERNO } from '../components/NavegadorInterno';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const appInterno = useNavegadorInterno();
   const router = useRouter();
   const { user } = useAuth();
 
@@ -57,6 +59,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
+    if (appInterno) { setErrorMsg(MSG_GOOGLE_INTERNO); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     setLoading(true);
     setErrorMsg('');
     try {
@@ -70,7 +73,7 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err) {
       console.error(err);
-      setErrorMsg(`Erro: ${err.message}`);
+      setErrorMsg(erroDoGoogle(err));
       setLoading(false);
     }
   };
@@ -86,6 +89,8 @@ export default function LoginPage() {
         <h1 style={{ textAlign: 'center' }}>Bem-vindo de volta</h1>
         <p style={{ textAlign: 'center' }}>Acesse seu painel financeiro executivo</p>
         
+        <AvisoNavegadorInterno app={appInterno} />
+
         {errorMsg && (
           <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.3)' }}>
             {errorMsg}
