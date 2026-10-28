@@ -10,7 +10,7 @@ jobs:
       - shell: bash {0}
         run: |
           S=https://landimadvisory.com.br
-          F=https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents
+          F='https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents'
           echo "::warning::site -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' $S/) · saude $(curl -s -o /dev/null -m 20 -w '%{http_code}' $S/api/saude)"
           echo "::warning::regras: listar workspaces sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$F/workspaces")"
           echo "::warning::regras: ler assinatura sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$F/subscriptions/teste")"
