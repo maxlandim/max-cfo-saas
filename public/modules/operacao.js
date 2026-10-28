@@ -329,6 +329,8 @@
             (ic > 0 && ic < 3 ? '<button class="fin-btn" onclick="os.mover(\'' + o.id + '\',-1)" title="Voltar">◀</button>' : '') +
             (ic < 2 ? '<button class="fin-btn" onclick="os.mover(\'' + o.id + '\',1)" title="Avançar">▶</button>' : '') +
             (c[0] === 'done' ? '<button class="fin-btn gold" onclick="os.faturar(\'' + o.id + '\')">💰 Faturar</button>' : '') +
+            ((c[0] === 'done' || c[0] === 'billed') && !o.nfId && !window.maxcfoLeitura && window.nfse ? '<button class="fin-btn" onclick="nfse.daOS(\'' + o.id + '\')" title="Emitir a NFS-e desta OS">🧾 NF</button>' : '') +
+            (o.nfId ? '<span class="fin-sub" title="Nota fiscal emitida">🧾 com nota</span>' : '') +
             '<button class="fin-btn" onclick="os.imprimir(\'' + o.id + '\')" title="Imprimir">🖨️</button>' +
             (c[0] === 'done' ? '<button class="fin-btn" onclick="os.avisar(\'' + o.id + '\')" title="Avisar o cliente">💬</button>' : '') +
             '<button class="fin-btn" onclick="os.editar(\'' + o.id + '\')">✏️</button></div></div>';
