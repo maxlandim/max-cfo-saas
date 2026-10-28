@@ -327,16 +327,22 @@ export default function DashboardPage() {
       }
     };
 
+    // Anexos ficam no próprio servidor (/api/anexos), com link assinado. O nome antigo da função foi mantido.
     window.uploadFileToFirebase = async (wsId, file) => {
       if (!wsId || !file || window.maxcfoLeitura) return null;
       if (file.size > 10 * 1024 * 1024) { if (window.showToast) window.showToast('O anexo precisa ter até 10 MB.', 'error'); return null; }
       try {
-        const { getStorage, ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
-        const fileRef = ref(getStorage(app), `workspaces/${wsId}/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytesResumable(fileRef, file);
-        return await getDownloadURL(snapshot.ref);
+        const token = window.getAuthToken ? await window.getAuthToken() : '';
+        const fd = new FormData();
+        fd.append('wsId', wsId);
+        fd.append('arquivo', file, file.name || 'anexo');
+        const r = await fetch('/api/anexos', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: fd });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.url) { if (window.showToast) window.showToast(d.error || 'Não consegui guardar o anexo agora.', 'error'); return null; }
+        return d.url;
       } catch (e) {
         console.error('Erro ao enviar anexo:', e);
+        if (window.showToast) window.showToast('Não consegui enviar o anexo. Confira a internet e tente de novo.', 'error');
         return null;
       }
     };
