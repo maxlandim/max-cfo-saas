@@ -121,6 +121,18 @@ async def main():
                 import base64, gzip
                 texto = gzip.decompress(base64.b64decode(z)).decode('utf-8')
             log(st == 200 and 'Teste robô aluguel' in texto, 'lançamento gravado na nuvem (Firestore)', st if st != 200 else ('comprimido' if z else 'texto'))
+            # anexos guardados no próprio servidor (/api/anexos), com link assinado
+            try:
+                r = await pg.evaluate("""(async()=>{ const f=new File(['%PDF-1.4 anexo do robo'],'Recibo teste robô.pdf',{type:'application/pdf'});
+                  const url=await window.uploadFileToFirebase(window.workspaceId,f); if(!url) return {url:null};
+                  const a=await fetch(url); const txt=await a.text(); const b=await fetch(url.replace(/t=[^&]+/,'t=errado'));
+                  const s=await (await fetch('/api/saude')).json(); return {url, st:a.status, txt, tipo:a.headers.get('content-type'), falso:b.status, saude:s}; })()""")
+                log(r.get('url') and r.get('st') == 200 and r.get('txt') == '%PDF-1.4 anexo do robo' and 'pdf' in (r.get('tipo') or ''), 'anexo enviado e aberto pelo link', r)
+                log(r.get('falso') == 404, 'link de anexo com assinatura errada não abre', r.get('falso'))
+                sd = r.get('saude') or {}
+                log(sd.get('anexos') is True and sd.get('volume') is True, 'pasta dos anexos em volume persistente (sobrevive ao Redeploy)', sd)
+            except Exception as e:
+                log(False, 'anexos', str(e)[:300])
             # relatório mensal em PDF
             try:
                 await pg.evaluate("switchView('reports')"); await pg.wait_for_timeout(800)
