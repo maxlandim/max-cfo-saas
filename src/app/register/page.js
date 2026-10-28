@@ -12,7 +12,6 @@ import AvisoNavegadorInterno, { useNavegadorInterno, erroDoGoogle, MSG_GOOGLE_IN
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [documento, setDocumento] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -23,7 +22,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (email && password && name && documento) {
+    if (email && password && name) {
       setLoading(true);
       setErrorMsg('');
       
@@ -31,7 +30,7 @@ export default function RegisterPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         await updateProfile(user, { displayName: name });
-        localStorage.setItem('maxcfo_user', JSON.stringify({ name, email, documento }));
+        localStorage.setItem('maxcfo_user', JSON.stringify({ name, email }));
         registrarCadastro();
         
         router.push('/dashboard');
@@ -85,7 +84,12 @@ export default function RegisterPage() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><SeletorIdioma escuro /></div>
         <h1 style={{ textAlign: 'center' }}>Comece Grátis</h1>
-        <p style={{ textAlign: 'center' }}>Crie sua conta e tenha um CFO Virtual</p>
+        <p style={{ textAlign: 'center' }}>Crie sua conta em 1 minuto e organize o financeiro da sua empresa</p>
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'grid', gap: 8, fontSize: 14, color: '#C9D1DE' }}>
+          <li>✓ Veja no celular quanto tem, quanto vai receber e quanto vai pagar</li>
+          <li>✓ Cobre clientes por Pix e WhatsApp e receba o relatório do mês pronto</li>
+          <li>✓ 7 dias grátis, sem cartão. Cancele quando quiser</li>
+        </ul>
 
         <AvisoNavegadorInterno app={appInterno} />
 
@@ -97,16 +101,12 @@ export default function RegisterPage() {
 
         <form onSubmit={handleRegister}>
           <div className="form-group">
-            <label>Nome Completo</label>
+            <label>Seu nome</label>
             <input type="text" className="form-input" required value={name} onChange={e => setName(e.target.value)} placeholder="Seu Nome" />
           </div>
           <div className="form-group">
-            <label>E-mail Profissional</label>
+            <label>E-mail</label>
             <input type="email" className="form-input" required value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@empresa.com" />
-          </div>
-          <div className="form-group">
-            <label>CPF ou CNPJ</label>
-            <input type="text" className="form-input" required value={documento} onChange={e => setDocumento(e.target.value)} placeholder="000.000.000-00 ou 00.000.000/0001-00" />
           </div>
           <div className="form-group">
             <label>Crie uma Senha</label>
