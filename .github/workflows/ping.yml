@@ -10,14 +10,14 @@ jobs:
       - shell: bash {0}
         run: |
           S=https://landimadvisory.com.br
-          for u in $S/ $S/api/saude; do
-            echo "::warning::$u -> $(curl -s -o /dev/null -m 20 -w '%{http_code} em %{time_total}s' "$u")"
+          F=https://firestore.googleapis.com/v1/projects/max-cfo-saas/databases/(default)/documents
+          echo "::warning::site -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' $S/) · saude $(curl -s -o /dev/null -m 20 -w '%{http_code}' $S/api/saude)"
+          echo "::warning::regras: listar workspaces sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$F/workspaces")"
+          echo "::warning::regras: ler assinatura sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$F/subscriptions/teste")"
+          echo "::warning::regras: ler emissor NFS-e sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$F/nfseEmissor/teste")"
+          echo "::warning::regras: gravar perfil sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' -X PATCH -H 'Content-Type: application/json' -d '{"fields":{}}' "$F/perfis/teste-ci")"
+          echo "::warning::regras: listar convites sem login (403 = fechado) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$F/convites")"
+          for B in max-cfo-saas.appspot.com max-cfo-saas.firebasestorage.app; do
+            echo "::warning::storage $B listar sem login (403 = fechado, 404 = bucket não existe) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "https://firebasestorage.googleapis.com/v0/b/$B/o")"
           done
-          echo "::warning::api/nfse (401 = versão nova no ar, 404 = deploy ainda não feito) -> $(curl -s -o /dev/null -m 20 -w '%{http_code}' "$S/api/nfse?wsId=xxxxxxxx")"
-          echo "::warning::nfe.js tem o emissor: $(curl -s -m 20 "$S/modules/nfe.js" | grep -c 'nfse.abrirEmissao')"
-          echo "::warning::NS: $(dig +short NS landimadvisory.com.br | tr '\n' ' ')"
-          echo "::warning::MX: $(dig +short MX landimadvisory.com.br | tr '\n' ' ')"
-          echo "::warning::TXT: $(dig +short TXT landimadvisory.com.br | tr '\n' ' ')"
-          echo "::warning::rodape com CNPJ: $(curl -s -m 20 $S/termos | grep -c '68.443.320')"
-          echo "::warning::saude: $(curl -s -m 15 $S/api/saude)"
-          echo "::warning::ssl expira: $(echo | openssl s_client -servername landimadvisory.com.br -connect landimadvisory.com.br:443 2>/dev/null | openssl x509 -noout -enddate)"
+          echo "::warning::erro do firestore: $(curl -s -m 20 "$F/workspaces" | tr -d '\n' | cut -c1-200)"
