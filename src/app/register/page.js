@@ -7,7 +7,7 @@ import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, getAddi
 import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
 import SeletorIdioma from '../components/SeletorIdioma';
-import AvisoNavegadorInterno, { useNavegadorInterno, erroDoGoogle, MSG_GOOGLE_INTERNO } from '../components/NavegadorInterno';
+import { useNavegadorInterno, erroDoGoogle, abrirNoNavegador } from '../components/NavegadorInterno';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -55,7 +55,8 @@ export default function RegisterPage() {
   };
 
   const handleGoogleLogin = async () => {
-    if (appInterno) { setErrorMsg(MSG_GOOGLE_INTERNO); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    // Dentro do Instagram/Facebook o Google bloqueia o login: abre a mesma página no Chrome (ou Safari)
+    if (appInterno) { setErrorMsg(''); abrirNoNavegador((m) => setErrorMsg(m)); return; }
     setLoading(true);
     setErrorMsg('');
     try {
@@ -90,8 +91,6 @@ export default function RegisterPage() {
           <li>✓ Cobre clientes por Pix e WhatsApp e receba o relatório do mês pronto</li>
           <li>✓ 7 dias grátis, sem cartão. Cancele quando quiser</li>
         </ul>
-
-        <AvisoNavegadorInterno app={appInterno} />
 
         {errorMsg && (
           <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.3)' }}>
