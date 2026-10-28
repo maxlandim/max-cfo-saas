@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminConfigurado, adminAuth, adminDb, emailsAdmin, usuarioDaRequisicao } from '../../../../lib/firebaseAdmin';
+import { adminConfigurado, adminAuth, adminDb, emailsAdmin, emailsCortesia, usuarioDaRequisicao } from '../../../../lib/firebaseAdmin';
 import { DIAS_DE_TESTE, PLANOS, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../../lib/plans';
 import { hojeBrasil } from '../../../../lib/lembretes';
 
@@ -35,7 +35,7 @@ export async function GET(req) {
       if (x.updatedAt && (!ultimaAlteracao[dono] || x.updatedAt > ultimaAlteracao[dono])) ultimaAlteracao[dono] = x.updatedAt;
     });
 
-    const admins = emailsAdmin(), agora = Date.now();
+    const admins = emailsAdmin(), cortesias = emailsCortesia(), agora = Date.now();
     const lista = contas.map((u) => {
       const email = (u.email || '').toLowerCase();
       const criado = new Date(u.metadata.creationTime).getTime();
@@ -47,6 +47,7 @@ export async function GET(req) {
       const fatura = s && s.faturaPendente;
       const vencida = !!(fatura && Date.parse(fatura.vencimento + 'T23:59:59-03:00') < agora);
       if (admins.includes(email)) situacao = 'admin';
+      else if (cortesias.includes(email)) situacao = 'cortesia';
       else if (ativa && agora < fimTeste && !pago) situacao = 'teste_com_cartao';
       else if (ativa && vencida && !pago) situacao = 'pagamento_pendente';
       else if (pago || ativa) situacao = 'assinante';

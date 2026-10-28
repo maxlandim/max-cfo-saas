@@ -11,6 +11,7 @@ const NOME_PLANO = { basic: 'Básico', intermediate: 'Intermediário', complete:
 const SITUACAO = {
   admin: ['Administrador', 'cinza'],
   assinante: ['Assinante', 'verde'],
+  cortesia: ['Cortesia (grátis)', 'verde'],
   teste_com_cartao: ['Teste já assinado', 'verde'],
   teste: ['Em teste', 'ouro'],
   pagamento_pendente: ['Pagamento pendente', 'vermelho'],
@@ -262,17 +263,14 @@ export default function AdminPage() {
             <section className="ad-cartao">
               <div className="ad-cartao-topo"><h2>Erros no navegador dos clientes</h2><span>últimos 7 dias</span></div>
               {(dados.erros || []).length ? (
-                <div className="ad-rolagem">
-                  <table className="ad-tab ad-erros">
-                    <thead><tr><th>Erro</th><th>Página</th><th className="n">Vezes</th><th>Último</th><th>Navegador</th></tr></thead>
-                    <tbody>{dados.erros.map((e, i) => (
-                      <tr key={i}>
-                        <td><b>{e.mensagem}</b>{e.pilha && <details><summary className="ad-sub">detalhes</summary><pre className="ad-pilha">{e.pilha}</pre></details>}</td>
-                        <td>{e.pagina || '—'}</td><td className="n">{num(e.vezes)}</td><td>{quando(e.ultimaVez)}</td>
-                        <td className="ad-sub">{Object.entries(e.navegadores || {}).map(([n, v]) => `${n} (${v})`).join(', ')}</td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
+                <div className="ad-erros">
+                  {dados.erros.map((e, i) => (
+                    <div key={i} className="ad-erro">
+                      <b className="ad-erro-msg">{e.mensagem}</b>
+                      <div className="ad-sub">Página <b>{e.pagina || '—'}</b> · {num(e.vezes)} {e.vezes === 1 ? 'vez' : 'vezes'} · último {quando(e.ultimaVez)} · {Object.entries(e.navegadores || {}).map(([n, v]) => `${n} (${v})`).join(', ')}</div>
+                      {e.pilha && <details><summary className="ad-sub">detalhes técnicos</summary><pre className="ad-pilha">{e.pilha}</pre></details>}
+                    </div>
+                  ))}
                 </div>
               ) : <p className="ad-vazio">Nenhum erro registrado nos últimos 7 dias.</p>}
             </section>
@@ -332,7 +330,7 @@ const ESTILO = `
 .ad-tab .n{text-align:right;font-variant-numeric:tabular-nums}
 .ad-rolagem{overflow-x:auto;max-width:100%}
 .ad-contas{min-width:920px}
-.ad-erros{min-width:720px}.ad-pilha{white-space:pre-wrap;font-size:11.5px;color:var(--sub);margin:6px 0 0;max-width:560px}
+.ad-erros{display:grid;gap:10px}.ad-erro{border:1px solid var(--linha,#E5E7EB);border-radius:10px;padding:10px 12px;display:grid;gap:4px}.ad-erro-msg{word-break:break-word;font-size:14px}.ad-pilha{white-space:pre-wrap;word-break:break-all;font-size:11.5px;color:var(--sub);margin:6px 0 0}
 .ad-btn-claro{border-color:var(--linha);color:var(--tinta);background:#fff}
 .ad-link-btn{background:none;border:0;padding:0;font:inherit;font-weight:700;cursor:pointer;color:var(--ouro)}
 .ad-sub{font-size:12px;color:var(--fraco)}
