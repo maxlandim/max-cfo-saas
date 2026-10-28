@@ -12,23 +12,23 @@ def log(ok, nome, extra=''):
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch()
-        for rotulo, ua, rota in [('Instagram Android', IG, '/register?utm_source=instagram&utm_medium=pago&utm_campaign=nfse'), ('Facebook iPhone', IOS_FB, '/login'), ('Chrome comum', CHROME, '/register')]:
+        for rotulo, ua, rota in [('Instagram Android', IG, '/register?utm_source=instagram&utm_medium=pago&utm_campaign=nfse'), ('Facebook iPhone', IOS_FB, '/login'), ('Instagram Android login', IG, '/login'), ('Chrome comum', CHROME, '/register')]:
             ctx = await b.new_context(viewport={'width': 412, 'height': 915}, user_agent=ua, locale='pt-BR', is_mobile=True, has_touch=True)
             pg = await ctx.new_page(); erros = []; popups = []
             pg.on('pageerror', lambda e: erros.append(str(e)))
             ctx.on('page', lambda w: popups.append(w))
             await pg.goto(SITE + rota, wait_until='networkidle'); await pg.wait_for_timeout(1500)
             txt = await pg.inner_text('body')
-            aviso = 'Você está no navegador' in txt
-            if rotulo == 'Chrome comum':
-                log(not aviso, f'{rotulo}: sem aviso no navegador normal')
-            else:
-                log(aviso, f'{rotulo}: mostra o aviso de navegador do app', txt[:200])
-                if 'Android' in rotulo: log(await pg.locator('text=Abrir no Chrome').count() == 1, f'{rotulo}: botão Abrir no Chrome')
-                else: log('Abrir no navegador' in txt, f'{rotulo}: explica como abrir no navegador do iPhone')
-                await pg.click('.btn-google'); await pg.wait_for_timeout(800)
+            log('Você está no navegador' not in txt, f'{rotulo}: sem aviso na tela', txt[:200])
+            if rotulo != 'Chrome comum':
+                await pg.click('.btn-google'); await pg.wait_for_timeout(2200)
+                desvio = await pg.evaluate('window.__ultimoDesvio || ""')
                 txt = await pg.inner_text('body')
-                log('O Google não permite entrar' in txt and not popups, f'{rotulo}: Google explica em vez de abrir a janela', [len(popups), txt[:200]])
+                if 'Android' in rotulo:
+                    log(desvio.startswith('intent://') and 'package=com.android.chrome' in desvio and rota.split('?')[0] in desvio and not popups, f'{rotulo}: Google abre a página direto no Chrome', desvio[:160])
+                else:
+                    log(desvio.startswith('x-safari-https://') and not popups, f'{rotulo}: Google tenta abrir no Safari', desvio[:160])
+                    log('abra esta página no Safari' in txt, f'{rotulo}: se o app não deixar, explica como abrir no Safari', txt[:200])
                 await pg.screenshot(path=f'{OUT}/interno_{rotulo.split()[0].lower()}.png')
             log(not erros, f'{rotulo}: sem erros de JavaScript', erros[:3])
             await ctx.close()
