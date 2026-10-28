@@ -32,7 +32,10 @@ RUN npm run build
 FROM node:24-alpine AS app
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S app && adduser -S app -G app \
+  && mkdir -p /data/anexos && chown app:app /data/anexos
+# Anexos dos lançamentos: no Coolify, crie um volume persistente com destino /data/anexos (senão somem no Redeploy)
+ENV ANEXOS_DIR=/data/anexos
 COPY --from=build /app/public ./public
 COPY --from=ocr /ocr/out ./public/vendor/ocr
 COPY --from=build --chown=app:app /app/.next/standalone ./

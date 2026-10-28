@@ -33,8 +33,8 @@ export default function PrivacidadePage() {
 
       <h2>4. Com quem compartilhamos</h2>
       <ul>
-        <li><b>Google Firebase / Google Cloud:</b> login, banco de dados e armazenamento de anexos.</li>
-        <li><b>Hospedagem:</b> servidor contratado (Hostinger) ou Vercel, onde o site roda.</li>
+        <li><b>Google Firebase / Google Cloud:</b> login e banco de dados.</li>
+        <li><b>Hospedagem:</b> servidor contratado (Hostinger), onde o site roda e onde ficam guardados os anexos que você enviar (boletos, recibos e notas), acessíveis só por link assinado.</li>
         <li><b>Resend:</b> envio dos lembretes por e-mail que você ligar em Configurações (resumo do dia para você e aviso de vencimento para os seus clientes, com nome, valor, vencimento e Pix).</li>
         <li><b>Pessoas que você autorizar:</b> quem você liberar em Equipe e acessos (o seu cliente ou contador, por exemplo) vê os dados daquela empresa em modo somente leitura, até você remover o acesso.</li>
         <li><b>Asaas:</b> processamento de pagamentos (cartão, Pix e boleto) e envio das cobranças.</li>
