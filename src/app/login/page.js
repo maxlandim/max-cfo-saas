@@ -8,7 +8,7 @@ import { registrarCadastro } from '../components/Visitas';
 import { auth, googleProvider } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import SeletorIdioma from '../components/SeletorIdioma';
-import AvisoNavegadorInterno, { useNavegadorInterno, erroDoGoogle, MSG_GOOGLE_INTERNO } from '../components/NavegadorInterno';
+import { useNavegadorInterno, erroDoGoogle, abrirNoNavegador } from '../components/NavegadorInterno';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -59,7 +59,8 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    if (appInterno) { setErrorMsg(MSG_GOOGLE_INTERNO); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    // Dentro do Instagram/Facebook o Google bloqueia o login: abre a mesma página no Chrome (ou Safari)
+    if (appInterno) { setErrorMsg(''); abrirNoNavegador((m) => setErrorMsg(m)); return; }
     setLoading(true);
     setErrorMsg('');
     try {
@@ -89,8 +90,6 @@ export default function LoginPage() {
         <h1 style={{ textAlign: 'center' }}>Bem-vindo de volta</h1>
         <p style={{ textAlign: 'center' }}>Acesse seu painel financeiro executivo</p>
         
-        <AvisoNavegadorInterno app={appInterno} />
-
         {errorMsg && (
           <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', padding: '10px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.3)' }}>
             {errorMsg}
