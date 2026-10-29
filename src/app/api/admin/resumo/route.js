@@ -85,7 +85,7 @@ export async function GET(req) {
     for (let i = 29; i >= 0; i--) {
       const dia = new Date(Date.parse(hoje + 'T12:00:00Z') - i * 864e5).toISOString().slice(0, 10);
       const x = porDia[dia] || {};
-      dias.push({ dia, visitas: x.visitas || 0, visitantes: x.visitantes || 0, cadastros: x.cadastros || 0, paginas: x.paginas || {}, origens: x.origens || {}, cadastrosPorOrigem: x.cadastrosPorOrigem || {} });
+      dias.push({ dia, visitas: x.visitas || 0, visitantes: x.visitantes || 0, cadastros: x.cadastros || 0, paginas: x.paginas || {}, origens: x.origens || {}, cadastrosPorOrigem: x.cadastrosPorOrigem || {}, funil: x.funil || {}, funilErros: x.funilErros || {} });
     }
 
     // Erros no navegador dos clientes (últimos 7 dias) e último backup

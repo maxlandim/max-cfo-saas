@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/firebase';
 import { useAuth } from '../context/AuthContext';
-import { NOME_PAGINA, NOME_ORIGEM } from '../../lib/estatisticas';
+import { NOME_PAGINA, NOME_ORIGEM, NOME_ERRO_CADASTRO } from '../../lib/estatisticas';
 
 const NOME_PLANO = { basic: 'Básico', intermediate: 'Intermediário', complete: 'Completo', unlimited: 'Escritório' };
 const SITUACAO = {
@@ -144,6 +144,15 @@ export default function AdminPage() {
       Object.entries(d.paginas).forEach(([k, v]) => { paginas[k] = (paginas[k] || 0) + v; });
     });
     const tabOrigens = Object.keys({ ...origens, ...cadOrig }).map((k) => ({ k, visitantes: origens[k] || 0, cadastros: cadOrig[k] || 0 })).sort((a, b) => b.visitantes - a.visitantes || b.cadastros - a.cadastros);
+    // funil do cadastro (7 dias)
+    const fun = { abriu: 0, preencheu: 0, enviou: 0, google: 0, erro: 0, whatsapp: 0 }, errosCad = {};
+    ultimos7.forEach((d) => {
+      fun.abriu += (d.paginas || {}).cadastro || 0;
+      Object.entries(d.funil || {}).forEach(([k, v]) => { fun[k] = (fun[k] || 0) + v; });
+      Object.entries(d.funilErros || {}).forEach(([k, v]) => { errosCad[k] = (errosCad[k] || 0) + v; });
+    });
+    fun.criou = soma(ultimos7, 'cadastros');
+    const tabErrosCad = Object.entries(errosCad).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
     const tabPaginas = Object.entries(paginas).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
     const filtradas = clientes.filter((c) => {
       if (busca && !(c.email + ' ' + c.nome).toLowerCase().includes(busca.toLowerCase())) return false;
@@ -155,7 +164,7 @@ export default function AdminPage() {
       return true;
     });
     return {
-      clientes, filtradas, pagantes, comCartao, emTeste, acabando, receita, receitaFutura, novas7, tabOrigens, tabPaginas,
+      clientes, filtradas, pagantes, comCartao, emTeste, acabando, receita, receitaFutura, novas7, tabOrigens, tabPaginas, fun, tabErrosCad,
       vis7: soma(ultimos7, 'visitantes'), visitas7: soma(ultimos7, 'visitas'), cad7: soma(ultimos7, 'cadastros'),
       vis30: soma(dados.dias, 'visitantes'), cad30: soma(dados.dias, 'cadastros'), visHoje: dados.dias[dados.dias.length - 1].visitantes,
       contagem: Object.fromEntries(FILTROS.map(([id]) => [id, null])),
@@ -197,6 +206,19 @@ export default function AdminPage() {
             <section className="ad-dois">
               <Barras titulo="Visitantes por dia" dados={dados.dias} campo="visitantes" total={r.vis30} />
               <Barras titulo="Contas criadas por dia" dados={dados.dias} campo="cadastros" total={r.cad30} />
+            </section>
+
+            <section className="ad-cartao">
+              <div className="ad-cartao-topo"><h2>Funil do cadastro</h2><span>últimos 7 dias</span></div>
+              <div className="ad-funil">
+                {[['Abriram o cadastro', r.fun.abriu], ['Começaram a preencher', r.fun.preencheu], ['Clicaram em Criar conta', r.fun.enviou], ['Tentaram com Google', r.fun.google], ['Deu erro', r.fun.erro], ['Criaram a conta', r.fun.criou]].map(([nome, v], i) => (
+                  <div key={i} className={'ad-funil-etapa' + (i === 5 ? ' fim' : '')}>
+                    <b>{num(v)}</b><span>{nome}</span>
+                    {i > 0 && i !== 4 && r.fun.abriu > 0 && <small>{Math.round((v / r.fun.abriu) * 100)}% de quem abriu</small>}
+                  </div>
+                ))}
+              </div>
+              <p className="ad-nota">Chamaram no WhatsApp pelo site: <b>{num(r.fun.whatsapp)}</b>{r.tabErrosCad.length ? ' · Erros: ' + r.tabErrosCad.map((e) => `${NOME_ERRO_CADASTRO[e.k] || e.k} (${e.v})`).join(', ') : ''}</p>
             </section>
 
             <section className="ad-dois">
@@ -330,6 +352,7 @@ const ESTILO = `
 .ad-tab .n{text-align:right;font-variant-numeric:tabular-nums}
 .ad-rolagem{overflow-x:auto;max-width:100%}
 .ad-contas{min-width:920px}
+.ad-funil{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.ad-funil-etapa{border:1px solid var(--linha);border-radius:12px;padding:12px;display:grid;gap:2px}.ad-funil-etapa b{font-size:24px}.ad-funil-etapa span{font-size:13px;color:var(--sub)}.ad-funil-etapa small{font-size:12px;color:var(--fraco)}.ad-funil-etapa.fim{background:var(--ouro-f);border-color:var(--ouro)}
 .ad-erros{display:grid;gap:10px}.ad-erro{border:1px solid var(--linha,#E5E7EB);border-radius:10px;padding:10px 12px;display:grid;gap:4px}.ad-erro-msg{word-break:break-word;font-size:14px}.ad-pilha{white-space:pre-wrap;word-break:break-all;font-size:11.5px;color:var(--sub);margin:6px 0 0}
 .ad-btn-claro{border-color:var(--linha);color:var(--tinta);background:#fff}
 .ad-link-btn{background:none;border:0;padding:0;font:inherit;font-weight:700;cursor:pointer;color:var(--ouro)}

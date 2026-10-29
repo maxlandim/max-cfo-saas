@@ -20,4 +20,13 @@ export function origemValida(o) {
 
 export const ROBOS = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp\/|linkedinbot|headless|lighthouse|pingdom|uptime|curl|wget|python|axios|node-fetch/i;
 
+// Etapas do funil do cadastro (as aberturas da página e as contas criadas já são contadas à parte)
+export const ETAPAS_FUNIL = ['preencheu', 'enviou', 'google', 'erro', 'whatsapp'];
+export const NOME_ERRO_CADASTRO = {
+  'email-already-in-use': 'E-mail já tinha conta', 'weak-password': 'Senha fraca', 'invalid-email': 'E-mail inválido',
+  'network-request-failed': 'Sem internet', 'too-many-requests': 'Muitas tentativas', 'popup-closed-by-user': 'Fechou a janela do Google',
+  'cancelled-popup-request': 'Fechou a janela do Google', 'popup-blocked': 'Janela do Google bloqueada', 'navegador-do-app': 'Google dentro do Instagram/Facebook',
+  outro: 'Outro erro',
+};
+
 export function diaId(dia) { return 'dia-' + dia; }

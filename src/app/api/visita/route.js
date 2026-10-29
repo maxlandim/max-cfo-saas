@@ -3,7 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '../../../lib/firebaseAdmin';
 import { limiteExcedido } from '../../../lib/limite';
 import { hojeBrasil } from '../../../lib/lembretes';
-import { PAGINAS, origemValida, ROBOS, diaId } from '../../../lib/estatisticas';
+import { PAGINAS, origemValida, ROBOS, diaId, ETAPAS_FUNIL } from '../../../lib/estatisticas';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +22,12 @@ export async function POST(req) {
   const ref = adminDb.collection('estatisticas').doc(diaId(dia));
   const inc = FieldValue.increment(1);
   try {
-    if (b.evento === 'cadastro') {
+    if (b.evento === 'funil') {
+      const etapa = ETAPAS_FUNIL.includes(b.etapa) ? b.etapa : '';
+      if (!etapa) return NextResponse.json({ ok: true, ignorado: 'etapa' });
+      const erro = etapa === 'erro' ? (String(b.erro || '').replace(/^auth\//, '').replace(/[^a-z0-9-]/gi, '').slice(0, 40) || 'outro') : '';
+      await ref.set({ dia, funil: { [etapa]: inc }, ...(erro ? { funilErros: { [erro]: inc } } : {}) }, { merge: true });
+    } else if (b.evento === 'cadastro') {
       await ref.set({ dia, cadastros: inc, cadastrosPorOrigem: { [origem]: inc } }, { merge: true });
     } else {
       const pagina = PAGINAS[String(b.pagina || '').replace(/\/+$/, '') || '/'];
