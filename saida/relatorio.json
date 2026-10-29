@@ -1,0 +1,283 @@
+{
+ "passos": [
+  [
+   true,
+   "conta de teste criada no Firebase",
+   ""
+  ],
+  [
+   true,
+   "painel abre (1ª vez) em 4.0s",
+   "[]"
+  ],
+  [
+   true,
+   "painel continua montado 3 s depois de abrir (sem redesenho do React)",
+   "[True, 6, 18]"
+  ],
+  [
+   true,
+   "módulos no menu",
+   "['Financeiro', 'Vendas', 'Fiscal', 'Pessoas e patrimônio', 'CFO com IA', 'Empresa e ajustes']"
+  ],
+  [
+   true,
+   "módulo \"Financeiro\" abre ao clicar",
+   ""
+  ],
+  [
+   true,
+   "  Financeiro › ⬇️\nContas a receber abre",
+   "([True, 733, 'Contas a receber'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › ⬆️\nContas a pagar abre",
+   "([True, 890, 'Contas a pagar'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 🏦\nContas financeiras abre",
+   "([True, 322, 'Contas financeiras'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 📈\nFluxo de caixa abre",
+   "([True, 978, 'Fluxo de caixa'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 🔄\nImportar extrato abre",
+   "([True, 339, 'Importar extrato'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 📊\nResultado (DRE) abre",
+   "([True, 1019, 'Resultado (DRE)'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 📄\nRelatório mensal (PDF) abre",
+   "([True, 2056, 'Relatório mensal (PDF)'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 📅\nAgenda de vencimentos abre",
+   "([True, 1140, 'Agenda de vencimentos'], [])"
+  ],
+  [
+   true,
+   "  Financeiro › 📒\nTodos os lançamentos abre",
+   "([True, 488, 'Todos os lançamentos'], [])"
+  ],
+  [
+   true,
+   "módulo \"Vendas\" abre ao clicar",
+   ""
+  ],
+  [
+   true,
+   "  Vendas › 👥\nClientes e fornecedores abre",
+   "([True, 312, 'Clientes e fornecedores'], [])"
+  ],
+  [
+   true,
+   "  Vendas › 📝\nOrçamentos abre",
+   "([True, 294, 'Orçamentos'], [])"
+  ],
+  [
+   true,
+   "  Vendas › 🔁\nMensalidades e contratos abre",
+   "([True, 340, 'Mensalidades e contratos'], [])"
+  ],
+  [
+   true,
+   "  Vendas › 🛠️\nOrdens de serviço abre",
+   "([True, 239, 'Ordens de serviço'], [])"
+  ],
+  [
+   true,
+   "  Vendas › 🤝\nFunil de vendas abre",
+   "([True, 347, 'Funil de vendas'], [])"
+  ],
+  [
+   true,
+   "  Vendas › 💸\nComissões abre",
+   "([True, 338, 'Comissões'], [])"
+  ],
+  [
+   true,
+   "  Vendas › 📦\nEstoque abre",
+   "([True, 289, 'Estoque'], [])"
+  ],
+  [
+   true,
+   "módulo \"Fiscal\" abre ao clicar",
+   ""
+  ],
+  [
+   true,
+   "  Fiscal › 🧾\nNotas fiscais abre",
+   "([True, 563, 'Notas fiscais'], [])"
+  ],
+  [
+   true,
+   "  Fiscal › ⚖️\nImpostos e reforma abre",
+   "([True, 100, 'Impostos e reforma'], [])"
+  ],
+  [
+   true,
+   "  Fiscal › 🧮\nEnviar ao contador abre",
+   "([True, 617, 'Enviar ao contador'], [])"
+  ],
+  [
+   true,
+   "  Fiscal › ✅\nChecklist fiscal abre",
+   "([True, 477, 'Checklist fiscal'], [])"
+  ],
+  [
+   true,
+   "módulo \"Pessoas e patrimônio\" abre ao clicar",
+   ""
+  ],
+  [
+   true,
+   "  Pessoas e patrimônio › 🧑‍💼\nFuncionários e folha abre",
+   "([True, 626, 'Funcionários e folha'], [])"
+  ],
+  [
+   true,
+   "  Pessoas e patrimônio › 🏢\nBens da empresa abre",
+   "([True, 212, 'Bens da empresa'], [])"
+  ],
+  [
+   true,
+   "módulo \"CFO com IA\" abre ao clicar",
+   ""
+  ],
+  [
+   true,
+   "  CFO com IA › 🤖\nPergunte ao CFO abre",
+   "([True, 692, 'Pergunte ao CFO'], [])"
+  ],
+  [
+   true,
+   "  CFO com IA › 🔮\nSimular cenários abre",
+   "([True, 791, 'Simular cenários'], [])"
+  ],
+  [
+   true,
+   "  CFO com IA › 🔍\nConsultar CNPJ abre",
+   "([True, 239, 'Consultar CNPJ'], [])"
+  ],
+  [
+   true,
+   "módulo \"Empresa e ajustes\" abre ao clicar",
+   ""
+  ],
+  [
+   true,
+   "  Empresa e ajustes › ⚙️\nConfigurações abre",
+   "([True, 2482, 'Configurações'], [])"
+  ],
+  [
+   true,
+   "  Empresa e ajustes › 🗂️\nTodas as empresas abre",
+   "([True, 902, 'Todas as empresas'], [])"
+  ],
+  [
+   true,
+   "  Empresa e ajustes › 👤\nEquipe e acessos abre",
+   "([True, 1116, 'Equipe e acessos'], [])"
+  ],
+  [
+   true,
+   "  Empresa e ajustes › 🕘\nHistórico de alterações abre",
+   "([True, 150, 'Histórico de alterações'], [])"
+  ],
+  [
+   true,
+   "botão de tema alterna claro e escuro",
+   "[['claro', 'rgb(243, 245, 249)'], 'escuro']"
+  ],
+  [
+   true,
+   "abas do topo do módulo navegam",
+   ""
+  ],
+  [
+   true,
+   "conta a pagar aparece na lista",
+   ""
+  ],
+  [
+   true,
+   "painel abre (2ª vez) em 0.5s",
+   "[]"
+  ],
+  [
+   true,
+   "lançamento continua depois de recarregar",
+   ""
+  ],
+  [
+   true,
+   "lançamento gravado na nuvem (Firestore)",
+   "comprimido"
+  ],
+  [
+   true,
+   "anexo enviado e aberto pelo link",
+   "{'url': '/api/anexos?ws=QZhRv3nVNybX4TCubfBT9bw5yHz2&f=1793266514664_4a8fab9d7a0ca882_Recibo-teste-robo.pdf&t=MabDG0ynu8wihuHtDgsJ71cVxelV-l4o', 'st': 200, 'txt': '%PDF-1.4 anexo do robo', 'tipo': 'application/pdf', 'falso': 404, 'saude': {'ok': True, 'versao': '1793227520', 'hora': '2026-10-29T09:35:15.225Z', 'anexos': True, 'volume': True}}"
+  ],
+  [
+   true,
+   "link de anexo com assinatura errada não abre",
+   "404"
+  ],
+  [
+   true,
+   "pasta dos anexos em volume persistente (sobrevive ao Redeploy)",
+   "{'ok': True, 'versao': '1793227520', 'hora': '2026-10-29T09:35:15.225Z', 'anexos': True, 'volume': True}"
+  ],
+  [
+   true,
+   "relatório mensal mostra a prévia com os lançamentos",
+   ""
+  ],
+  [
+   true,
+   "PDF do relatório baixado (476 KB)",
+   "Relatorio-Empresa-2026-10.pdf"
+  ],
+  [
+   true,
+   "painel no celular abre em 0.6s",
+   "[]"
+  ],
+  [
+   true,
+   "celular: módulo abre no menu",
+   ""
+  ],
+  [
+   true,
+   "celular: funcionalidade abre",
+   ""
+  ]
+ ],
+ "falhas": [],
+ "console": [
+  [
+   "error",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ ],
+ "tempos": {
+  "login_abre": 1.7,
+  "login_pronto": 3.1,
+  "painel_primeira_vez": 4.0,
+  "painel_segunda_vez": 0.5,
+  "painel_celular": 0.6
+ }
+}

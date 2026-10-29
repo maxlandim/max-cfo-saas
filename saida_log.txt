@@ -1,0 +1,389 @@
+OK    conta de teste criada no Firebase 
+OK    painel abre (1ª vez) em 4.0s []
+OK    painel continua montado 3 s depois de abrir (sem redesenho do React) [True, 6, 18]
+OK    módulos no menu ['Financeiro', 'Vendas', 'Fiscal', 'Pessoas e patrimônio', 'CFO com IA', 'Empresa e ajustes']
+OK    módulo "Financeiro" abre ao clicar 
+OK      Financeiro › ⬇️
+Contas a receber abre ([True, 733, 'Contas a receber'], [])
+OK      Financeiro › ⬆️
+Contas a pagar abre ([True, 890, 'Contas a pagar'], [])
+OK      Financeiro › 🏦
+Contas financeiras abre ([True, 322, 'Contas financeiras'], [])
+OK      Financeiro › 📈
+Fluxo de caixa abre ([True, 978, 'Fluxo de caixa'], [])
+OK      Financeiro › 🔄
+Importar extrato abre ([True, 339, 'Importar extrato'], [])
+OK      Financeiro › 📊
+Resultado (DRE) abre ([True, 1019, 'Resultado (DRE)'], [])
+OK      Financeiro › 📄
+Relatório mensal (PDF) abre ([True, 2056, 'Relatório mensal (PDF)'], [])
+OK      Financeiro › 📅
+Agenda de vencimentos abre ([True, 1140, 'Agenda de vencimentos'], [])
+OK      Financeiro › 📒
+Todos os lançamentos abre ([True, 488, 'Todos os lançamentos'], [])
+OK    módulo "Vendas" abre ao clicar 
+OK      Vendas › 👥
+Clientes e fornecedores abre ([True, 312, 'Clientes e fornecedores'], [])
+OK      Vendas › 📝
+Orçamentos abre ([True, 294, 'Orçamentos'], [])
+OK      Vendas › 🔁
+Mensalidades e contratos abre ([True, 340, 'Mensalidades e contratos'], [])
+OK      Vendas › 🛠️
+Ordens de serviço abre ([True, 239, 'Ordens de serviço'], [])
+OK      Vendas › 🤝
+Funil de vendas abre ([True, 347, 'Funil de vendas'], [])
+OK      Vendas › 💸
+Comissões abre ([True, 338, 'Comissões'], [])
+OK      Vendas › 📦
+Estoque abre ([True, 289, 'Estoque'], [])
+OK    módulo "Fiscal" abre ao clicar 
+OK      Fiscal › 🧾
+Notas fiscais abre ([True, 563, 'Notas fiscais'], [])
+OK      Fiscal › ⚖️
+Impostos e reforma abre ([True, 100, 'Impostos e reforma'], [])
+OK      Fiscal › 🧮
+Enviar ao contador abre ([True, 617, 'Enviar ao contador'], [])
+OK      Fiscal › ✅
+Checklist fiscal abre ([True, 477, 'Checklist fiscal'], [])
+OK    módulo "Pessoas e patrimônio" abre ao clicar 
+OK      Pessoas e patrimônio › 🧑‍💼
+Funcionários e folha abre ([True, 626, 'Funcionários e folha'], [])
+OK      Pessoas e patrimônio › 🏢
+Bens da empresa abre ([True, 212, 'Bens da empresa'], [])
+OK    módulo "CFO com IA" abre ao clicar 
+OK      CFO com IA › 🤖
+Pergunte ao CFO abre ([True, 692, 'Pergunte ao CFO'], [])
+OK      CFO com IA › 🔮
+Simular cenários abre ([True, 791, 'Simular cenários'], [])
+OK      CFO com IA › 🔍
+Consultar CNPJ abre ([True, 239, 'Consultar CNPJ'], [])
+OK    módulo "Empresa e ajustes" abre ao clicar 
+OK      Empresa e ajustes › ⚙️
+Configurações abre ([True, 2482, 'Configurações'], [])
+OK      Empresa e ajustes › 🗂️
+Todas as empresas abre ([True, 902, 'Todas as empresas'], [])
+OK      Empresa e ajustes › 👤
+Equipe e acessos abre ([True, 1116, 'Equipe e acessos'], [])
+OK      Empresa e ajustes › 🕘
+Histórico de alterações abre ([True, 150, 'Histórico de alterações'], [])
+OK    botão de tema alterna claro e escuro [['claro', 'rgb(243, 245, 249)'], 'escuro']
+OK    abas do topo do módulo navegam 
+OK    conta a pagar aparece na lista 
+OK    painel abre (2ª vez) em 0.5s []
+OK    lançamento continua depois de recarregar 
+OK    lançamento gravado na nuvem (Firestore) comprimido
+OK    anexo enviado e aberto pelo link {'url': '/api/anexos?ws=QZhRv3nVNybX4TCubfBT9bw5yHz2&f=1793266514664_4a8fab9d7a0ca882_Recibo-teste-robo.pdf&t=MabDG0ynu8wihuHtDgsJ71cVxelV-l4o', 'st': 200, 'txt': '%PDF-1.4 anexo do robo', 'tipo': 'application/pdf', 'falso': 404, 'saude': {'ok': True, 'versao': '1793227520', 'hora': '2026-10-29T09:35:15.225Z', 'anexos': True, 'volume': True}}
+OK    link de anexo com assinatura errada não abre 404
+OK    pasta dos anexos em volume persistente (sobrevive ao Redeploy) {'ok': True, 'versao': '1793227520', 'hora': '2026-10-29T09:35:15.225Z', 'anexos': True, 'volume': True}
+OK    relatório mensal mostra a prévia com os lançamentos 
+OK    PDF do relatório baixado (476 KB) Relatorio-Empresa-2026-10.pdf
+OK    painel no celular abre em 0.6s []
+OK    celular: módulo abre no menu 
+OK    celular: funcionalidade abre 
+dados de teste esvaziados
+conta de teste apagada
+FALHAS: []
+TEMPOS: {'login_abre': 1.7, 'login_pronto': 3.1, 'painel_primeira_vez': 4.0, 'painel_segunda_vez': 0.5, 'painel_celular': 0.6}
+CONSOLE: [
+[
+"error",
+"Failed to load resource: the server responded with a status of 404 ()"
+]
+]
+tipo='application/pdf' 410 {"error":"A leitura agora é feita pelo próprio sistema. Atualize a página (F5) e envie o arquivo de novo."}
+tipo='' 410 {"error":"A leitura agora é feita pelo próprio sistema. Atualize a página (F5) e envie o arquivo de novo."}
+tipo='application/pdf' 410 {"error":"A leitura agora é feita pelo próprio sistema. Atualize a página (F5) e envie o arquivo de novo."}
+tipo='' 410 {"error":"A leitura agora é feita pelo próprio sistema. Atualize a página (F5) e envie o arquivo de novo."}
+OK    pc / sem rolagem lateral (1366px), 6272 letras
+OK    pc /pricing sem rolagem lateral (1366px), 2381 letras
+OK    pc /consultoria sem rolagem lateral (1366px), 3552 letras
+OK    pc /login sem rolagem lateral (1366px), 191 letras
+OK    pc sem erros nas páginas []
+OK    cel / sem rolagem lateral (390px), 6224 letras
+OK    cel /pricing sem rolagem lateral (390px), 2381 letras
+OK    cel /consultoria sem rolagem lateral (390px), 3518 letras
+OK    cel /login sem rolagem lateral (390px), 191 letras
+OK    cel sem erros nas páginas []
+OK    novos: página inicial tem links para a consultoria 
+OK    novos: logo aparece na página inicial 
+OK    novos: site diz que emite NFS-e 
+OK    novos: plano Escritório com 10 empresas e empresa adicional 
+OK    novos: preço do Básico (fundador 49,90 ou normal 79,90) Mensal
+Anual 2 meses grátis
+Preço de fundador para os primeiros assinantes, por 12 meses · 50 vagas
+Básico
+de R$ 79,90 por
+R$49,90/mês
+cobrado todo mês · 12 mes
+OK    novos: plano anual = 10 mensalidades Mensal
+Anual 2 meses grátis
+Preço de fundador para os primeiros assinantes, por 12 meses · 50 vagas
+Básico
+de R$ 799,00 por
+R$499,00/ano
+equivale a R$ 41,58/mês
+OK    novos: consultoria lista os serviços 
+OK    novos: formulário abre o WhatsApp com a mensagem pronta https://wa.me/5561992105889?text=Olá! Quero uma proposta da Landim Advisory.
+Serviço: Planejamento tributário e reforma
+Nome: Robô Teste
+Empresa: Empresa XPTO
+OK    novos: consultoria no celular sem rolagem lateral 390
+OK    novos: sem erros de JavaScript nas páginas públicas []
+OK    novos: rota de lembretes protegida por senha 401
+OK    novos: painel do administrador fechado sem login 401
+OK    novos: rota de backup protegida por senha 401
+OK    novos: tarefa diária protegida por senha 401
+OK    novos: cobrança pelo Asaas exige login 401
+OK    novos: webhook das cobranças recusa sem token 401
+OK    novos: indicação exige login 401
+OK    novos: emissor de NFS-e exige login 401
+OK    novos: emitir NFS-e exige login 401
+OK    novos: botão Ver demonstração na página inicial 
+OK    novos: código de indicação do link fica guardado 
+OK    novos: demonstração abre sem login com empresa fictícia ['visory.com.br/dashboard?demo=1', 196]
+OK    novos: demonstração mostra o DRE 
+OK    novos: validade: Início avisa do lote vencido 
+OK    novos: validade: módulo carregado e lotes da demonstração [1, 5]
+OK    novos: validade: tela de Validades lista os lotes Estoque
+
+Validade dos produtos por lote: o que venceu, o que vence logo e o valor em risco
+
+📄 Entrada por nota fiscal
++ Produto
+📦 Produtos
+🗓️ Validades (6)
+1
+Lotes vencidos · R$ 44,70
+5
+Vencem em até 
+OK    novos: validade: coluna na lista de produtos 
+OK    novos: leitor: boleto em PDF sem IA {'forma': 'Boleto', 'linhaDigitavel': '34191790011043510047391020150008616410000123456', 'valor': 1234.56, 'vencimento': '2026-11-25', '_leitor': True, 'tipo': 'DESPESA', 'contato': 'Imobiliária Sol LTDA', 'documento': '12345678000195', 'descricao': 'Aluguel da loja - novembro/2026 — Imobiliária Sol
+OK    novos: leitor: boleto com cedente na linha {'forma': 'Boleto', 'linhaDigitavel': '23793381286000000001223456000001816510000058990', 'valor': 589.9, 'vencimento': '2026-12-05', '_leitor': True, 'tipo': 'DESPESA', 'contato': 'Telecom Fibra Net S.A.', 'documento': '11222333000181', 'descricao': 'Boleto Telecom Fibra Net', 'categoria': '', 'comp
+OK    novos: leitor: conta de energia {'forma': 'Boleto', 'linhaDigitavel': '836800000181734201234592002402024059010011121216', 'valor': 1873.42, 'vencimento': '2026-11-10', '_leitor': True, 'contato': 'Neoenergia', 'descricao': 'Neoenergia — energia elétrica e gás OUT/2026', 'categoria': 'Energia e Utilidades', 'tipo': 'DESPESA', 'comp
+OK    novos: leitor: DAS {'forma': 'Boleto', 'linhaDigitavel': '856000000393127703280009000007261233456789000019', 'valor': 3912.77, 'vencimento': '2026-11-20', '_leitor': True, 'contato': 'Receita Federal', 'descricao': 'DAS — Simples Nacional Outubro/2026', 'categoria': 'Impostos e Taxas', 'tipo': 'DESPESA', 'completo': T
+OK    novos: leitor: DANFE com itens conferidos {'conferido': True, 'itens': 5, 'total': 2030.3, 'cnpj': '12345678000195'}
+OK    novos: leitor: código de barras na foto {'tipo': 'DESPESA', 'forma': 'Boleto', 'linhaDigitavel': '34191090080001234567489012345677516460000235000', 'valor': 2350, 'vencimento': '2026-11-30', 'descricao': 'Boleto', 'categoria': '', '_leitor': True, '_soCodigo': True, 'completo': False}
+OK    novos: leitor: foto de lado {'tipo': 'DESPESA', 'forma': 'Boleto', 'linhaDigitavel': '34191090080001234567489012345677516460000235000', 'valor': 2350, 'vencimento': '2026-11-30', 'descricao': 'Boleto', 'categoria': '', '_leitor': True, '_soCodigo': True, 'completo': False}
+OK    novos: leitor: PDF escaneado pelo código de barras {'tipo': 'DESPESA', 'forma': 'Boleto', 'linhaDigitavel': '34191090080001234567489012345677516460000235000', 'valor': 2350, 'vencimento': '2026-11-30', 'descricao': 'Boleto', 'categoria': '', '_leitor': True, '_soCodigo': True, 'completo': False}
+OK    novos: OCR: arquivo do motor no site tesseract.min.js 200
+OK    novos: OCR: arquivo do motor no site worker.min.js 200
+OK    novos: OCR: arquivo do motor no site lang/por.traineddata.gz 200
+OK    novos: OCR: boleto pela foto (sem código de barras) {'r': {'forma': 'Boleto', 'linhaDigitavel': '34191790011043510047391020150008616410000123456', 'valor': 1234.56, 'vencimento': '2026-11-25', '_leitor': True, 'tipo': 'DESPESA', 'contato': 'Imobiliária Sol LTDA', 'documento': '12345678000195', 'descricao': 'Aluguel da loja - novembro/2026 — Imobiliár
+OK    novos: OCR: recibo pela foto {'r': {'tipo': 'DESPESA', 'descricao': 'Recibo — Frio & Forno Assistência', 'valor': 450, 'contato': 'Frio & Forno Assistência Técnica', 'documento': '11222333000181', 'vencimento': '2026-10-20', 'dataEmissao': '2026-10-20', 'categoria': '', 'jaPago': False, '_leitor': True, 'completo': False, '_ocr
+OCR-DANFE-TEXTO: " ICMS SUBST.\n0,00\nOUTRAS DESPESAS\nCNPJ/CPF\n98.765.432/0001-98\nDATA DA EMISSÃO\n15/10/2026\nDATA DA SAÍDA/ENTRADA\n15/10/2026\nVALOR TOTAL DO [PI\n12,50\nOR TOTAL DOS PRODUTOS\n42,30\nVALOR TOTAL DA NOTA\n4,50\nDADOS DO PRODUTO / SERVIÇO\ncóDIGO         DESCRIÇÃO DO PRODUTO / SERVIÇO                      NCM/SH                 CFOP UN — QUANT.        VALOR UNIT. — VALORTOTAL BCICMS — VLR.ICMS ALÍO.ICM:\nFAR-001        FARINHA DE TRIGO TIPO 1 25KG                    11010010 — 000     5102 SC     10,0000      95,5000        955,00         955,00      114,60 12,00\nACU-020       AÇÚCAR REFINADO 1KG FARDO COM 10 UNIDA  17019900 — 000     5102 FD     5,0000       42,9000        214,50         214,50      25,74     12,00\nDES MARCA DOCE VIDA EMBALAGEM PLÁSTICA\nOLE-300        ÓLEO DE SOJA 900ML                                     15079011     060      5405 UN      24,0000      7,2500           174,00           174,00       20,88      12,00\nFER-500           FERMENTO BIOLÓGICO SECO 500G                        21021090 — 000        5102 PCT 12,0000        18,4000            220,80              220,80         26,50        12,00\nMAN-005        MANTEIGA SEM SAL 5KG                                  04051000 — 000       5102 UN      2,0000        189,0000        378,00           378,00       45,36       12,00\nINFORMAÇÕES COMPLEMENTARES\nPedido 8821. Documento emitido por ME ou EPP optante pelo Simples Nacional."
+OK    novos: OCR: nota fiscal pela foto com itens {'ms': 3917, 'erro': None, 'total': 2030.3, 'conferido': False, 'itens': [['FAR-001', 10, 955], ['ACU-020', 5, 214.5], ['OLE-300', 24, 174], ['FER-500', 12, 220.8], ['MAN-005', 2, 378]], 'parc': [{'numero': '001', 'vencimento': '2026-11-14', 'valor': 1015.15}, {'numero': '002', 'vencimento': '2026-1
+OK    novos: IA externa desligada no servidor [410, 410]
+OK    novos: CFO: preço de venda com os números **Como formar o preço de venda (markup)**
+Preço = custo do produto ÷ (1 − impostos% − despesas fixas% − lucro desejado%)
+OK    novos: CFO responde sem IA com os dados **A receber nos próximos 30 dias: R$ 12.304,00** (total em aberto: R$ 18.703,00)
+
+**Em atraso: R$ 482,00** de 1 cobrança
+OK    novos: CFO: onde está o gasto **Onde está o gasto em out/26** (total R$ 51.618,90):
+• Salários e Pró-labore — R$ 22.800,00 (44%)
+• Fornecedores — R$ 1
+OK    novos: demonstração sem erros de JavaScript []
+OK    novos: backups do administrador fechados sem login 401
+OK    novos: contador de visitas responde 200
+OK    novos: webhook do Asaas recusa aviso sem token [401, 'Token inválido.']
+OK    novos: checkout Pix/boleto pede login [401, 'Faça login para assinar.']
+OK    novos: minha assinatura exige login [401, 'Faça login novamente.']
+OK    novos: pagamento configurado (pede login para assinar) [401, 'Faça login para assinar.']
+OK    novos: teste de lembrete exige login/configuração [503, 'Os lembretes por e-mail ainda não foram ativados no servidor (falta RESEND_API_KEY).']
+OK    novos: conta de teste criada 
+OK    novos: tutorial do Início abre sozinho ✕
+Bem-vindo ao Início
+Esta é a tela para abrir todo dia. Em poucos segundos você
+OK    novos: tutorial avança para o próximo passo 
+OK    novos: botão ❔ de tutorial no topo 
+OK    novos: logo no menu do painel 
+   itens: [['RECEITA', 'Mensalidade XLSX', 1500.5, '2026-11-08', ''], ['DESPESA', 'Aluguel XLSX', 2300, '2026-11-03', ''], ['DESPESA', 'Internet XLSX', 199.9, '2026-11-01', '']]
+OK    novos: Excel (.xlsx) lido: tipos, valores e datas [['RECEITA', 'Mensalidade XLSX', 1500.5, '2026-11-08', ''], ['DESPESA', 'Aluguel XLSX', 2300, '2026-11-03', ''], ['DESPESA', 'Internet XLSX', 199.9, '2026-11-01', '']]
+OK    novos: importou 3 contas do Excel 3
+OK    novos: painel do BPO com indicadores 
+OK    novos: cartão de acesso do cliente/contador na Equipe 
+::warning::convite: gravado
+OK    novos: convite tentado gravado (regras novas publicadas)
+OK    novos: convite existe no Firestore 200
+OK    novos: cartão de lembretes por e-mail nas Configurações 
+OK    novos: lembretes salvos na empresa 
+   cobrança: ['object', True, True, '⚡ Gerar cobrança pelo Asaas (ambiente de teste)\nO cliente escolhe Pix, boleto ou cartão. Quando ele pagar, a conta é baixada sozinha.\nNOME DO CLIENTE\nCPF OU CNPJ DO CLIENTE\nE-MAIL (O ASAAS ENVIA A COBRANÇA)\nCELULAR\nGerar cobrança de R$\xa0250,00', 'mLuGmBZ2KqcdAHFVoVBgZe32z242', False]
+OK    novos: tela Cobrar oferece cobrança pelo Asaas com baixa automática ['object', True, True, '⚡ Gerar cobrança pelo Asaas (ambiente de teste)\nO cliente escolhe Pix, boleto ou cartão. Quando ele pagar, a conta é baixada sozinha.\nNOME DO CLIENTE\nCPF OU CNPJ DO CLIENTE\nE-MAIL (O ASAAS ENVIA A COBRANÇA)\nCELULAR\nGerar cobrança de R$\xa0250,00', 'mLuGmBZ2KqcdAHFVoVBgZ
+OK    novos: cobrança gerada e link mostrado https://sandbox.asaas.com/i/teste1
+OK    novos: pagamento avisado pelo Asaas dá baixa sozinho ['pago', 'Pix', 'paga']
+OK    novos: NFS-e: tela mostra o que falta configurar Notas Fiscais
+
+Emissão de NFS-e no padrão nacional, com conta a receber e faturamento de 12 meses
+
+⚙️ Configurar emissão
+Registrar nota de outro sistema
++ Emitir NFS-e
+🧾 Emita NFS-e direto daqui. Desd
+OK    novos: NFS-e: configuração pede certificado e dados fiscais 
+OK    novos: NFS-e: formulário de emissão abre 
+OK    novos: NFS-e: nota emitida aparece no painel {'id': 'mvtcnlnwlowm', 'modelo': 'NFS-e', 'origem': 'emissor', 'numero': '12', 'chave': '55555555555555555555555555555555555555555555555555', 'idDps': 'DPS1', 'ambiente': '2', 'teste': True, 'tomador': 'CLIENTE NFSE', 'cnpj': '52998224725', 'servico': 'Consultoria', 'valor': 350, 'issRetido': 0, 'is
+OK    novos: analista vê a conta aguardando aprovação, sem pagar 	10/01/2099	
+Fornecedor teste
+Fornecedores
+	Conta principal	R$ 90,00	Vence em 26371 dias
+⏳ Aguardando aprovação
+	
+⧉
+✏️
+🗑
+OK    novos: dono vê o botão Aprovar 	10/01/2099	
+Fornecedor teste
+Fornecedores
+	Conta principal	R$ 90,00	Vence em 26371 dias
+⏳ Aguardando aprovação
+	
+✔ Apro
+OK    novos: aprovação registrada 
+OK    novos: convite com escolha de papel (consulta, analista, gestor) 
+OK    novos: 2.0 MB de dados gravados comprimidos na nuvem [200, ['dataZ', 'formato', 'owner', 'tamanho', 'updatedAt']]
+OK    novos: os 15 mil lançamentos voltam depois de recarregar 15000
+OK    novos: sem erros de JavaScript no painel []
+OK    novos: atalho do administrador escondido para cliente comum 
+OK    novos: painel do administrador abre Landim Advisory
+Administrador
+↻ Atualizar
+Abrir o sistema
+Painel do administrador
+
+Números de 29/10/2026, às 06:37. As v
+OK    novos: receita mensal somada dos assinantes (129,90 + 269,90) 
+OK    novos: 2 gráficos de 30 dias 60
+OK    novos: tabela de origens 
+OK    novos: filtro de contas (5 → 2 em teste) [5, 2]
+OK    novos: painel do administrador no celular sem rolagem lateral 390
+OK    novos: escolha de pagamento com nome e CPF/CNPJ 
+OK    novos: nome já usado vem preenchido 
+OK    novos: máscara de CPF 529.982.247-25
+OK    novos: Pix/boleto envia forma, plano e CPF [{'planId': 'intermediate', 'periodo': 'mensal', 'forma': 'pix_boleto', 'nome': 'Empresa Teste Ltda', 'documento': '52998224725'}]
+OK    novos: erro do pagamento aparece na janela 
+OK    novos: CPF incompleto é barrado antes de enviar 
+OK    novos: máscara de CNPJ 11.222.333/0001-81
+OK    novos: cartão envia forma=cartao e período anual [{'planId': 'basic', 'periodo': 'anual', 'forma': 'cartao', 'nome': 'Empresa Teste Ltda', 'documento': '11222333000181'}]
+OK    novos: janela de pagamento no celular sem rolagem lateral 390
+OK    novos: Esc fecha a escolha de pagamento 
+OK    novos: indique e ganhe com link próprio na Minha assinatura 
+OK    novos: página Minha assinatura Landim Advisory
+PT
+EN
+ES
+Voltar ao painel
+Minha assinatura
+Plano
+Completo · mensal · preço de fundador
+Forma de pagamento
+Pix ou boleto (cobrança por e-mail)
+Pr
+OK    novos: Minha assinatura no celular sem rolagem lateral 390
+OK    novos: cancelamento pede confirmação 
+OK    novos: painel bloqueado mostra a cobrança vencida 🔒
+Pagamento pendente
+
+A cobrança da assinatura venceu. Pague com Pix ou boleto pelo link abaixo para continuar; o boleto
+OK    novos: aviso de cobrança Pix/boleto perto do vencimento 
+OK    novos: atalho Minha assinatura no menu 
+conta apagada 200
+novos FALHAS: nenhuma
+::warning::novos: tudo OK
+nota_ia status 410
+{"error":"A leitura agora é feita pelo próprio sistema. Atualize a página (F5) e envie o arquivo de novo."}
+::warning::nota_ia: DIVERGENTE {"itens": [], "total": null, "parcelas": null, "frete": null, "ipi": null, "desc": null, "num": null, "chave": null}
+OK    idiomas: en: língua aplicada na página inicial ['en', 'visible']
+OK    idiomas: en: sem erros de JavaScript []
+OK    idiomas: en: sem erro de hidratação do React []
+OK    idiomas: es: língua aplicada na página inicial ['es', 'visible']
+OK    idiomas: es: sem erros de JavaScript []
+OK    idiomas: es: sem erro de hidratação do React []
+OK    idiomas: pt: celular / sem rolagem lateral (390px) []
+OK    idiomas: pt: celular /consultoria sem rolagem lateral (390px) []
+OK    idiomas: pt: celular /pricing sem rolagem lateral (390px) []
+OK    idiomas: pt: celular /login sem rolagem lateral (390px) []
+OK    idiomas: pt: celular /register sem rolagem lateral (390px) []
+OK    idiomas: pt: celular /termos sem rolagem lateral (390px) []
+OK    idiomas: en: celular / sem rolagem lateral (390px) []
+OK    idiomas: en: celular /consultoria sem rolagem lateral (390px) []
+OK    idiomas: en: celular /pricing sem rolagem lateral (390px) []
+OK    idiomas: en: celular /login sem rolagem lateral (390px) []
+OK    idiomas: en: celular /register sem rolagem lateral (390px) []
+OK    idiomas: en: celular /termos sem rolagem lateral (390px) []
+OK    idiomas: es: celular / sem rolagem lateral (390px) []
+OK    idiomas: es: celular /consultoria sem rolagem lateral (390px) []
+OK    idiomas: es: celular /pricing sem rolagem lateral (390px) []
+OK    idiomas: es: celular /login sem rolagem lateral (390px) []
+OK    idiomas: es: celular /register sem rolagem lateral (390px) []
+OK    idiomas: es: celular /termos sem rolagem lateral (390px) []
+OK    idiomas: navegador en-US com pt-BR na lista abre em português pt-BR
+OK    idiomas: pt: página em português pt-BR
+IDIOMAS_FALTANDO_en={"Landim Advisory": "/", "{0}": "/", "−{0}": "/", "+{0}": "/", "R$": "/", "Landim Advisory Consultoria Empresarial Ltda": "/", "SHIGS {0}, Bloco G, Lote {1}, Plano Piloto, Brasília-DF, CEP {2}{3}": "/", "maxpaeslandim@gmail.com": "/", "· WhatsApp": "/", "WhatsApp ({0}) {1}{2} · maxpaeslandim@gmail.com": "/consultoria", "G": "/login", "login e banco de dados.": "/privacidade", "servidor contratado (Hostinger), onde o site roda e onde ficam guardados os anexos que você enviar (boletos, recibos e notas), acessíveis só por link assinado.": "/privacidade", "Resend:": "/privacidade", "Asaas:": "/privacidade", "ViaCEP:": "/privacidade", "BrasilAPI / Minha Receita:": "/privacidade", "Open Finance": "painel", "M": "painel", "CFO Master": "painel", "Ctrl K": "painel", "🔥 Burn Rate": "painel", "Petrobrás": "painel", "Itaú": "painel", "Banco do Brasil": "painel", "Magalu": "painel", "Americanas": "painel", "⚫ Ultra Dark": "painel", "🔵 Midnight Blue": "painel", "Hub Fintech": "painel", "- {0}": "painel", "SKU": "painel", "João Silva": "painel", "Maria Souza": "painel", "{0} ΔS": "painel", "CNPJ": "painel", "Ultimate": "painel", "×": "painel", "x": "painel", "V": "painel", "Bom dia! Sou o": "painel", "MEI": "painel", "{0} atrasado": "painel", "💸 {0} recebimento(s) em atraso: {1}. Cobre por Pix em Contas a receber.": "painel", "Mercado Bom Preço ·": "painel", "Frio & Forno Assistência ·": "painel", "Lanchonete Ponto Certo ·": "painel", "Distribuidora Centro-Oeste ·": "painel", "PDV Fácil ·": "painel", "Nubank PJ": "painel", "{0} / {1}": "painel", "-{0}": "painel", "Caesb": "painel", "Café da Esquina": "painel", "Condomínio Vila Verde": "painel", "Distribuidora Centro-Oeste": "painel", "Embala Tudo": "painel", "Frio & Forno Assistência": "painel", "Hotel Planalto": "painel", "Imobiliária Central": "painel", "Lanchonete Ponto Certo": "painel", "Mercado Bom Preço": "painel", "Moinho Planalto": "painel", "Neoenergia": "painel", "Operadora Fibra": "painel", "PDV Fácil": "painel", "Restaurante Sabor Caseiro": "painel", "{0} cx": "painel", "{0} l": "painel", "{0} a receber em atraso": "painel", ". Vale cobrar esses clientes.": "painel"}
+IDIOMAS_FALTANDO_es={"Landim Advisory": "/", "{0}": "/", "−{0}": "/", "+{0}": "/", "R$": "/", "Landim Advisory Consultoria Empresarial Ltda": "/", "SHIGS {0}, Bloco G, Lote {1}, Plano Piloto, Brasília-DF, CEP {2}{3}": "/", "maxpaeslandim@gmail.com": "/", "· WhatsApp": "/", "WhatsApp ({0}) {1}{2} · maxpaeslandim@gmail.com": "/consultoria", "G": "/login", "login e banco de dados.": "/privacidade", "servidor contratado (Hostinger), onde o site roda e onde ficam guardados os anexos que você enviar (boletos, recibos e notas), acessíveis só por link assinado.": "/privacidade", "Resend:": "/privacidade", "Asaas:": "/privacidade", "ViaCEP:": "/privacidade", "BrasilAPI / Minha Receita:": "/privacidade", "Open Finance": "painel", "M": "painel", "CFO Master": "painel", "Ctrl K": "painel", "🔥 Burn Rate": "painel", "Petrobrás": "painel", "Itaú": "painel", "Banco do Brasil": "painel", "Magalu": "painel", "Americanas": "painel", "⚫ Ultra Dark": "painel", "🔵 Midnight Blue": "painel", "Hub Fintech": "painel", "- {0}": "painel", "SKU": "painel", "João Silva": "painel", "Maria Souza": "painel", "{0} ΔS": "painel", "CNPJ": "painel", "Ultimate": "painel", "×": "painel", "x": "painel", "V": "painel", "Bom dia! Sou o": "painel", "MEI": "painel", "{0} atrasado": "painel", "💸 {0} recebimento(s) em atraso: {1}. Cobre por Pix em Contas a receber.": "painel", "Mercado Bom Preço ·": "painel", "Frio & Forno Assistência ·": "painel", "Lanchonete Ponto Certo ·": "painel", "Distribuidora Centro-Oeste ·": "painel", "PDV Fácil ·": "painel", "Nubank PJ": "painel", "{0} / {1}": "painel", "-{0}": "painel", "Caesb": "painel", "Café da Esquina": "painel", "Condomínio Vila Verde": "painel", "Distribuidora Centro-Oeste": "painel", "Embala Tudo": "painel", "Frio & Forno Assistência": "painel", "Hotel Planalto": "painel", "Imobiliária Central": "painel", "Lanchonete Ponto Certo": "painel", "Mercado Bom Preço": "painel", "Moinho Planalto": "painel", "Neoenergia": "painel", "Operadora Fibra": "painel", "PDV Fácil": "painel", "Restaurante Sabor Caseiro": "painel", "{0} cx": "painel", "{0} l": "painel", "{0} a receber em atraso": "painel", ". Vale cobrar esses clientes.": "painel"}
+idiomas FALHAS: nenhuma
+OK    interno: Instagram Android: sem aviso na tela Landim Advisory
+PT
+EN
+ES
+Comece Grátis
+
+Crie sua conta em 1 minuto e organize o financeiro da sua empresa
+
+✓ Veja no celular quanto tem, quanto vai receber e quanto vai pagar
+✓ Cobre clientes por Pix 
+OK    interno: Instagram Android: Google abre a página direto no Chrome intent://landimadvisory.com.br/register?utm_source=instagram&utm_medium=pago&utm_campaign=nfse#Intent;scheme=https;package=com.android.chrome;S.browser_fallback
+OK    interno: Instagram Android: sem erros de JavaScript []
+OK    interno: Facebook iPhone: sem aviso na tela Landim Advisory
+PT
+EN
+ES
+Bem-vindo de volta
+
+Acesse seu painel financeiro executivo
+
+E-mail
+Senha
+Entrar na Plataforma
+ou
+G Entrar com Google
+Esqueci minha senha
+Não tem uma conta? Crie agora
+OK    interno: Facebook iPhone: Google tenta abrir no Safari x-safari-https://landimadvisory.com.br/login
+OK    interno: Facebook iPhone: se o app não deixar, explica como abrir no Safari Landim Advisory
+PT
+EN
+ES
+Bem-vindo de volta
+
+Acesse seu painel financeiro executivo
+
+Para entrar com o Google, abra esta página no Safari: toque em ⋯ no canto da tela e escolha “Abrir no navegador”. O
+OK    interno: Facebook iPhone: sem erros de JavaScript []
+OK    interno: Instagram Android login: sem aviso na tela Landim Advisory
+PT
+EN
+ES
+Bem-vindo de volta
+
+Acesse seu painel financeiro executivo
+
+E-mail
+Senha
+Entrar na Plataforma
+ou
+G Entrar com Google
+Esqueci minha senha
+Não tem uma conta? Crie agora
+OK    interno: Instagram Android login: Google abre a página direto no Chrome intent://landimadvisory.com.br/login#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Flandimadvisory.com.br%2Flogin;end
+OK    interno: Instagram Android login: sem erros de JavaScript []
+OK    interno: Chrome comum: sem aviso na tela Landim Advisory
+PT
+EN
+ES
+Comece Grátis
+
+Crie sua conta em 1 minuto e organize o financeiro da sua empresa
+
+✓ Veja no celular quanto tem, quanto vai receber e quanto vai pagar
+✓ Cobre clientes por Pix 
+OK    interno: Chrome comum: sem erros de JavaScript []
+interno FALHAS: nenhuma
