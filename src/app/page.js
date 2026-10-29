@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { CardsPlanos, INCLUSO, ESTILO_PLANOS, useFundadores } from './components/Planos';
 import DadosEmpresa from './components/DadosEmpresa';
 import SeletorIdioma from './components/SeletorIdioma';
+import { registrarFunil } from './components/Visitas';
 
 const WHATS = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Quero saber mais sobre a Landim Advisory.');
+const WHATS_DEMO = 'https://wa.me/5561992105889?text=' + encodeURIComponent('Olá! Vi o anúncio e quero conhecer o sistema da Landim Advisory.');
 
 const RESOLVE = [
   { icone: '🏦', titulo: 'Quanto tenho e quanto vou ter', texto: 'Saldo de cada banco hoje e a previsão dia a dia. O sistema avisa antes de o caixa ficar negativo.' },
@@ -74,6 +76,7 @@ export default function LandingPage() {
               <Link href="/register" className="lp-btn lp-btn-p">Testar grátis por 7 dias</Link>
               <a href="/dashboard?demo=1" className="lp-btn lp-btn-s">Ver demonstração</a>
             </div>
+            <a className="lp-whats" href={WHATS_DEMO} target="_blank" rel="noopener" onClick={() => registrarFunil('whatsapp')}>Prefere conversar antes? <b>Fale com a gente no WhatsApp</b></a>
             <div className="lp-garantias"><span>✓ Sem cartão para testar</span><span>✓ Cancele quando quiser</span><span>✓ {vagas > 0 ? 'Preço de fundador: a partir de R$ 49,90/mês' : 'A partir de R$ 79,90/mês'}</span></div>
           </div>
           <div className="lp-hero-tela" aria-label="Exemplo da tela inicial do sistema">
@@ -240,6 +243,7 @@ const ESTILO = `
 .lp-sub{font-size:19px;color:#4B5565;margin:0 0 28px;max-width:560px}
 .lp-ctas{display:flex;gap:12px;flex-wrap:wrap}
 .lp-ctas-c{justify-content:center}
+.lp-whats{display:inline-block;margin-top:14px;color:#1F7A47;font-size:15px;text-decoration:none}.lp-whats b{text-decoration:underline}
 .lp-garantias{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px;color:#4B5565;font-size:14px;font-weight:600}
 .lp-janela{background:#fff;border:1px solid #E3E6EC;border-radius:18px;box-shadow:0 30px 70px rgba(11,18,32,.14);overflow:hidden}
 .lp-janela-top{display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid #EEF0F4;background:#F7F8FA}

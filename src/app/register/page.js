@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
-import { registrarCadastro } from '../components/Visitas';
+import { registrarCadastro, registrarFunil } from '../components/Visitas';
+import { EMPRESA } from '../../lib/empresa';
 import { auth, googleProvider } from '../lib/firebase';
 import SeletorIdioma from '../components/SeletorIdioma';
 import { useNavegadorInterno, erroDoGoogle, abrirNoNavegador } from '../components/NavegadorInterno';
@@ -22,6 +23,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    registrarFunil('enviou');
     if (email && password && name) {
       setLoading(true);
       setErrorMsg('');
@@ -36,6 +38,7 @@ export default function RegisterPage() {
         router.push('/dashboard');
       } catch (err) {
         console.error(err);
+        registrarFunil('erro', err.code || 'outro');
         if (err.code === 'auth/email-already-in-use') {
           setErrorMsg('Este e-mail já está em uso.');
         } else if (err.code === 'auth/weak-password') {
@@ -56,7 +59,8 @@ export default function RegisterPage() {
 
   const handleGoogleLogin = async () => {
     // Dentro do Instagram/Facebook o Google bloqueia o login: abre a mesma página no Chrome (ou Safari)
-    if (appInterno) { setErrorMsg(''); abrirNoNavegador((m) => setErrorMsg(m)); return; }
+    registrarFunil('google');
+    if (appInterno) { registrarFunil('erro', 'navegador-do-app'); setErrorMsg(''); abrirNoNavegador((m) => setErrorMsg(m)); return; }
     setLoading(true);
     setErrorMsg('');
     try {
@@ -71,6 +75,7 @@ export default function RegisterPage() {
       router.push('/dashboard');
     } catch (err) {
       console.error("Erro completo do Google Login:", err);
+      registrarFunil('erro', err.code || 'outro');
       setErrorMsg(erroDoGoogle(err));
       setLoading(false);
     }
@@ -98,7 +103,7 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleRegister}>
+        <form onSubmit={handleRegister} onFocus={() => registrarFunil('preencheu')}>
           <div className="form-group">
             <label>Seu nome</label>
             <input type="text" className="form-input" required value={name} onChange={e => setName(e.target.value)} placeholder="Seu Nome" />
@@ -124,6 +129,11 @@ export default function RegisterPage() {
         <button type="button" className="btn-google" onClick={handleGoogleLogin} disabled={loading}>
           <span style={{ marginRight: '8px' }}>G</span> Cadastrar com Google
         </button>
+
+        <a href={'https://wa.me/' + EMPRESA.whatsapp.replace(/\D/g, '').replace(/^(?!55)/, '55') + '?text=' + encodeURIComponent('Olá! Quero conhecer o sistema da Landim Advisory.')} target="_blank" rel="noopener" onClick={() => registrarFunil('whatsapp')}
+          style={{ display: 'block', textAlign: 'center', marginTop: 12, padding: '11px 14px', borderRadius: 10, border: '1px solid rgba(37,211,102,.45)', color: '#4ADE80', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+          Prefiro falar no WhatsApp
+        </a>
 
         <div className="auth-link">
           Já tem uma conta? <Link href="/login">Faça Login</Link>

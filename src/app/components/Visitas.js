@@ -45,6 +45,16 @@ export function registrarCadastro() {
   enviar({ evento: 'cadastro', origem: ler('la_origem') || descobrirOrigem() });
 }
 
+// Funil do cadastro (só contagens do dia, sem dados pessoais): começou a preencher, enviou, Google, erro, WhatsApp.
+// Cada etapa conta no máximo uma vez por página aberta.
+const funilVisto = new Set();
+export function registrarFunil(etapa, erro) {
+  const chave = etapa + '|' + (erro || '');
+  if (funilVisto.has(chave)) return;
+  funilVisto.add(chave);
+  enviar({ evento: 'funil', etapa, erro: erro ? String(erro).slice(0, 60) : '', origem: ler('la_origem') || descobrirOrigem() });
+}
+
 // Conta as visitas das páginas públicas (o painel e a área do administrador não entram)
 export default function Visitas() {
   const caminho = usePathname();
