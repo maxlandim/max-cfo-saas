@@ -5,6 +5,7 @@ import { adminDb } from '../../../lib/firebaseAdmin';
 import { limiteExcedido } from '../../../lib/limite';
 import { hojeBrasil } from '../../../lib/lembretes';
 import { ROBOS } from '../../../lib/estatisticas';
+import { RUIDO } from '../../../lib/ruidoErros';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,8 @@ export async function POST(req) {
   try { b = JSON.parse((await req.text()).slice(0, 4000)); } catch { return NextResponse.json({ ok: false }, { status: 400 }); }
   const mensagem = String(b.mensagem || '').slice(0, 300);
   if (!mensagem) return NextResponse.json({ ok: false }, { status: 400 });
+  // páginas abertas antes da atualização ainda podem mandar o ruído do navegador do Instagram/Facebook
+  if (RUIDO.test(mensagem)) return NextResponse.json({ ok: true });
   // e-mails e números longos (CPF, valores) saem da mensagem antes de gravar
   const limpar = (t) => String(t || '').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '<e-mail>').replace(/\d{6,}/g, '<n>');
   const pagina = String(b.pagina || '').replace(/[^\w/-]/g, '').slice(0, 80);
