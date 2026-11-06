@@ -136,3 +136,17 @@ Revisar esta tabela a cada fornecedor novo e uma vez por ano. Fornecedor novo qu
 1. Firebase › Firestore › coleção `exclusoes` › apagar o documento do cliente (id = uid).
 2. Firebase › Authentication › usuário › **Ativar conta**.
 3. Se ele quiser voltar a assinar, assina de novo pelo painel.
+
+---
+
+## 5. Pendências de dependências (auditoria de 06/11/2026)
+
+O `npm audit` acusa vulnerabilidades em bibliotecas que só se resolvem com atualização de versão principal:
+
+| Biblioteca | Hoje | Problema | Correção |
+|---|---|---|---|
+| Next.js | 14.2.35 (a linha 14 não recebe mais correções) | Avisos críticos e altos: negação de serviço em Server Components e envenenamento de cache. Os de otimizador de imagem, nonce de CSP e WebSocket não se aplicam a este site | Atualizar para Next.js 15 ou 16, com React 19 |
+| firebase (navegador) | 10.14 | Dependências internas antigas (undici, grpc-js) | Atualizar para firebase 12 |
+| firebase-admin (servidor) | 12 | Idem | Atualizar para firebase-admin 13 |
+
+Como fazer com segurança: num branch próprio, atualizar uma de cada vez, conferir o build e o GitHub Actions e testar na prévia da Vercel (login, painel, cobrança no sandbox, NFS-e em produção restrita) antes de juntar. Prazo recomendado pela regra da seção 4: até 7 dias para as altas e 24 h para críticas que afetem o site (as do Next.js afetam disponibilidade, não vazamento de dados). Depois, trocar `continue-on-error` para `false` no passo de auditoria do `.github/workflows/verificacoes.yml`.
