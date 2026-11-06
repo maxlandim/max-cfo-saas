@@ -8,7 +8,13 @@ export const dynamic = 'force-dynamic';
 // GET: diz se o usuário logado pode usar o painel (assinatura em dia, teste grátis ou admin).
 export async function GET(req) {
   if (!adminConfigurado) {
-    // Antes de configurar FIREBASE_SERVICE_ACCOUNT o acesso fica liberado, com aviso no painel.
+    // Sem a FIREBASE_SERVICE_ACCOUNT o servidor não consegue conferir a assinatura. Em produção o painel fica
+    // fechado (antes ficava aberto para todos, sem pagar). No computador (next dev) continua liberado para testes;
+    // PERMITIR_SEM_CONFIGURACAO=1 libera de propósito, por exemplo numa prévia sem as variáveis.
+    if (process.env.NODE_ENV === 'production' && process.env.PERMITIR_SEM_CONFIGURACAO !== '1') {
+      console.error('FIREBASE_SERVICE_ACCOUNT ausente: painel fechado até configurar o servidor.');
+      return NextResponse.json({ error: 'O sistema está em manutenção. Tente de novo em alguns minutos ou fale no WhatsApp.' }, { status: 503 });
+    }
     return NextResponse.json({ acesso: true, motivo: 'configuracao_pendente' });
   }
   const user = await usuarioDaRequisicao(req);

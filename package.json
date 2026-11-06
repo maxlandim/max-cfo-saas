@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --import ./test/registrar.mjs --test test/seguranca.test.mjs test/protecoes.test.mjs test/rotas.test.mjs",
+    "teste:seguranca": "node scripts/teste-seguranca.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { donoDoEspaco } from '../../../lib/asaasCliente';
-import { limiteExcedido } from '../../../lib/limite';
+import { limitar } from '../../../lib/limite';
 import { ErroAnexo, LIMITE_ANEXO, lerAnexo, salvarAnexo } from '../../../lib/anexos';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,7 @@ export async function POST(req) {
   if (!adminConfigurado) return NextResponse.json({ error: 'Servidor sem configuração.' }, { status: 503 });
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 });
-  if (limiteExcedido('anexo:' + user.uid, 300)) return NextResponse.json({ error: 'Muitos anexos em pouco tempo. Tente de novo daqui a pouco.' }, { status: 429 });
+  if (await limitar('anexo:' + user.uid, 300)) return NextResponse.json({ error: 'Muitos anexos em pouco tempo. Tente de novo daqui a pouco.' }, { status: 429 });
   const tamanho = Number(req.headers.get('content-length') || 0);
   if (tamanho > LIMITE_ANEXO + 64 * 1024) return NextResponse.json({ error: 'O anexo precisa ter até 10 MB.' }, { status: 413 });
   let form;

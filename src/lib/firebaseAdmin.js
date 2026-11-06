@@ -3,6 +3,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { registrarEvento } from './seguranca';
 
 function lerContaDeServico() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -37,8 +38,16 @@ export async function usuarioDaRequisicao(req) {
   try {
     return await adminAuth.verifyIdToken(token);
   } catch {
+    registrarEvento('tokenInvalido');
     return null;
   }
+}
+
+// true se o usuário (já verificado) é administrador; registra a tentativa quando não é
+export function ehAdmin(usuario) {
+  const ok = Boolean(usuario) && emailsAdmin().includes(String(usuario.email || '').toLowerCase()) && usuario.email_verified !== false;
+  if (usuario && !ok) registrarEvento('adminNegado');
+  return ok;
 }
 
 export function emailsAdmin() {

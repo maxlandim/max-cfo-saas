@@ -7,7 +7,8 @@
   function E() { return window.maxcfoEmpresas; }
   function F() { return window.fin; }
   function el(id) { return document.getElementById(id); }
-  function esc(s) { return F() ? F().esc(s) : String(s == null ? '' : s); }
+  function esc(s) { return F() ? F().esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function jsArg(s) { return esc(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, '\\x27').replace(/[\r\n]/g, ' ')); } // valor dentro de onclick="f('...')"
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'success'); }
   function doc(d) { d = String(d || '').replace(/\D/g, ''); return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : d; }
 
@@ -64,9 +65,9 @@
         var ativa = !window.maxcfoLeitura && (x.id || '') === (e.ativa || '');
         return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ' + (ativa ? 'var(--gold-border)' : 'var(--border)') + ';border-radius:10px;background:' + (ativa ? 'var(--gold-dim)' : 'var(--bg-surf)') + '">' +
           '<div style="flex:1;min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.nome) + (x.id ? '' : ' <span class="fin-sub">(principal)</span>') + '</div><div class="fin-sub">' + esc(doc(x.cnpj) || 'sem CNPJ') + '</div></div>' +
-          (ativa ? '<span class="fin-sit ok">Aberta</span>' : '<button class="fin-btn gold" onclick="empresas.trocar(\'' + esc(x.id) + '\')">Abrir</button>') +
-          '<button class="fin-btn" title="Renomear" onclick="empresas.renomear(\'' + esc(x.id) + '\')">✏️</button>' +
-          (x.id ? '<button class="fin-btn" title="Excluir" onclick="empresas.remover(\'' + esc(x.id) + '\')">🗑️</button>' : '') + '</div>';
+          (ativa ? '<span class="fin-sit ok">Aberta</span>' : '<button class="fin-btn gold" onclick="empresas.trocar(\'' + jsArg(x.id) + '\')">Abrir</button>') +
+          '<button class="fin-btn" title="Renomear" onclick="empresas.renomear(\'' + jsArg(x.id) + '\')">✏️</button>' +
+          (x.id ? '<button class="fin-btn" title="Excluir" onclick="empresas.remover(\'' + jsArg(x.id) + '\')">🗑️</button>' : '') + '</div>';
       }).join('') + '</div>' +
       (podeCriar
         ? '<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px"><div class="form-grid"><div class="form-field"><label class="form-label" for="empCnpj">CNPJ</label><input class="form-input" id="empCnpj" placeholder="Busca o nome na Receita" maxlength="18"></div><div class="form-field"><label class="form-label" for="empNome">Nome da empresa *</label><input class="form-input" id="empNome" maxlength="80"></div></div>' +
@@ -154,7 +155,7 @@
           '<td style="white-space:nowrap"><div class="fin-pos">+' + moeda(k.aReceber30) + '</div><div class="fin-neg">−' + moeda(k.aPagar30) + '</div></td>' +
           '<td style="white-space:nowrap">' + (k.vencidosRec.length || k.vencidosPag.length ? '<div class="fin-pos">+' + moeda(somar(k.vencidosRec)) + '</div><div class="fin-neg">−' + moeda(somar(k.vencidosPag)) + '</div>' : '—') + '</td>' +
           '<td style="white-space:nowrap">' + ultimoTxt(l) + '</td><td>' + alerta + '</td>' +
-          '<td style="white-space:nowrap"><button class="fin-btn" title="Relatório mensal em PDF" onclick="rel.abrirEmpresa(\'' + esc(l.emp.id || '') + '\')">📄 Relatório</button> ' + (l.ativa ? '' : '<button class="fin-btn gold" onclick="empresas.trocar(\'' + esc(l.emp.id) + '\')">Abrir</button>') + '</td></tr>';
+          '<td style="white-space:nowrap"><button class="fin-btn" title="Relatório mensal em PDF" onclick="rel.abrirEmpresa(\'' + jsArg(l.emp.id || '') + '\')">📄 Relatório</button> ' + (l.ativa ? '' : '<button class="fin-btn gold" onclick="empresas.trocar(\'' + jsArg(l.emp.id) + '\')">Abrir</button>') + '</td></tr>';
       }).join('') + '</tbody></table></div>' : '<div class="empty-block" style="padding:24px">Nenhuma empresa neste filtro. 👏</div>') +
       '<p class="fin-sub" style="margin-top:10px">Os números vêm dos lançamentos de cada empresa. Em "Próximos 30 dias" e "Atrasados": verde é a receber, vermelho é a pagar. "Sem movimento" = nenhum lançamento alterado nos últimos 7 dias. Hoje: ' + F().dataBR(hoje) + '.</p></div>';
   }

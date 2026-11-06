@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { adminConfigurado, adminAuth, adminDb, emailsAdmin, emailsCortesia, usuarioDaRequisicao } from '../../../../lib/firebaseAdmin';
+import { adminConfigurado, adminAuth, adminDb, emailsAdmin, emailsCortesia, usuarioDaRequisicao, ehAdmin } from '../../../../lib/firebaseAdmin';
 import { DIAS_DE_TESTE, PLANOS, FUNDADOR, MESES_PAGOS_NO_ANUAL } from '../../../../lib/plans';
 import { hojeBrasil } from '../../../../lib/lembretes';
+import { TIPOS_EVENTO, ALERTA_ACIMA_DE } from '../../../../lib/seguranca';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export async function GET(req) {
   if (!adminConfigurado) return NextResponse.json({ error: 'O servidor ainda não tem a FIREBASE_SERVICE_ACCOUNT.' }, { status: 503 });
   const eu = await usuarioDaRequisicao(req);
   if (!eu) return NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 });
-  if (!emailsAdmin().includes(String(eu.email || '').toLowerCase())) return NextResponse.json({ error: 'Esta área é só para administradores.' }, { status: 403 });
+  if (!ehAdmin(eu)) return NextResponse.json({ error: 'Esta área é só para administradores.' }, { status: 403 });
 
   try {
     // Contas (até 5.000)
@@ -101,9 +102,19 @@ export async function GET(req) {
       ultimoBackup = b.empty ? null : b.docs[0].data().ultimoDia;
     } catch (e) { console.warn('Último backup:', e.message); }
 
+    // Segurança: eventos suspeitos por dia (src/lib/seguranca.js) e exclusões de conta pedidas
+    let seguranca = { dias: [], exclusoes: [], tipos: TIPOS_EVENTO, alertaAcima: ALERTA_ACIMA_DE };
+    try {
+      const ini14 = hojeBrasil(new Date(Date.now() - 13 * 864e5));
+      const sg = await adminDb.collection('seguranca').where('dia', '>=', ini14).get();
+      seguranca.dias = sg.docs.map((d) => ({ dia: d.id, total: d.data().total || 0, tipos: d.data().tipos || {} })).sort((a, b) => (a.dia < b.dia ? 1 : -1));
+      const ex = await adminDb.collection('exclusoes').orderBy('pedidoEm', 'desc').limit(20).get();
+      seguranca.exclusoes = ex.docs.map((d) => ({ pedidoEm: d.data().pedidoEm, apagarEm: d.data().apagarEm || null, apagadaEm: d.data().apagadaEm || null }));
+    } catch (e) { console.warn('Segurança:', e.message); }
+
     const precos = Object.fromEntries(Object.entries(PLANOS).map(([k, v]) => [k, v.valor / 100]));
     const fundadores = lista.filter((c) => c.fundador).length;
-    return NextResponse.json({ geradoEm: new Date().toISOString(), hoje, contas: lista, dias, precos, erros, ultimoBackup, diasDeTeste: DIAS_DE_TESTE, fundador: { usados: fundadores, vagas: FUNDADOR.vagas } });
+    return NextResponse.json({ geradoEm: new Date().toISOString(), hoje, contas: lista, dias, precos, erros, seguranca, ultimoBackup, diasDeTeste: DIAS_DE_TESTE, fundador: { usados: fundadores, vagas: FUNDADOR.vagas } });
   } catch (e) {
     console.error('Resumo do administrador:', e);
     return NextResponse.json({ error: 'Não consegui montar o resumo agora.' }, { status: 500 });

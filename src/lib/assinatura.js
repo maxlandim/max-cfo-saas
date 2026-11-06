@@ -21,7 +21,9 @@ export async function fimDoTeste(uid) {
 
 export async function statusDoUsuario(decoded) {
   const uid = decoded.uid;
-  const email = (decoded.email || '').toLowerCase();
+  // Acesso por e-mail (administrador ou cortesia) só vale com o e-mail confirmado: sem isso, alguém poderia
+  // criar uma conta com o e-mail de uma cortesia que ainda não se cadastrou e usar o sistema de graça.
+  const email = decoded.email_verified === false ? '' : (decoded.email || '').toLowerCase();
 
   if (email && emailsAdmin().includes(email)) {
     return { acesso: true, motivo: 'admin', plano: 'unlimited' };

@@ -297,11 +297,37 @@ export default function AdminPage() {
               ) : <p className="ad-vazio">Nenhum erro registrado nos últimos 7 dias.</p>}
             </section>
 
+            <Seguranca dados={dados.seguranca} />
+
             <Backups ultimo={dados.ultimoBackup} />
           </>
         )}
       </main>
     </div>
+  );
+}
+
+// Monitoramento de segurança: eventos suspeitos por dia e exclusões de conta (src/lib/seguranca.js)
+function Seguranca({ dados }) {
+  if (!dados) return null;
+  const tipos = dados.tipos || {}, limites = dados.alertaAcima || {};
+  const dias = dados.dias || [];
+  const alerta = (d) => Object.entries(d.tipos || {}).some(([k, v]) => v > (limites[k] || Infinity));
+  return (
+    <section className="ad-cartao">
+      <div className="ad-cartao-topo"><h2>Segurança</h2><span>últimos 14 dias</span></div>
+      {dias.length ? (
+        <div className="ad-erros">
+          {dias.map((d) => (
+            <div key={d.dia} className="ad-erro" style={alerta(d) ? { borderColor: '#B42318', background: '#FEF3F2' } : undefined}>
+              <b className="ad-erro-msg">{d.dia.split('-').reverse().join('/')} · {d.total} {d.total === 1 ? 'evento' : 'eventos'}{alerta(d) ? ' · acima do normal' : ''}</b>
+              <div className="ad-sub">{Object.entries(d.tipos || {}).map(([k, v]) => `${tipos[k] || k}: ${v}`).join(' · ')}</div>
+            </div>
+          ))}
+        </div>
+      ) : <p className="ad-vazio">Nenhum evento suspeito registrado.</p>}
+      <p className="ad-nota">Exclusões de conta pedidas pelos clientes: <b>{(dados.exclusoes || []).filter((e) => !e.apagadaEm).length}</b> aguardando os 30 dias · <b>{(dados.exclusoes || []).filter((e) => e.apagadaEm).length}</b> concluídas. O plano de resposta a incidentes está em SEGURANCA.md.</p>
+    </section>
   );
 }
 

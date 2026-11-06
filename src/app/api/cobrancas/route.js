@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { chamar, configDoEspaco, conectar, desconectar, donoDoEspaco } from '../../../lib/asaasCliente';
 import { soDigitos, documentoValido } from '../../../lib/asaas';
-import { limiteExcedido } from '../../../lib/limite';
+import { limitar } from '../../../lib/limite';
+import { registrarEvento } from '../../../lib/seguranca';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ async function entrada(req, wsId) {
   if (!adminConfigurado) return [null, NextResponse.json({ error: 'Servidor sem configuração.' }, { status: 503 })];
   const user = await usuarioDaRequisicao(req);
   if (!user) return [null, NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 })];
-  if (!donoDoEspaco(user.uid, wsId)) return [null, NextResponse.json({ error: 'Só o dono da empresa pode usar a cobrança pelo Asaas.' }, { status: 403 })];
+  if (!donoDoEspaco(user.uid, wsId)) return [null, (registrarEvento('acessoNegado'), NextResponse.json({ error: 'Só o dono da empresa pode usar a cobrança pelo Asaas.' }, { status: 403 }))];
   return [user, null];
 }
 
@@ -37,7 +38,7 @@ export async function POST(req) {
   if (erro) return erro;
   try {
     if (b.acao === 'conectar') {
-      if (limiteExcedido('conectar:' + user.uid, 10)) return NextResponse.json({ error: 'Muitas tentativas. Tente de novo em 1 hora.' }, { status: 429 });
+      if (await limitar('conectar:' + user.uid, 10)) return NextResponse.json({ error: 'Muitas tentativas. Tente de novo em 1 hora.' }, { status: 429 });
       const r = await conectar({ wsId, uid: user.uid, chaveApi: b.chave, site: site(), email: user.email });
       return NextResponse.json({ ok: true, ...r });
     }
@@ -47,7 +48,7 @@ export async function POST(req) {
     if (!cfg) return NextResponse.json({ error: 'Conecte a conta do Asaas da empresa primeiro.' }, { status: 400 });
 
     if (b.acao === 'gerar') {
-      if (limiteExcedido('cobrar:' + user.uid, 300)) return NextResponse.json({ error: 'Muitas cobranças em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
+      if (await limitar('cobrar:' + user.uid, 300)) return NextResponse.json({ error: 'Muitas cobranças em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
       const c = b.cliente || {};
       const doc = soDigitos(c.documento);
       if (!String(c.nome || '').trim()) return NextResponse.json({ error: 'Informe o nome do cliente.' }, { status: 400 });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, adminDb } from '../../../../lib/firebaseAdmin';
+import { iguais, registrarEvento } from '../../../../lib/seguranca';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,8 +9,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
   if (!adminConfigurado) return NextResponse.json({ error: 'Servidor sem configuração.' }, { status: 503 });
   const wsId = new URL(req.url).searchParams.get('ws') || '';
-  const cfg = wsId ? (await adminDb.collection('cobrancaAsaas').doc(wsId).get()).data() : null;
-  if (!cfg || !cfg.webhookToken || req.headers.get('asaas-access-token') !== cfg.webhookToken) return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });
+  const cfg = /^[A-Za-z0-9_-]{1,80}$/.test(wsId) ? (await adminDb.collection('cobrancaAsaas').doc(wsId).get()).data() : null;
+  if (!cfg || !cfg.webhookToken || !iguais(req.headers.get('asaas-access-token') || '', cfg.webhookToken)) {
+    registrarEvento('webhookNegado');
+    return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });
+  }
   let ev;
   try { ev = await req.json(); } catch { return NextResponse.json({ error: 'Corpo inválido.' }, { status: 400 }); }
   const p = ev && ev.payment;

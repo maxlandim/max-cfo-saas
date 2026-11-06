@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminConfigurado, adminAuth, adminDb, emailsAdmin, usuarioDaRequisicao } from '../../../../lib/firebaseAdmin';
+import { adminConfigurado, adminAuth, adminDb, emailsAdmin, usuarioDaRequisicao, ehAdmin } from '../../../../lib/firebaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ async function admin(req) {
   if (!adminConfigurado) return [null, NextResponse.json({ error: 'Servidor sem FIREBASE_SERVICE_ACCOUNT.' }, { status: 503 })];
   const eu = await usuarioDaRequisicao(req);
   if (!eu) return [null, NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 })];
-  if (!emailsAdmin().includes(String(eu.email || '').toLowerCase())) return [null, NextResponse.json({ error: 'Esta área é só para administradores.' }, { status: 403 })];
+  if (!ehAdmin(eu)) return [null, NextResponse.json({ error: 'Esta área é só para administradores.' }, { status: 403 })];
   return [eu, null];
 }
 

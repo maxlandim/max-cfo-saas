@@ -1,0 +1,8 @@
+# Encontrou uma falha de segurança na Landim Advisory? Avise por e-mail, sem expor os dados de ninguém.
+# Respondemos em até 3 dias úteis. Found a security issue? Please email us.
+Contact: mailto:maxpaeslandim@gmail.com
+Contact: https://wa.me/5561992105889
+Expires: 2027-11-06T00:00:00.000Z
+Preferred-Languages: pt, en, es
+Canonical: https://landimadvisory.com.br/.well-known/security.txt
+Policy: https://landimadvisory.com.br/privacidade
