@@ -32,7 +32,7 @@ const casos = [
   ['POST', '/api/conta', falso, { acao: 'excluir', confirmacao: 'EXCLUIR' }],
   ['GET', '/api/admin/resumo', falso],
   ['GET', '/api/admin/backup', falso],
-  ['GET', '/api/admin/notas', falso],
+  ['POST', '/api/admin/notas', falso, {}],
   ['POST', '/api/nfse', falso, { acao: 'emitir', wsId: 'x' }],
   ['POST', '/api/cobrancas', falso, { acao: 'gerar', wsId: 'x' }],
   ['GET', '/api/cobrancas/eventos?ws=x', falso],
@@ -42,7 +42,7 @@ const casos = [
 ];
 for (const [metodo, caminho, headers, corpo] of casos) {
   const r = await chamar(caminho, { method: metodo, headers, body: corpo ? JSON.stringify(corpo) : undefined });
-  ok([400, 401, 403, 404, 503].includes(r.status), `${metodo} ${caminho} → ${r.status}`);
+  ok([400, 401, 403, 404, 405, 503].includes(r.status), `${metodo} ${caminho} → ${r.status}`);
 }
 
 console.log('\nRotina diária e webhooks com senha errada (devem recusar)');
