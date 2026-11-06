@@ -4,15 +4,15 @@
 const CSP = [
   "default-src 'self'",
   // 'unsafe-inline': o Next.js e o painel usam scripts e onclick no próprio HTML; 'wasm-unsafe-eval': leitor de documentos (OCR)
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://apis.google.com https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://apis.google.com https://www.gstatic.com https://www.google.com https://www.recaptcha.net https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   // Firebase (login e banco), consultas de CNPJ e CEP, bibliotecas do leitor de PDF e OCR
   "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://brasilapi.com.br https://minhareceita.org https://viacep.com.br https://max-cfo-api.onrender.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tessdata.projectnaptha.com",
   "worker-src 'self' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-  // Login com Google (janela e iframe do Firebase Auth)
-  "frame-src 'self' https://max-cfo-saas.firebaseapp.com https://accounts.google.com https://apis.google.com",
+  // Login com Google (janela e iframe do Firebase Auth) e reCAPTCHA, se a proteção do Firebase Auth for ligada
+  "frame-src 'self' https://max-cfo-saas.firebaseapp.com https://accounts.google.com https://apis.google.com https://www.google.com https://www.recaptcha.net https://recaptcha.google.com",
   "media-src 'self' blob: data:",
   "object-src 'none'",
   "base-uri 'self'",
