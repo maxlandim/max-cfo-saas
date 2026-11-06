@@ -6,6 +6,8 @@ import { estadoDoEspaco, temDados } from '../../../lib/espacoServidor';
 import { emailDoDia, montarEmailTeste } from '../../../lib/emailsTeste';
 import { vagasFundador } from '../../../lib/fundadores';
 import { DIAS_DE_TESTE } from '../../../lib/plans';
+import { cronAutorizado } from '../../../lib/seguranca';
+import { limitar } from '../../../lib/limite';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -55,11 +57,7 @@ async function temAcesso(uid) {
 }
 
 export async function GET(req) {
-  const segredo = process.env.CRON_SECRET;
-  const url = new URL(req.url);
-  const h = req.headers.get('authorization') || '';
-  const dado = h.startsWith('Bearer ') ? h.slice(7) : url.searchParams.get('chave');
-  if (!segredo || dado !== segredo) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  if (!cronAutorizado(req)) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   const f = faltando();
   if (f.length) return NextResponse.json({ error: 'Configure no servidor: ' + f.join(', ') }, { status: 503 });
 
@@ -135,6 +133,7 @@ export async function POST(req) {
   if (f.length) return NextResponse.json({ error: 'Os lembretes por e-mail ainda não foram ativados no servidor (falta ' + f.join(', ') + ').' }, { status: 503 });
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 });
+  if (await limitar('lembrete-teste:' + user.uid, 10)) return NextResponse.json({ error: 'Muitos testes em pouco tempo. Tente de novo em 1 hora.' }, { status: 429 });
   let body = {};
   try { body = await req.json(); } catch {}
   const wsId = String(body.wsId || '');

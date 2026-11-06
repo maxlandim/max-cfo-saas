@@ -5,7 +5,7 @@ export const metadata = { title: 'Política de Privacidade — Landim Advisory' 
 
 export default function PrivacidadePage() {
   return (
-    <LegalPage titulo="Política de Privacidade" atualizado="27 de outubro de 2026">
+    <LegalPage titulo="Política de Privacidade" atualizado="6 de novembro de 2026">
       <p>Esta política explica como a Landim Advisory, operada por {EMPRESA.razao} (CNPJ {EMPRESA.cnpj}, {EMPRESA.endereco}), trata dados pessoais, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
 
       <h2>1. Papéis</h2>
@@ -46,13 +46,14 @@ export default function PrivacidadePage() {
       <p>Alguns desses fornecedores guardam dados fora do Brasil, com cláusulas de proteção compatíveis com a LGPD (art. 33). Não vendemos dados pessoais.</p>
 
       <h2>5. Por quanto tempo guardamos</h2>
-      <p>Enquanto a conta estiver ativa. Após o encerramento, os dados ficam disponíveis para exportação por 30 dias e depois são excluídos, exceto o que a lei obriga a guardar (por exemplo, registros fiscais e de acesso).</p>
+      <p>Enquanto a conta estiver ativa. Após o encerramento, os dados ficam guardados por 30 dias (nesse prazo você pode pedir uma cópia ou desistir pelo suporte) e depois são excluídos, exceto o que a lei obriga a guardar (por exemplo, registros fiscais e de acesso).</p>
 
       <h2>6. Segurança</h2>
-      <p>Usamos conexão criptografada (HTTPS), regras de acesso que isolam os dados de cada conta e verificação de assinatura no servidor. Nenhum sistema é 100% imune; se houver um incidente relevante, avisaremos os afetados e a ANPD, como prevê a lei.</p>
+      <p>Usamos conexão criptografada (HTTPS), senhas guardadas com hash pelo Google Firebase, criptografia AES-256 para chaves de pagamento e certificados digitais, regras de acesso que isolam os dados de cada conta, limite de tentativas nas operações sensíveis, política de segurança de conteúdo no navegador, cópias de segurança diárias guardadas por 30 dias e monitoramento diário de acessos suspeitos. Nenhum sistema é 100% imune. Se houver um incidente que possa causar risco ou dano relevante aos titulares, avisaremos os afetados e a ANPD em até 3 dias úteis, como prevê a Resolução CD/ANPD nº 15/2024.</p>
 
       <h2>7. Seus direitos</h2>
       <p>Você pode pedir confirmação do tratamento, acesso, correção, anonimização, portabilidade, exclusão, informação sobre compartilhamento e revogação do consentimento (art. 18 da LGPD). Escreva para o encarregado de dados, Max Oliveira Paes Landim: {EMPRESA.email}. Respondemos em até 15 dias.</p>
+      <p>Você também pode exportar todos os dados e excluir a conta sozinho, no painel, em Configurações › Dados. Ao excluir, a assinatura é cancelada e o login é bloqueado na hora, e todos os dados (empresas, anexos, notas e cópias de segurança) são apagados de forma definitiva em 30 dias. Até lá, é possível desistir falando com o suporte.</p>
 
       <h2>8. Armazenamento no navegador</h2>
       <p>O painel guarda preferências e uma cópia dos dados no próprio navegador para funcionar mais rápido. Não usamos cookies de publicidade.</p>

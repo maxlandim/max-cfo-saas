@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { gzipSync, gunzipSync } from 'zlib';
 import { adminConfigurado, adminDb } from '../../../lib/firebaseAdmin';
 import { hojeBrasil } from '../../../lib/lembretes';
+import { cronAutorizado } from '../../../lib/seguranca';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -29,11 +30,7 @@ async function comprimidoDe(wsId, d) {
 }
 
 export async function GET(req) {
-  const segredo = process.env.CRON_SECRET;
-  const url = new URL(req.url);
-  const h = req.headers.get('authorization') || '';
-  const dado = h.startsWith('Bearer ') ? h.slice(7) : url.searchParams.get('chave');
-  if (!segredo || dado !== segredo) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
+  if (!cronAutorizado(req)) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
   if (!adminConfigurado) return NextResponse.json({ error: 'Configure FIREBASE_SERVICE_ACCOUNT.' }, { status: 503 });
 
   const dia = hojeBrasil();

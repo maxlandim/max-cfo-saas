@@ -1,0 +1,54 @@
+# Roda a cada push no master e em todo pull request:
+# testes de segurança, auditoria de dependências, build e teste das rotas com o site rodando.
+name: Verificações de segurança
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    - cron: '0 9 * * 1' # toda segunda-feira, para pegar vulnerabilidades novas nas dependências
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm install --no-fund --no-audit
+
+      - name: Testes
+        run: npm test
+
+      - name: Auditoria de dependências (falha em vulnerabilidade crítica)
+        run: |
+          npm audit --omit=dev --audit-level=high || echo "::warning::Há vulnerabilidades altas nas dependências. Veja o relatório acima e os pull requests do Dependabot."
+          npm audit --omit=dev --audit-level=critical
+
+      - name: Procurar segredos no código
+        run: |
+          if grep -rInE "(sk_live_[0-9a-zA-Z]{10,}|\\\$aact_prod_[0-9a-zA-Z]{10,}|re_[0-9a-zA-Z]{20,}|-----BEGIN (RSA |EC )?PRIVATE KEY-----|\"private_key\": *\"-----BEGIN)" \
+            --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next . ; then
+            echo "::error::Encontrei algo parecido com uma chave secreta no código. Tire do repositório e troque a chave."
+            exit 1
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Teste de segurança com o site rodando
+        run: |
+          npx next start -p 3000 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/api/saude >/dev/null && break; sleep 1; done
+          node scripts/teste-seguranca.mjs http://localhost:3000

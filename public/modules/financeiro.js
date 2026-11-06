@@ -51,6 +51,7 @@
   function moeda(v) { return (window.fmt ? window.fmt(v) : 'R$ ' + Number(v || 0).toFixed(2)); }
   F.moeda = moeda;
   function esc(s) { return window.escHtml ? window.escHtml(String(s == null ? '' : s)) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function jsArg(s) { return esc(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, '\\x27').replace(/[\r\n]/g, ' ')); } // valor dentro de onclick="f('...')"
   F.esc = esc;
   function novoId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'success'); }
@@ -705,7 +706,7 @@
       '<div class="form-field"><label class="form-label" for="finBxCentro">Centro de custo</label><select class="form-input" id="finBxCentro"><option value="">Nenhum</option>' + F.centros().map(function (c) { return '<option value="' + esc(c) + '"' + (c === t.centroCusto ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
       '<div class="form-field span-2"><label class="form-label" for="finBxObs">Observação</label><textarea class="form-input" id="finBxObs" rows="2" maxlength="500" placeholder="Ex.: pago com atraso combinado, comprovante enviado por WhatsApp">' + esc(t.notes || '') + '</textarea></div>' +
       '</div>',
-      '<button class="btn-ghost" onclick="fin.fechar(\'finBaixaModal\')">Cancelar</button><button class="btn-primary" onclick="fin.confirmarBaixa(\'' + esc(t.id) + '\')">Confirmar</button>');
+      '<button class="btn-ghost" onclick="fin.fechar(\'finBaixaModal\')">Cancelar</button><button class="btn-primary" onclick="fin.confirmarBaixa(\'' + jsArg(t.id) + '\')">Confirmar</button>');
     var atualizar = function (mexeuValor) {
       var j = num(el('finBxJuros').value), d = num(el('finBxDesc').value), devido = r2(t.amount + j - d);
       if (!mexeuValor) el('finBxValor').value = devido.toFixed(2);
@@ -872,7 +873,7 @@
       '<div class="form-field"><label class="form-label" for="finPixChave">Chave</label><input class="form-input" id="finPixChave" value="' + esc(pix.chaveDigitada || pix.chave || '') + '" autocomplete="off"></div>' +
       '<div class="form-field"><label class="form-label" for="finPixNome">Nome do recebedor</label><input class="form-input" id="finPixNome" maxlength="25" value="' + esc(pix.nome || st().settings.company || st().settings.name || '') + '"></div>' +
       '<div class="form-field"><label class="form-label" for="finPixCidade">Cidade</label><input class="form-input" id="finPixCidade" maxlength="15" value="' + esc(pix.cidade || 'Brasilia') + '"></div>' +
-      '</div><button class="fin-btn gold" style="margin-top:8px" onclick="fin.salvarPix(\'' + esc(t.id) + '\')">Salvar chave e gerar</button></details>' +
+      '</div><button class="fin-btn gold" style="margin-top:8px" onclick="fin.salvarPix(\'' + jsArg(t.id) + '\')">Salvar chave e gerar</button></details>' +
       '<div id="finPixArea"></div>' +
       '<div class="form-grid" style="margin-top:14px">' +
       '<div class="form-field"><label class="form-label" for="finWhats">WhatsApp do cliente</label><input class="form-input" id="finWhats" placeholder="(61) 99999-9999" value="' + esc(contato.telefone || '') + '"></div>' +

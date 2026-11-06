@@ -3,12 +3,13 @@ import { adminAuth, adminConfigurado, adminDb, usuarioDaRequisicao } from '../..
 import { donoDoEspaco } from '../../../lib/asaasCliente';
 import { statusDoUsuario } from '../../../lib/assinatura';
 import { nivelDoStatus } from '../../../lib/plans';
-import { limiteExcedido } from '../../../lib/limite';
+import { limitar } from '../../../lib/limite';
 import {
   carregar, resumo, salvarConfig, salvarCertificado, removerCertificado, testarConexao, emitir, cancelar, listar, xmlDaNota,
   ErroCertificado, ErroEmissor,
 } from '../../../lib/nfse/emissor';
 import { consultaPublica } from '../../../lib/nfse/sefin';
+import { registrarEvento } from '../../../lib/seguranca';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -39,7 +40,7 @@ async function entrada(req, wsId, { soDono = false } = {}) {
   if (!user) return [null, null, NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 })];
   if (!/^[\w-]{6,80}$/.test(wsId)) return [null, null, NextResponse.json({ error: 'Empresa inválida.' }, { status: 400 })];
   const papel = await papelNoEspaco(user, wsId);
-  if (!papel || (soDono && papel !== 'dono')) return [null, null, NextResponse.json({ error: soDono ? 'Só o dono da empresa configura a emissão e o certificado.' : 'Sem acesso à emissão de notas desta empresa.' }, { status: 403 })];
+  if (!papel || (soDono && papel !== 'dono')) return [null, null, (registrarEvento('acessoNegado'), NextResponse.json({ error: soDono ? 'Só o dono da empresa configura a emissão e o certificado.' : 'Sem acesso à emissão de notas desta empresa.' }, { status: 403 }))];
   return [user, papel, null];
 }
 
@@ -85,7 +86,7 @@ export async function POST(req) {
   if (falha) return falha;
   try {
     if (b.acao === 'certificado') {
-      if (limiteExcedido('nfse-cert:' + user.uid, 10)) return NextResponse.json({ error: 'Muitas tentativas. Tente de novo em 1 hora.' }, { status: 429 });
+      if (await limitar('nfse-cert:' + user.uid, 10)) return NextResponse.json({ error: 'Muitas tentativas. Tente de novo em 1 hora.' }, { status: 429 });
       const pfx = Buffer.from(String(b.arquivo || ''), 'base64');
       return NextResponse.json({ ok: true, ...(await salvarCertificado(adminDb, wsId, user.uid, pfx, b.senha)) });
     }
@@ -94,16 +95,16 @@ export async function POST(req) {
 
     if (!(await planoPermite(wsId))) return NextResponse.json({ error: 'A emissão de notas fiscais faz parte do plano Intermediário em diante.', plano: true }, { status: 402 });
     if (b.acao === 'testar') {
-      if (limiteExcedido('nfse-teste:' + user.uid, 20)) return NextResponse.json({ error: 'Muitos testes em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
+      if (await limitar('nfse-teste:' + user.uid, 20)) return NextResponse.json({ error: 'Muitos testes em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
       return NextResponse.json(await testarConexao(adminDb, wsId));
     }
     if (b.acao === 'emitir') {
-      if (limiteExcedido('nfse-emitir:' + wsId, 300)) return NextResponse.json({ error: 'Muitas notas em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
+      if (await limitar('nfse-emitir:' + wsId, 300)) return NextResponse.json({ error: 'Muitas notas em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
       const r = await emitir(adminDb, wsId, b.nota || {}, { usuario: user.email || user.uid });
       return NextResponse.json({ ok: true, ...r, consulta: consultaPublica(r.chave) });
     }
     if (b.acao === 'cancelar') {
-      if (limiteExcedido('nfse-cancelar:' + wsId, 60)) return NextResponse.json({ error: 'Muitos cancelamentos em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
+      if (await limitar('nfse-cancelar:' + wsId, 60)) return NextResponse.json({ error: 'Muitos cancelamentos em pouco tempo. Tente de novo mais tarde.' }, { status: 429 });
       return NextResponse.json(await cancelar(adminDb, wsId, String(b.chave || ''), b.motivo, b.justificativa, { usuario: user.email || user.uid }));
     }
     return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 });

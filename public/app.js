@@ -109,7 +109,7 @@ function fmtPct(v) { return (isFinite(v) ? v : 0).toFixed(1).replace('.', ',') +
 function fmtNum(v) { return v.toLocaleString('pt-BR'); }
 function timeNow() { return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
 function escHtml(s = '') {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\n/g,'<br>');
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
@@ -991,6 +991,26 @@ function downloadText(content, filename, type) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// Excluir a conta (direito do titular, LGPD). O servidor cancela a assinatura, bloqueia o login
+// e apaga os dados em 30 dias (src/app/api/conta/route.js).
+async function excluirMinhaConta() {
+  if (typeof window.maxcfoExcluirConta !== 'function') return showToast('Não disponível neste modo.', 'warn');
+  if (window.maxcfoLeitura || window.maxcfoEquipe) return showToast('Volte para a sua própria empresa para excluir a sua conta.', 'warn');
+  const aviso = 'Excluir a sua conta?\n\n' +
+    '• A assinatura é cancelada agora e o login fica bloqueado.\n' +
+    '• Em 30 dias, todos os dados (todas as empresas, anexos, notas e cópias de segurança) são apagados para sempre.\n' +
+    '• Até lá, para desistir, fale com o suporte.\n\n' +
+    'Antes de continuar, use "Exportar Dados" se quiser guardar uma cópia.';
+  if (!confirm(aviso)) return;
+  const digitado = prompt('Para confirmar, digite EXCLUIR');
+  if (digitado === null) return;
+  if (String(digitado).trim().toUpperCase() !== 'EXCLUIR') return showToast('Exclusão cancelada: o texto não confere.', 'warn');
+  const r = await window.maxcfoExcluirConta(digitado);
+  if (r && r.ok) { alert('Pronto. Sua conta foi encerrada e os dados serão apagados em ' + (r.dias || 30) + ' dias.'); window.location.href = '/'; return; }
+  showToast((r && r.erro) || 'Não consegui concluir agora.', 'error');
+  if (r && r.loginRecente && confirm('Quer sair agora para entrar de novo?')) { try { await window.maxcfoSair(); } catch (e) {} }
 }
 
 function clearAllData() {

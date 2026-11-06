@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/firebaseAdmin';
 import { meuCodigo, vincularIndicacao } from '../../../lib/indicacao';
+import { limitar } from '../../../lib/limite';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,7 @@ export async function POST(req) {
   if (!adminConfigurado) return NextResponse.json({ error: 'Servidor sem configuração.' }, { status: 503 });
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 });
+  if (await limitar('indicacao:' + user.uid, 10)) return NextResponse.json({ error: 'Muitas tentativas. Tente de novo em 1 hora.' }, { status: 429 });
   let body = {};
   try { body = await req.json(); } catch {}
   try {

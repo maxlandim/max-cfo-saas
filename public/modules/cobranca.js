@@ -8,7 +8,8 @@
   'use strict';
   function F() { return window.fin; }
   function el(id) { return document.getElementById(id); }
-  function esc(s) { return F() ? F().esc(s) : String(s == null ? '' : s); }
+  function esc(s) { return F() ? F().esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function jsArg(s) { return esc(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, '\\x27').replace(/[\r\n]/g, ' ')); } // valor dentro de onclick="f('...')"
   function st() { return window.state || {}; }
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'success'); }
   function salvar() { if (window.saveStateToFirebase) window.saveStateToFirebase(window.workspaceId, st()); }
@@ -53,7 +54,7 @@
         '<div class="fin-sub" style="margin:4px 0 8px">O cliente paga com Pix, boleto ou cartão pelo link. Quando ele pagar, a conta é baixada sozinha.</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap"><input class="form-input" id="cobLink" readonly value="' + esc(t.cobranca.url) + '" style="flex:1;min-width:200px">' +
         '<button class="fin-btn gold" onclick="fin.copiar(\'cobLink\')">Copiar link</button><a class="fin-btn" href="' + esc(t.cobranca.url) + '" target="_blank" rel="noopener">Abrir</a>' +
-        (t.cobranca.status !== 'paga' ? '<button class="fin-btn" onclick="cobranca.cancelar(\'' + esc(t.id) + '\')">Cancelar cobrança</button>' : '') + '</div>';
+        (t.cobranca.status !== 'paga' ? '<button class="fin-btn" onclick="cobranca.cancelar(\'' + jsArg(t.id) + '\')">Cancelar cobrança</button>' : '') + '</div>';
       return;
     }
     if (!s.conectado) {
@@ -69,7 +70,7 @@
       '<div class="form-field"><label class="form-label" for="cobDoc">CPF ou CNPJ do cliente</label><input class="form-input" id="cobDoc" inputmode="numeric" value="' + esc(c.documento || c.cpfCnpj || '') + '"></div>' +
       '<div class="form-field"><label class="form-label" for="cobEmail">E-mail (o Asaas envia a cobrança)</label><input class="form-input" id="cobEmail" type="email" value="' + esc(c.email || '') + '"></div>' +
       '<div class="form-field"><label class="form-label" for="cobTel">Celular</label><input class="form-input" id="cobTel" value="' + esc(c.telefone || '') + '"></div>' +
-      '</div><button class="btn-primary" id="cobGerarBtn" style="margin-top:10px" onclick="cobranca.gerar(\'' + esc(t.id) + '\')">Gerar cobrança de ' + moeda(t.amount) + '</button>';
+      '</div><button class="btn-primary" id="cobGerarBtn" style="margin-top:10px" onclick="cobranca.gerar(\'' + jsArg(t.id) + '\')">Gerar cobrança de ' + moeda(t.amount) + '</button>';
   }
 
   window.cobranca = {

@@ -4,6 +4,7 @@ import { PLANOS, somarMeses } from '../../../lib/plans';
 import { vagasFundador } from '../../../lib/fundadores';
 import { fimDoTeste, registrarAssinatura, guardarFatura, valorDoPlano, empresasCadastradas, extrasNecessarias } from '../../../lib/assinatura';
 import { asaas, asaasConfigurado, linkCheckout, montarRef, dataAsaas, soDigitos, documentoValido } from '../../../lib/asaas';
+import { limitar } from '../../../lib/limite';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,7 @@ export async function POST(req) {
   }
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login para assinar.' }, { status: 401 });
+  if (await limitar('checkout:' + user.uid, 20)) return NextResponse.json({ error: 'Muitas tentativas. Tente de novo em 1 hora.' }, { status: 429 });
 
   let body = {};
   try { body = await req.json(); } catch {}

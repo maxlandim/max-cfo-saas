@@ -3,6 +3,7 @@ import { adminConfigurado, adminDb, usuarioDaRequisicao } from '../../../lib/fir
 import { statusDoUsuario, ajustarEmpresasExtras, empresasCadastradas, extrasNecessarias } from '../../../lib/assinatura';
 import { EMPRESA_EXTRA, MAX_EMPRESAS, empresasIncluidas, limiteDeEmpresas } from '../../../lib/plans';
 import { asaas, asaasConfigurado } from '../../../lib/asaas';
+import { limitar } from '../../../lib/limite';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,7 @@ export async function POST(req) {
   if (!adminConfigurado) return NextResponse.json({ error: 'Servidor sem configuração.' }, { status: 503 });
   const user = await usuarioDaRequisicao(req);
   if (!user) return NextResponse.json({ error: 'Faça login novamente.' }, { status: 401 });
+  if (await limitar('assinatura:' + user.uid, 30)) return NextResponse.json({ error: 'Muitas alterações seguidas. Tente de novo em 1 hora.' }, { status: 429 });
   let body = {};
   try { body = await req.json(); } catch {}
   if (body.acao === 'empresas') return empresasExtras(user, body);

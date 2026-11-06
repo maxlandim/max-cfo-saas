@@ -5,7 +5,7 @@ export const metadata = { title: 'Termos de Uso — Landim Advisory' };
 
 export default function TermosPage() {
   return (
-    <LegalPage titulo="Termos de Uso" atualizado="27 de outubro de 2026">
+    <LegalPage titulo="Termos de Uso" atualizado="6 de novembro de 2026">
       <h2>1. Quem somos</h2>
       <p>A Landim Advisory é uma plataforma on-line de gestão financeira para empresas, operada por {EMPRESA.razao}, inscrita no CNPJ {EMPRESA.cnpj}, com sede em {EMPRESA.endereco}. Contato: {EMPRESA.email} ou WhatsApp {EMPRESA.whatsapp}.</p>
 
@@ -48,7 +48,7 @@ export default function TermosPage() {
       <p>O software, a marca Landim Advisory e o conteúdo da plataforma pertencem ao operador. A assinatura dá a você uma licença de uso, pessoal e intransferível, enquanto estiver ativa.</p>
 
       <h2>11. Encerramento</h2>
-      <p>Você pode encerrar a conta a qualquer momento. Podemos suspender ou encerrar contas que violem estes Termos. Após o encerramento, os dados ficam disponíveis para exportação por 30 dias e depois são excluídos, salvo obrigação legal de guarda.</p>
+      <p>Você pode encerrar a conta a qualquer momento, no painel, em Configurações › Dados › Excluir minha conta. Podemos suspender ou encerrar contas que violem estes Termos. Após o encerramento, os dados ficam guardados por 30 dias (nesse prazo você pode pedir uma cópia ou desistir pelo suporte) e depois são excluídos de forma definitiva, salvo obrigação legal de guarda.</p>
 
       <h2>12. Alterações e foro</h2>
       <p>Podemos atualizar estes Termos; mudanças relevantes serão avisadas por e-mail ou no painel. Fica eleito o foro de Brasília-DF, ressalvado o direito do consumidor de propor ação no seu domicílio.</p>

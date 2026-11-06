@@ -1,0 +1,26 @@
+# Dependabot: abre pull requests quando sai correção de segurança ou versão nova das bibliotecas.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    groups:
+      correcoes:
+        update-types: [minor, patch]
+    ignore:
+      # Next.js 15+ e React 19 mudam muita coisa: atualizar com calma, num branch próprio
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

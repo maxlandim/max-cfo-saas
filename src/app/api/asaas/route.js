@@ -4,6 +4,7 @@ import { PLANOS, MESES_PAGOS_NO_ANUAL } from '../../../lib/plans';
 import { asaas, asaasConfigurado, lerRef, msDaData } from '../../../lib/asaas';
 import { uidDoAsaas, registrarAssinatura, aplicarPagamento, guardarFatura, limparFatura, sincronizarAssinatura } from '../../../lib/assinatura';
 import { pagamentoDeIndicado } from '../../../lib/indicacao';
+import { iguais, registrarEvento } from '../../../lib/seguranca';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,8 @@ export async function POST(req) {
   if (!adminConfigurado || !asaasConfigurado() || !process.env.ASAAS_WEBHOOK_TOKEN) {
     return NextResponse.json({ error: 'Webhook não configurado.' }, { status: 503 });
   }
-  if (req.headers.get('asaas-access-token') !== process.env.ASAAS_WEBHOOK_TOKEN) {
+  if (!iguais(req.headers.get('asaas-access-token') || '', process.env.ASAAS_WEBHOOK_TOKEN)) {
+    registrarEvento('webhookNegado');
     return NextResponse.json({ error: 'Token inválido.' }, { status: 401 });
   }
   let ev;

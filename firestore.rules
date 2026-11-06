@@ -24,9 +24,10 @@ service cloud.firestore {
 
     match /workspaces/{wsId} {
       // A segunda condição permite ler o espaço antigo, que usava o e-mail como id, para a migração automática.
+      // Exige e-mail confirmado: sem isso, quem criasse uma conta com o e-mail de outra pessoa leria os dados antigos dela.
       // A terceira libera a consulta (somente leitura) para o cliente ou contador convidado pelo dono, com e-mail confirmado.
       allow read: if donoDoEspaco(wsId)
-        || (request.auth != null && request.auth.token.email != null && request.auth.token.email.lower() == wsId)
+        || (emailConfirmado() && request.auth.token.email.lower() == wsId)
         || (emailConfirmado() && exists(/databases/$(database)/documents/convites/$(request.auth.token.email.lower())/espacos/$(wsId)));
       allow create, update: if donoDoEspaco(wsId) && request.resource.data.owner == request.auth.uid;
       // Equipe (analista ou gestor) grava os dados, mas não troca o dono

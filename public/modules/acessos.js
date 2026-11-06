@@ -10,6 +10,7 @@
   function F() { return window.fin; }
   function el(id) { return document.getElementById(id); }
   function esc(s) { return F() ? F().esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function jsArg(s) { return esc(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, '\\x27').replace(/[\r\n]/g, ' ')); } // valor dentro de onclick="f('...')"
   function toast(m, t) { if (window.showToast) window.showToast(m, t || 'success'); }
   function st() { return window.state || {}; }
   function lista() { var s = st(); if (!Array.isArray(s.acessosLeitura)) s.acessosLeitura = []; return s.acessosLeitura; }
@@ -62,7 +63,7 @@
         var aberta = (lido && lido.wsId === c.wsId) || (window.maxcfoEquipe && window.maxcfoEquipe.wsId === c.wsId);
         return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ' + (aberta ? 'var(--gold-border)' : 'var(--border)') + ';border-radius:10px;background:' + (aberta ? 'var(--gold-dim)' : 'var(--bg-surf)') + '">' +
           '<div style="flex:1;min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.empresa || 'Empresa') + '</div><div class="fin-sub">de ' + esc(c.donoNome || c.donoEmail || '—') + ' · ' + esc((window.maxcfoPapeis || {})[c.papel || 'leitura'] || 'Consulta') + '</div></div>' +
-          (aberta ? '<span class="fin-sit ok">Aberta</span>' : a.emailVerificado ? '<button class="fin-btn gold" onclick="acessos.abrir(\'' + esc(c.wsId) + '\')">Abrir</button>' : '') + '</div>';
+          (aberta ? '<span class="fin-sit ok">Aberta</span>' : a.emailVerificado ? '<button class="fin-btn gold" onclick="acessos.abrir(\'' + jsArg(c.wsId) + '\')">Abrir</button>' : '') + '</div>';
       }).join('') + '</div></div>';
   }
 
